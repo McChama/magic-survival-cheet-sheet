@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Official Magic Survival font, extracted from TomkoSK/magic-survival-builder, served
+   locally from public/assets/ — see src/config/assets.ts for provenance/licensing notes. */
+@font-face {
+  font-family: "MagicSurvival";
+  src: url("/assets/magicSurvival.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+  /* Bumped from the browser default (16px) — Tailwind's whole type/spacing scale is
+     rem-based, so this raises every text-xs/sm/base/lg size (and gap/padding) app-wide
+     on both desktop and mobile instead of hunting down each small-text utility class. */
+  font-size: 1.5rem;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: #141417;
+}
+
+body {
+  font-family: MagicSurvival, ui-sans-serif, system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Form controls don't inherit font-family from body by default in any browser — without
+   this, every <button>/<input>/etc. needs its own explicit fontFamily inline style, which
+   is exactly how MagicSurvival has gone missing on individual elements before. This makes
+   the global font the single source of truth instead. */
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+input::placeholder {
+  color: rgba(232, 232, 226, 0.35);
+}
+
+/* Tap targets stay comfortable at phone width without relying on hover states. */
+button, [role="button"] {
+  touch-action: manipulation;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.animate-pulse-green {
+  animation: pulse-green 1.4s ease-in-out infinite;
+}
+
+@keyframes msFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes msPop {
+  from { opacity: 0; transform: translateY(8px) scale(.9); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes msSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-ms-fade-up { animation: msFadeUp .2s ease-out; }
+.animate-ms-pop { animation: msPop .2s ease-out; }
+.animate-ms-slide-up { animation: msSlideUp .28s cubic-bezier(.22,.9,.3,1); }

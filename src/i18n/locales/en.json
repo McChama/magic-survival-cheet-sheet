@@ -1,0 +1,68 @@
+{
+  "home": {
+    "titleAlt": "Magic Survival",
+    "startGame": "Start Game",
+    "researchAria": "Research",
+    "subjectAria": "Subject"
+  },
+  "classSelect": {
+    "closeAria": "Close",
+    "selectClassHeading": "Select a Class",
+    "selected": "Selected"
+  },
+  "subject": {
+    "title": "Test Subject",
+    "closeAria": "Close",
+    "choosePlaceholder": "Choose a Subject",
+    "noDetail": "—",
+    "applying": "Applying",
+    "select": "Select"
+  },
+  "dashboard": {
+    "changeClassAria": "Change class",
+    "currentLevel": "Current Level : {{level}}",
+    "enemiesKilled": "Enemies killed {{count}}",
+    "loadout": "Loadout",
+    "emptyLoadout": "No artifacts or magics yet — use the + button to add some."
+  },
+  "loadoutFab": {
+    "artifact": "Artifact",
+    "magic": "Magic",
+    "openAria": "Add to loadout",
+    "closeAria": "Close loadout menu"
+  },
+  "loadoutSheet": {
+    "titleByKind": {
+      "artifact": "Artifact obtained",
+      "passive": "Passive obtained",
+      "magic": "Magic obtained"
+    },
+    "closeAria": "Close",
+    "noResults": "No results.",
+    "selectItemPlaceholder": "Select an item",
+    "tapHint": "Tap an icon to add or remove it from your loadout.",
+    "noAdditionalEffect": "No additional effect data.",
+    "baseMagicPickup": "Base magic pickup — tracked for fusion dependencies.",
+    "categories": {
+      "all": "All",
+      "normal": "Normal",
+      "rare": "Rare",
+      "epic": "Epic",
+      "special": "Special",
+      "legendary": "Legendary",
+      "offensive": "Offensive",
+      "utility": "Utility",
+      "passive": "Passive"
+    }
+  },
+  "research": {
+    "closeAria": "Close",
+    "heading": "Resasdasearch",
+    "selectResearch": "Select Research",
+    "purchasePoints": "Purchase Research Points",
+    "researchBtn": "Research",
+    "revertBtn": "Revert",
+    "noPauseMenuStat": "No pause-menu stat — tracked for the research budget only.",
+    "increaseStat": "Increase {{stat}} by {{step}}{{unit}} per level"
+  }
+}

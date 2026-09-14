@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Magic Survival · Run Companion — Mockup</title>
+<style>
+  :root{
+    --bg-950:#0a0a0c; --bg-900:#141416; --bg-800:#1d1d1f; --bg-700:#26262a;
+    --border:#2a2a2d; --border-strong:#3a3a3e;
+    --text-primary:#e8e6e1; --text-secondary:#9a9994; --text-muted:#6b6a66;
+    --gold:#eecc18; --gold-dim:#7a6c14;
+    --watch:#6ed94a; --warning:#f0a028; --critical:#e05a3c;
+    --r-common:#6f6d6a; --r-rare:#2f6b8f; --r-epic:#7d3f9e; --r-special:#9e2f3f; --r-legendary:#a3a333;
+    --font-ui: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+    --font-flavor: "MagicSurvival", var(--font-ui);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg-950);color:var(--text-primary);font-family:var(--font-ui);}
+  button{font-family:inherit;}
+
+  .shell{display:flex;min-height:100vh;}
+
+  /* ---- Sidebar (desktop) ---- */
+  .sidebar{
+    display:none;
+    width:220px; flex-shrink:0; background:var(--bg-900);
+    border-right:1px solid var(--border); padding:20px 12px; flex-direction:column; gap:4px;
+  }
+  .sidebar .brand{font-size:13px; color:var(--text-secondary); padding:0 10px 20px; letter-spacing:.02em;}
+  .navitem{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px;
+    color:var(--text-secondary); font-size:14px; cursor:pointer; border:1px solid transparent;
+  }
+  .navitem.active{ background:var(--bg-800); color:var(--text-primary); border-color:var(--border);}
+  .navitem .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);opacity:0;margin-left:auto;}
+  .navitem.active .dot{opacity:1;}
+
+  /* ---- Main column ---- */
+  .main{flex:1; min-width:0; display:flex; flex-direction:column;}
+
+  /* ---- Status bar (both breakpoints) ---- */
+  .statusbar{
+    position:sticky; top:0; z-index:5; background:rgba(10,10,12,0.92); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border); padding:10px 16px; display:flex; align-items:center; gap:10px;
+  }
+  .fusionchip{
+    display:flex; align-items:center; gap:6px; background:var(--bg-800); border:1px solid var(--border);
+    border-radius:999px; padding:4px 10px 4px 4px; font-size:12px; color:var(--text-secondary); cursor:pointer;
+  }
+  .fusionchip .icon{width:18px;height:18px;border-radius:5px;flex-shrink:0;}
+  .statusbar .spacer{flex:1;}
+  .minutepill{
+    font-family:var(--font-flavor); font-size:13px; color:var(--gold); background:var(--bg-800);
+    border:1px solid var(--border); border-radius:8px; padding:4px 10px; cursor:pointer;
+  }
+
+  .screen{padding:20px 16px 100px; max-width:1100px; width:100%; margin:0 auto;}
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  h1{font-size:18px; font-weight:500; color:var(--gold); margin:0 0 2px;}
+  .subtitle{font-size:12px; color:var(--text-muted); margin:0 0 20px;}
+  h2{font-size:12px; font-weight:500; color:var(--text-secondary); text-transform:none; margin:0 0 10px;}
+
+  .row-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+
+  /* ---- Generic card / grid select ---- */
+  .btngrid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .selectbtn{
+    border:1px solid var(--border); background:var(--bg-800); color:var(--text-secondary);
+    border-radius:10px; padding:12px 8px; font-size:13px; text-align:center; cursor:pointer;
+  }
+  .selectbtn.active{border-color:var(--gold-dim); background:rgba(238,204,24,0.08); color:var(--gold);}
+
+  .stepper{
+    display:flex; align-items:center; justify-content:space-between; background:var(--bg-800);
+    border:1px solid var(--border); border-radius:10px; padding:10px 16px; margin-bottom:24px;
+  }
+  .stepper .circbtn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border-strong);background:transparent;color:var(--text-primary);cursor:pointer;}
+  .stepper .val{font-family:var(--font-flavor); font-size:18px; color:var(--gold);}
+
+  .fusioncard{
+    border:1px solid var(--border); background:var(--bg-800); border-radius:10px; padding:10px;
+    display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; text-align:center;
+  }
+  .fusioncard.active{border-color:var(--gold); background:rgba(238,204,24,0.06);}
+  .fusioncard .icon{width:40px;height:40px;border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:500;}
+  .fusioncard .name{font-size:11px; color:var(--text-secondary); line-height:1.2;}
+  .fusioncard .ingredients{font-size:10px; color:var(--text-muted); line-height:1.2;}
+
+  /* ---- Stat rows ---- */
+  .statpanel{border:1px solid var(--border); background:var(--bg-800); border-radius:10px; padding:0 14px;}
+  .statrow{display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--border);}
+  .statrow:last-child{border-bottom:none;}
+  .statrow .label{font-size:13px; color:var(--text-secondary); display:flex; align-items:center; gap:8px;}
+  .statrow .label .flag{width:6px;height:6px;border-radius:50%;}
+  .statrow .flag.watch{background:var(--watch);}
+  .statrow .flag.warn{background:var(--warning);}
+  .statctrl{display:flex; align-items:center; gap:8px;}
+  .statctrl .circbtn{width:26px;height:26px;border-radius:50%;border:1px solid var(--border-strong);background:transparent;color:var(--text-secondary);font-size:13px;cursor:pointer;}
+  .statval{font-family:var(--font-flavor); font-size:14px; color:var(--gold); width:44px; text-align:right; background:transparent; border:none; cursor:pointer;}
+  .capbar{height:3px;border-radius:2px;background:var(--bg-700); margin:0 0 10px 14px; max-width:200px;}
+  .capbar .fill{height:100%; border-radius:2px; background:var(--text-muted);}
+  .capbar .fill.warn{background:var(--warning);}
+
+  .tabpair{display:flex; gap:6px; background:var(--bg-800); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:14px;}
+  .tabpair button{flex:1; border:none; background:transparent; color:var(--text-secondary); padding:9px 0; border-radius:7px; font-size:13px; cursor:pointer;}
+  .tabpair button.active{background:rgba(238,204,24,0.12); color:var(--gold);}
+
+  /* ---- Recommender ---- */
+  .slotgrid{display:flex; flex-direction:column; gap:8px; margin-bottom:16px;}
+  .slot{display:flex; align-items:center; gap:10px; border:1px solid var(--border); background:var(--bg-800); border-radius:10px; padding:9px 12px; cursor:pointer;}
+  .slot .swatch{width:32px;height:32px;border-radius:7px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; color:#fff;}
+  .slot .swatch.empty{background:transparent; border:1.5px dashed var(--border-strong); color:var(--text-muted);}
+  .slot .name{font-size:13px; color:var(--text-secondary); flex:1;}
+  .slot.filled .name{color:var(--text-primary);}
+
+  .result{display:flex; align-items:center; gap:12px; border:1px solid var(--border); background:var(--bg-800); border-radius:10px; padding:10px 12px; margin-bottom:8px;}
+  .result.best{border-color:var(--gold);}
+  .result .swatch{width:38px;height:38px;border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:500; color:#fff;}
+  .result .body{flex:1; min-width:0;}
+  .result .name{font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:6px;}
+  .result .bar{height:5px; border-radius:3px; background:var(--bg-700); margin-top:6px;}
+  .result .bar .fill{height:100%; border-radius:3px; background:var(--text-muted);}
+  .result.best .bar .fill{background:var(--gold);}
+  .result .score{font-family:var(--font-flavor); font-size:16px; color:var(--text-secondary);}
+  .result.best .score{color:var(--gold);}
+
+  /* ---- Bottom nav (mobile) ---- */
+  .bottomnav{
+    position:sticky; bottom:0; display:flex; background:rgba(10,10,12,0.95); backdrop-filter:blur(6px);
+    border-top:1px solid var(--border);
+  }
+  .bottomnav .item{flex:1; text-align:center; padding:10px 0 calc(10px + env(safe-area-inset-bottom)); color:var(--text-muted); font-size:11px; cursor:pointer;}
+  .bottomnav .item.active{color:var(--gold);}
+  .bottomnav .icon{display:block; margin:0 auto 4px; width:20px;height:20px;}
+
+  .desktopgrid{display:grid; grid-template-columns:1fr; gap:20px;}
+
+  /* ---- Desktop breakpoint ---- */
+  @media (min-width:960px){
+    .sidebar{display:flex;}
+    .bottomnav{display:none;}
+    .screen{padding:28px 40px 60px;}
+    .btngrid{grid-template-columns:repeat(6,1fr);}
+    .desktopgrid{grid-template-columns:1.4fr 1fr;}
+    .statuswrap{grid-column:1/-1;}
+    #screen-stats .tabpair{display:none;}
+    #screen-stats .desktopgrid{grid-template-columns:1fr 1fr;}
+    .slotgrid{flex-direction:row; flex-wrap:wrap;}
+    .slot{flex:1 1 220px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <nav class="sidebar">
+    <div class="brand">MAGIC SURVIVAL<br/>Run Companion</div>
+    <div class="navitem active" data-nav="dashboard"><span>Minuto 0</span><span class="dot"></span></div>
+    <div class="navitem" data-nav="stats"><span>Stats</span><span class="dot"></span></div>
+    <div class="navitem" data-nav="recommender"><span>Recomendador</span><span class="dot"></span></div>
+  </nav>
+
+  <div class="main">
+    <div class="statusbar">
+      <div class="fusionchip"><span class="icon" style="background:var(--r-legendary)"></span>Empyrean Wrath</div>
+      <div class="fusionchip"><span class="icon" style="background:var(--r-epic)"></span>Telekinetic Sword</div>
+      <div class="spacer"></div>
+      <div class="minutepill">Min. 12</div>
+    </div>
+
+    <!-- ================= DASHBOARD ================= -->
+    <section class="screen active" id="screen-dashboard">
+      <div class="row-header">
+        <div><h1>Dashboard · Minuto 0</h1><p class="subtitle" style="margin:0;">Configura tu run antes de empezar</p></div>
+        <button class="selectbtn" style="padding:8px 14px;">Nueva partida</button>
+      </div>
+
+      <div class="desktopgrid">
+        <div>
+          <h2>Clase</h2>
+          <div class="btngrid" style="margin-bottom:20px;">
+            <div class="selectbtn active">Wizard</div>
+            <div class="selectbtn">Warrior</div>
+            <div class="selectbtn">Priest</div>
+            <div class="selectbtn">Alchemist</div>
+            <div class="selectbtn">Esper</div>
+            <div class="selectbtn">Engineer</div>
+          </div>
+
+          <h2>Sujeto</h2>
+          <div class="btngrid" style="margin-bottom:20px;">
+            <div class="selectbtn">Fire</div>
+            <div class="selectbtn active">Lightning</div>
+            <div class="selectbtn">Ice</div>
+            <div class="selectbtn">Nature</div>
+            <div class="selectbtn">Light</div>
+            <div class="selectbtn">Dark</div>
+          </div>
+
+          <h2>Puntos de investigación globales</h2>
+          <div class="stepper">
+            <button class="circbtn">–</button>
+            <span class="val">14</span>
+            <button class="circbtn">+</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="row-header" style="margin-bottom:10px;">
+            <h2 style="margin:0;">Fusiones objetivo</h2>
+            <span style="font-size:11px;color:var(--text-muted);">2/3</span>
+          </div>
+          <div class="btngrid" style="grid-template-columns:repeat(3,1fr);">
+            <div class="fusioncard active">
+              <div class="icon" style="background:var(--r-legendary);">EW</div>
+              <div class="name">Empyrean Wrath</div>
+              <div class="ingredients">Thunderstorm + Meteor</div>
+            </div>
+            <div class="fusioncard active">
+              <div class="icon" style="background:var(--r-epic);">TS</div>
+              <div class="name">Telekinetic Sword</div>
+              <div class="ingredients">Spirit + Electric Shock</div>
+            </div>
+            <div class="fusioncard">
+              <div class="icon" style="background:var(--r-rare);">CS</div>
+              <div class="name">Crazed Spray</div>
+              <div class="ingredients">Energy Bolt + Spirit</div>
+            </div>
+            <div class="fusioncard">
+              <div class="icon" style="background:var(--r-rare);">TC</div>
+              <div class="name">Terra Current</div>
+              <div class="ingredients">Arcane Ray + Electric Shock</div>
+            </div>
+            <div class="fusioncard">
+              <div class="icon" style="background:var(--r-epic);">WC</div>
+              <div class="name">War Climate</div>
+              <div class="ingredients">Blizzard + Meteor</div>
+            </div>
+            <div class="fusioncard">
+              <div class="icon" style="background:var(--r-common);">DE</div>
+              <div class="name">Demon Equation</div>
+              <div class="ingredients">Fireball + Energy Bolt</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= STATS ================= -->
+    <section class="screen" id="screen-stats">
+      <div class="row-header">
+        <h1 style="margin:0;">Menú de pausa inteligente</h1>
+        <div class="minutepill">Min. 12</div>
+      </div>
+
+      <div class="tabpair">
+        <button class="active">Combate</button>
+        <button>Utilidad / Supervivencia</button>
+      </div>
+
+      <div class="desktopgrid">
+        <div>
+          <h2>Combate</h2>
+          <div class="statpanel">
+            <div class="statrow">
+              <span class="label">ATK</span>
+              <div class="statctrl"><button class="circbtn">–</button><button class="statval">55</button><button class="circbtn">+</button></div>
+            </div>
+            <div class="statrow">
+              <span class="label">Amplify ATK</span>
+              <div class="statctrl"><button class="circbtn">–</button><button class="statval">0%</button><button class="circbtn">+</button></div>
+            </div>
+            <div class="statrow">
+              <span class="label"><span class="flag warn"></span>Critical Strike Rate</span>
+              <div class="statctrl"><button class="circbtn">–</button><button class="statval">86%</button><button class="circbtn">+</button></div>
+            </div>
+          </div>
+          <div class="capbar"><div class="fill warn" style="width:86%"></div></div>
+
+          <div class="statpanel">
+            <div class="statrow">
+              <span class="label">Crit. Multiplier</span>
+              <div class="statctrl"><button class="circbtn">–</button><button class="statval">300%</button><button class="circbtn">+</button></div>
+            </div>
+            <div class="statrow">
+              <span class="label">All Magic Damage</span>
+              <div class="statctrl"><button class="circbtn">–</button><button class="statval">65%</button><button class="circbtn">+</button></div>
+            </div>
+            <div class="statrow">
+              <span class="label"><span class="flag watch"></span>All Magic Cooldown</span>
+              <div class="statctrl"><button class="circbtn">–</button><button class="statval">42%</button><button class="circbtn">+</button></div>
+            </div>
+          </div>
+          <div class="capbar"><div class="fill" style="width:70%"></div></div>
+        </div>
+
+        <div>
+          <h2>Utilidad / Supervivencia</h2>
+          <div class="statpanel">
+            <div class="statrow">
+              <span class="label">HP</span>
+              <div class="statctrl"><button class="circbtn">–</button><button class="statval">200</button><button class="circbtn">+</button></div>
+            </div>
+            <div class="statrow">
+              <span class="label">HP Regen per sec.</span>
+              <div class="statctrl"><button class="circbtn">–</button><button class="statval">0.2%</button><button class="circbtn">+</button></div>
+            </div>
+            <div class="statrow">
+              <span class="label">Damage Taken</span>
+              <div class="statctrl"><button class="circbtn">–</button><button class="statval">-30%</button><button class="circbtn">+</button></div>
+            </div>
+            <div class="statrow">
+              <span class="label">Evasion</span>
+              <div class="statctrl"><button class="circbtn">–</button><button class="statval">0%</button><button class="circbtn">+</button></div>
+            </div>
+          </div>
+          <p style="font-size:11px;color:var(--text-muted);margin:12px 0 0;display:flex;align-items:center;gap:6px;">
+            <span class="flag watch" style="width:7px;height:7px;border-radius:50%;background:var(--watch);"></span>
+            Vas por detrás de la build ideal
+            <span style="margin:0 4px;">·</span>
+            <span class="flag warn" style="width:7px;height:7px;border-radius:50%;background:var(--warning);"></span>
+            Rendimiento decreciente
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= RECOMMENDER ================= -->
+    <section class="screen" id="screen-recommender">
+      <div class="row-header">
+        <div><h1 style="margin:0;">Recomendador activo</h1><p class="subtitle" style="margin:2px 0 0;">Toca cada casilla y busca las opciones del cofre</p></div>
+        <button class="circbtn" style="width:34px;height:34px;">↺</button>
+      </div>
+
+      <div class="slotgrid">
+        <div class="slot filled">
+          <span class="swatch" style="background:var(--r-common);">BP</span>
+          <span class="name">Blood Pack</span>
+        </div>
+        <div class="slot filled">
+          <span class="swatch" style="background:var(--r-legendary);">GA</span>
+          <span class="name">Gaia</span>
+        </div>
+        <div class="slot">
+          <span class="swatch empty">+</span>
+          <span class="name">Opción 3</span>
+        </div>
+        <div class="slot">
+          <span class="swatch empty">+</span>
+          <span class="name">Opción 4</span>
+        </div>
+      </div>
+
+      <div class="result best">
+        <span class="swatch" style="background:var(--r-legendary);">GA</span>
+        <div class="body">
+          <div class="name">Gaia <span style="color:var(--gold);font-size:11px;">★ mejor opción</span></div>
+          <div class="bar"><div class="fill" style="width:82%"></div></div>
+        </div>
+        <span class="score">8.2</span>
+      </div>
+      <div class="result">
+        <span class="swatch" style="background:var(--r-common);">BP</span>
+        <div class="body">
+          <div class="name">Blood Pack</div>
+          <div class="bar"><div class="fill" style="width:41%"></div></div>
+        </div>
+        <span class="score">4.1</span>
+      </div>
+    </section>
+  </div>
+</div>
+
+<nav class="bottomnav">
+  <div class="item active" data-nav="dashboard">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    Minuto 0
+  </div>
+  <div class="item" data-nav="stats">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h10M4 18h7"/><path d="M17 15l3 3 3-3" transform="translate(-3 0)"/></svg>
+    Stats
+  </div>
+  <div class="item" data-nav="recommender">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4z"/></svg>
+    Recomendador
+  </div>
+</nav>
+
+<script>
+  function goTo(name){
+    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
+    document.querySelectorAll('[data-nav]').forEach(n => n.classList.toggle('active', n.dataset.nav === name));
+  }
+  document.querySelectorAll('[data-nav]').forEach(el => el.addEventListener('click', () => goTo(el.dataset.nav)));
+</script>
+
+</body>
+</html>

@@ -1,0 +1,66 @@
+/**
+ * Asset resolution for sprites and the game font.
+ *
+ * These sprites and the MagicSurvival.ttf font are extracted game assets originally
+ * sourced from the public repo TomkoSK/magic-survival-builder, not original artwork
+ * from this project — the underlying art belongs to the Magic Survival developers.
+ * They now ship locally under public/assets/ (see public/assets/{artifactImages,
+ * magicImages,passiveImages,researchImages}/ and public/assets/magicSurvival.ttf)
+ * instead of being hotlinked, so the app works offline and doesn't depend on a
+ * third-party repo staying up. `VITE_ASSET_BASE_URL` is still overridable if you
+ * ever want to point at a CDN instead.
+ */
+export const IMAGE_BASE_URL = import.meta.env.VITE_ASSET_BASE_URL ?? "/assets/";
+
+export const FONT_URL = `${IMAGE_BASE_URL}magicSurvival.ttf`;
+
+export function assetUrl(relativePath: string): string {
+  return `${IMAGE_BASE_URL}${relativePath}`;
+}
+
+export function artifactImage(fileName: string): string {
+  return assetUrl(`artifactImages/${fileName}`);
+}
+
+export function magicImage(fileName: string): string {
+  return assetUrl(`magicImages/${fileName}`);
+}
+
+export function passiveImage(fileName: string): string {
+  return assetUrl(`passiveImages/${fileName}`);
+}
+
+export function researchImage(fileName: string): string {
+  return assetUrl(`researchImages/${fileName}`);
+}
+
+export function classImage(fileName: string): string {
+  return assetUrl(`classImages/${fileName}`);
+}
+
+export function subjectImage(fileName: string): string {
+  return assetUrl(`subjectImages/${fileName}`);
+}
+
+/** One frame (1-indexed) of a Subject's idle-sway animation — see public/assets/subjectAnim/{slug}/. */
+export function subjectAnimFrame(slug: string, frame: number): string {
+  return assetUrl(`subjectAnim/${slug}/${frame}.png`);
+}
+
+export function baseMagicImage(fileName: string): string {
+  return assetUrl(`baseMagicImages/${fileName}`);
+}
+
+/** Generic chrome/decoration assets not tied to a game entity (dividers, frames, icons). */
+export function uiImage(fileName: string): string {
+  return assetUrl(`uiImages/${fileName}`);
+}
+
+/**
+ * One of the 7 real in-game button-click sound variants (public/assets/audio/ui/) — the
+ * game picks one at random per click, see reference/game-data-sources.md. Not wired up to
+ * any button yet; this is just the path helper for when that lands.
+ */
+export function uiClickSound(variant: number): string {
+  return assetUrl(`audio/ui/Sound_UI${variant}.wav`);
+}
