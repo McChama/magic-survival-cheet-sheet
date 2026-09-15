@@ -1,4 +1,4 @@
-const CLICK_SOUND_SRC = '/assets/audio/ui/Sound_UI1.wav'
+const CLICK_SOUND_SRC = `${import.meta.env.BASE_URL}assets/audio/ui/Sound_UI1.wav`
 const CLICK_SOUND_VOLUME = 0.1 // 0 (silent) to 1 (full volume)
 const CLICKABLE_SELECTOR =
   'button, a[href], [role="button"], [role="link"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="radio"], [role="switch"], input[type="button"], input[type="submit"], input[type="reset"], select, summary, [data-ui-sound]'
