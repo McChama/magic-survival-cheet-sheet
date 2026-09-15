@@ -31,6 +31,8 @@ Then open the URL Vite prints (defaults to `http://localhost:5173`).
 - `npm run preview` — preview the production build locally
 - `npm run lint` — run Oxlint
 - `npm run i18n:dump` — regenerate `src/i18n/locales/en/gameData.json` from `src/data/*.ts`
+- `npm run i18n:check-sync` — fail if `gameData.json` is stale relative to `src/data/*.ts` (used in CI to catch new/changed translation entries that weren't dumped)
+- `npm run i18n:check-hardcoded-text` — scan `src/components/**/*.tsx` for plain-text JSX/attributes that should be translation keys instead (used in CI to enforce the i18n convention)
 
 ## Project structure
 
@@ -50,6 +52,29 @@ Then open the URL Vite prints (defaults to `http://localhost:5173`).
 When adding or updating game data, follow the language rule in
 [CLAUDE.md](CLAUDE.md) — everything that lands in `src/data/` must be in
 English.
+
+## CI
+
+Three GitHub Actions workflows run on pushes/PRs to `master`
+(`.github/workflows/`):
+
+- **`lint.yml`** — runs `npm run lint` (Oxlint) and `tsc -b` (type check) on
+  every push/PR.
+- **`i18n-new-entries.yml`** — runs only when `src/data/**` or `src/i18n/**`
+  change. `src/i18n/locales/en/gameData.json` is a point-in-time dump of the
+  translation keys built at runtime from `src/data/*.ts` (see
+  `src/i18n/gameData.ts`); it isn't the source of truth, but it's the one
+  artifact a reviewer can diff to see exactly which keys a PR adds, changes,
+  or removes. This workflow fails the build if that dump is stale (i.e.
+  `npm run i18n:dump` wasn't re-run and committed after a data change) and
+  posts the pending diff to the job summary.
+- **`translation-conventions.yml`** — runs `npm run i18n:check-hardcoded-text`
+  on every push/PR. Parses `src/components/**/*.tsx` with the TypeScript
+  compiler API and fails the build on plain-text JSX children or string-literal
+  text attributes (`aria-label`, `alt`, `title`, `placeholder`, …) that aren't
+  routed through `useTranslation()`/`t("...")` — i.e. new UI copy typed
+  directly into a view instead of added as a key in
+  `src/i18n/locales/en/*.json`.
 
 ## Disclaimer
 

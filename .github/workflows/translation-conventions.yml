@@ -1,0 +1,29 @@
+name: Translation conventions
+
+# Enforces this project's i18n convention: user-facing text in views must
+# come from the translation files (useTranslation() + t("...")), never be
+# typed as a plain-text literal in JSX. Catches PRs that add new UI copy
+# directly in src/components/**/*.tsx instead of adding a key to
+# src/i18n/locales/en/*.json.
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  check-hardcoded-text:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Scan views for hardcoded text
+        run: npm run i18n:check-hardcoded-text

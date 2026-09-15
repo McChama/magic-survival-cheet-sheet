@@ -1,0 +1,47 @@
+name: New translation entries
+
+# Detects new/changed translation entries introduced via src/data/*.ts (the
+# source of truth for the "gameData" i18next namespace, see
+# src/i18n/gameData.ts) that haven't been reflected in the on-disk dump at
+# src/i18n/locales/en/gameData.json (npm run i18n:dump). That dump isn't the
+# runtime source of truth, but it's the one artifact a reviewer can diff to
+# see exactly which translation keys a PR adds, changes, or removes.
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "src/data/**"
+      - "src/i18n/**"
+  push:
+    branches: [master]
+    paths:
+      - "src/data/**"
+      - "src/i18n/**"
+
+jobs:
+  check-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check gameData.json is in sync with src/data/*.ts
+        run: npm run i18n:check-sync
+
+      - name: Diff summary (new/changed translation keys)
+        if: failure()
+        run: |
+          npm run i18n:dump
+          echo "### New/changed translation entries" >> "$GITHUB_STEP_SUMMARY"
+          echo '```diff' >> "$GITHUB_STEP_SUMMARY"
+          git diff -- src/i18n/locales/en/gameData.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "src/i18n/locales/en/gameData.json is stale. Run 'npm run i18n:dump' locally and commit the result." >&2
+          exit 1
