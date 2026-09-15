@@ -47,6 +47,12 @@ export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch }: Hom
         <img src={uiImage("title/TitleText.png")} alt={t("home.titleAlt")} className="max-w-[110px] h-auto" />
       </div>
 
+      <div className="relative flex justify-end pr-2">
+        <div className="text-right font-magic uppercase text-[#d93b3b] text-[2rem] leading-[1.1] tracking-wide whitespace-nowrap [text-shadow:-1px_-1px_0_#fff,1px_-1px_0_#fff,-1px_1px_0_#fff,1px_1px_0_#fff,0_0_6px_rgba(255,255,255,.7)]">
+          {t("home.cheatSheet")}
+        </div>
+      </div>
+
       <div className="relative mt-auto pt-0 pr-6 pb-[26px] pl-10">
         <button
           type="button"

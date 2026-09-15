@@ -33,6 +33,13 @@ export default {
           critical: "rgb(224, 90, 60)",
         },
       },
+      fontSize: {
+        // Shared size for short flavor/description text blocks (a node's or class level's
+        // in-game effect text) that sit in a fixed-height container and must never reflow
+        // the surrounding layout — see CLAUDE.md's "Descriptive text" rule. Deliberately
+        // smaller/tighter than the app's other body copy, which can size to its content.
+        descriptive: ["0.75rem", { lineHeight: "1.15" }],
+      },
       boxShadow: {
         panel: "0 0 0 1px rgba(255,255,255,0.04), 0 8px 24px rgba(0,0,0,0.5)",
         glow: "0 0 0 2px rgb(238, 204, 24), 0 0 16px rgba(238, 204, 24, 0.5)",

@@ -27,7 +27,7 @@ export function LoadoutFab() {
               onClick={() => openSheet("artifact")}
               className="flex items-center gap-3 bg-transparent border-none cursor-pointer font-[inherit] p-0"
             >
-              <span className="text-[1.1rem] text-[#e8e8e2] font-bold [text-shadow:0_1px_4px_#000]">{t("loadoutFab.artifact")}</span>
+              <span className="text-[1.1rem] text-[#e8e8e2] [text-shadow:0_1px_4px_#000]">{t("loadoutFab.artifact")}</span>
               <span className="w-[46px] h-[46px] rounded-full bg-[#1b1b1f] border border-[#efc84f]/50 text-[#efc84f] text-2xl flex items-center justify-center">
                 ✦
               </span>
@@ -37,7 +37,7 @@ export function LoadoutFab() {
               onClick={() => openSheet("magic")}
               className="flex items-center gap-3 bg-transparent border-none cursor-pointer font-[inherit] p-0"
             >
-              <span className="text-[1.1rem] text-[#e8e8e2] font-bold [text-shadow:0_1px_4px_#000]">{t("loadoutFab.magic")}</span>
+              <span className="text-[1.1rem] text-[#e8e8e2] [text-shadow:0_1px_4px_#000]">{t("loadoutFab.magic")}</span>
               <span className="w-[46px] h-[46px] rounded-full bg-[#1b1b1f] border border-[#5fe3c4]/50 text-[#5fe3c4] text-2xl flex items-center justify-center">
                 ✧
               </span>

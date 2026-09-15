@@ -1,6 +1,7 @@
 {
   "home": {
     "titleAlt": "Magic Survival",
+    "cheatSheet": "Cheat Sheet",
     "startGame": "Start Game",
     "researchAria": "Research",
     "subjectAria": "Subject"
@@ -8,7 +9,10 @@
   "classSelect": {
     "closeAria": "Close",
     "selectClassHeading": "Select a Class",
-    "selected": "Selected"
+    "selected": "Selected",
+    "levelDownAria": "Decrease class level",
+    "levelUpAria": "Increase class level",
+    "noBonusData": "No bonus data extracted for this class yet."
   },
   "subject": {
     "title": "Test Subject",
@@ -60,10 +64,7 @@
     "closeAria": "Close",
     "heading": "Research",
     "selectResearch": "Select Research",
-    "purchasePoints": "Purchase Research Points",
     "researchBtn": "Research",
-    "revertBtn": "Revert",
-    "noPauseMenuStat": "No pause-menu stat — tracked for the research budget only.",
-    "increaseStat": "Increase {{stat}} by {{step}}{{unit}} per level"
+    "revertBtn": "Revert"
   }
 }

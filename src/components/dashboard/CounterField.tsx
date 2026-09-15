@@ -32,7 +32,7 @@ export function CounterField({ text, color, value, onChange, fontSize = 19 }: Co
           if (e.key === "Enter") commit();
           if (e.key === "Escape") setEditing(false);
         }}
-        className="w-[70px] text-center bg-[#1a1a1f] rounded font-bold outline-none"
+        className="w-[70px] text-center bg-[#1a1a1f] rounded outline-none"
         style={{ border: `1px solid ${color}`, color, fontSize: rem(fontSize) }}
       />
     );
@@ -45,7 +45,7 @@ export function CounterField({ text, color, value, onChange, fontSize = 19 }: Co
         setDraft(String(value));
         setEditing(true);
       }}
-      className="bg-transparent border-none p-0 cursor-pointer font-bold"
+      className="bg-transparent border-none p-0 cursor-pointer"
       style={{ color, fontSize: rem(fontSize) }}
     >
       {text}

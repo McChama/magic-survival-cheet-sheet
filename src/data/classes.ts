@@ -108,6 +108,11 @@ export interface SubjectDetail {
   trait?: string;
 }
 
+/** Falls back to `SUBJECTS[0]` ("Wizard") for any unrecognized name, matching the store's own default. */
+export function getSubjectDetail(name: string): SubjectDetail | null {
+  return SUBJECT_DETAILS[name] ?? SUBJECT_DETAILS[SUBJECTS[0]] ?? null;
+}
+
 export const SUBJECT_DETAILS: Record<string, SubjectDetail> = {
   Wizard: { description: "Freeshooter", trait: "Increase Magic Bolt Damage by 5% (All Classes)" },
   Astronomer: { description: "Core Energy", trait: "Increase Satellite Damage by 5% (All Classes)" },
@@ -137,55 +142,130 @@ export const SUBJECT_DETAILS: Record<string, SubjectDetail> = {
 };
 
 /**
- * Per-Class level-up bonuses (Research Material spent on a class grants these as it hits
- * Lv2/3/4/5), shown on the Class select screen once someone wires it in — not implemented
- * yet, just extracted. Sourced directly from the game's own English dictionary
- * (`eng_Dictionary_Class.txt` inside `data.unity3d`, ids 1-24), the same file
- * `SUBJECT_DETAILS` above comes from — this replaced an earlier wiki-sourced version of
- * this data (https://magic-survival-rpg.fandom.com/wiki/Classes) once the real dictionary
- * turned up, since the wiki rewrites the text into full sentences the game never actually
- * shows (see `SUBJECT_DETAILS`'s doc comment for the same issue on the Subject side). All
- * text below is the game's own English, verbatim, including its own
- * 【】〈〉《》[]{}『』〔〕@ marker formatting (same convention `artifacts.ts`/`passives.ts` use —
- * see CLAUDE.md's language rule) — `@` marks a line break within a single displayed field.
+ * Per-Class level-up bonuses — specifically the **Lv2 through Lv5** bonuses (4 entries).
+ * Class Level 1 is a free baseline with none of these active yet; see
+ * `RunMeta.classLevels`'s doc comment in `types/game.ts` for the confirmed 1-5 level range
+ * (source: https://magic-survival-rpg.fandom.com/wiki/Classes, per-class progression, not a
+ * single run-wide number) and `ClassSelectScreen.tsx` for how a class's own level (via
+ * `getClassLevel`) maps to how many of these 4 `levels` entries are unlocked (level - 1).
+ * Sourced directly from the game's own English dictionary (`eng_Dictionary_Class.txt`
+ * inside `data.unity3d`, ids 1-24), the same file `SUBJECT_DETAILS` above comes from.
  *
- * `tooltip` is the line shown for the Lv1 bonus, which for most classes names the ability
- * in 〔brackets〕 plus a passive per-level scaling note (e.g. "every 5 levels, damage +3%").
- * `levels` is the 4 bonuses granted at Lv1 through Lv4 (Lv4 is always the permanent
- * "(All Classes)" one), in order. A few classes (Arcanist, Archaeologist, Black Mage) have a
- * `tooltip` that names "Magic Bolt" even though their own Lv1 bonus in `levels[0]` is
- * something else (Intelligence/Explorer/Arcane Effuse) — confirmed real, not a data error:
- * the dictionary genuinely shows that flavor line for all three, most likely leftover
- * design-doc text never updated.
+ * **Corrected 2026-09-15**: the first pass of this data (a) dropped the `tooltip` line
+ * entirely from the rendered UI (it was extracted into this file but no component ever
+ * read it — the user caught this by comparing against an actual in-game screenshot), (b)
+ * invented a shared 4-slot color pattern (`DEFAULT_LEVEL_CLASSNAMES`: celeste/white/
+ * celeste/blue for every class) that doesn't match the real per-line colors the dictionary
+ * encodes — e.g. Arcanist's own Lv3 line is green (`#64FF32`) and Lv4 is pink (`#FF76DE`),
+ * not the "standard" blue — and (c) treated Lv1 as already granting `levels[0]` for free,
+ * which the wiki's own text disproved ("Each class requires 45 Research Material to unlock
+ * (3 for Lv2, 6 for Lv3, 12 for Lv4, 24 for Lv5)... Once acquired, the Lv5 bonus is
+ * permanent" — Lv1 costs nothing and grants nothing on its own; `levels[3]`, the
+ * "(All Classes)" one, is that permanent Lv5 bonus). Every line now carries its *own* real
+ * hex `color` straight from the dictionary's `<color=#RRGGBB>` tag for that line, instead
+ * of a guessed shared progression — there is no "standard" pattern, it genuinely varies per
+ * class per line.
+ *
+ * `tooltip` is the Lv1 flavor/scaling line (dictionary column L1) — shown regardless of the
+ * class's own level since it's not itself one of the 4 gated bonuses. For most classes
+ * this names the ability once in 〔brackets〕 plus a per-level scaling note (e.g. "every 5
+ * levels, damage +3%"); a few classes (Arcanist, Archaeologist, Black Mage) have a
+ * `tooltip` that names "Magic Bolt" even though their own `levels[0]` (Lv2) bonus is
+ * something else (Intelligence/Explorer/Arcane Effuse) — confirmed real dictionary text,
+ * not a data error, most likely leftover design-doc flavor text never updated.
+ * `levels` is columns L2-L5 — the Lv2 through Lv5 bonuses (Lv5, `levels[3]`, always the
+ * permanent "(All Classes)" one). All text keeps the game's own `@`(line break)/
+ * 〔〕〈〉《》[]{}『』【】 marker formatting verbatim (same convention `artifacts.ts` uses) —
+ * render through `<GameText>` (`src/components/shared/GameText.tsx`), which strips the
+ * bracket characters and colors 4 of the 7 bracket types per a worked example the user
+ * provided from the real game (〔〕 cyan, `[]` pale yellow, `〈〉` green, `『』` pink);
+ * `{}`/`【】`/`《》` have no confirmed color yet and just inherit the line's own color — see
+ * that component's header comment before "fixing" one of those to a guessed color.
  */
+export interface ClassBonusLine {
+  text: string;
+  /** Hex color straight from the dictionary's `<color=#RRGGBB>` tag for this line. */
+  color: string;
+}
+
 export interface ClassBonus {
-  tooltip: string;
-  levels: [string, string, string, string];
+  tooltip: ClassBonusLine;
+  levels: [ClassBonusLine, ClassBonusLine, ClassBonusLine, ClassBonusLine];
 }
 
 export const CLASS_BONUSES: Record<string, ClassBonus> = {
-  Wizard: { tooltip: "〔Magic Bolt Lv +1〕 @ Every time the character gains [5] levels, Magic Bolt Damage 〈3%〉 is 『added』", levels: ["Magic Bolt Lv +1", "Decrease Magic Bolt Cooldown by 20%", "Increase the number of Magic Bolts by 1", "Increase Magic Bolt Damage by 20% (All Classes)"] },
-  Astronomer: { tooltip: "〔Satellite Lv +1〕 @ Every time the character gains [5] levels, Satellite Damage 〈3%〉 is 『added』", levels: ["Satellite Lv +1", "Increase Satellite Rotation Speed by 50%", "Increase the number of Satellites by 35%", "Increase Satellite Damage by 20% (All Classes)"] },
-  Cryomancer: { tooltip: "〔Frost Nova Lv +1〕 @ Every time the character gains [5] levels, Frost Nova Damage 〈3%〉 is 『added』", levels: ["Frost Nova Lv +1", "Decrease Frost Nova Cooldown by 20%", "Increase Frost Nova Size by 25%", "Increase Frost Nova Damage by 20% (All Classes)"] },
-  Shaman: { tooltip: "〔Thunderstorm Lv +1〕 @ Every time the character gains [5] levels, Thunderstorm Damage 〈3%〉 is 『added』", levels: ["Thunderstorm Lv +1", "Decrease Thunderstorm Cooldown by 20%", "Increase the number of Thunderstorms by 35%", "Increase Thunderstorm Damage by 20% (All Classes)"] },
-  Warlock: { tooltip: "〔Meteor Lv +1〕 @ Every time the character gains [5] levels, Meteor Damage 〈3%〉 is 『added』", levels: ["Meteor Lv +1", "Decrease Meteor Cooldown by 20%", "Increase the number of Meteors by 1", "Increase Meteor Damage by 20% (All Classes)"] },
-  Arcanist: { tooltip: "〔Magic Bolt Lv +1〕 @ Every time the character gains [1] levels, All Magic Damage 〈1%〉 is {added} @ Reduce Magic Choices by 【1】 and disable [Mana Recovery]", levels: ["Intelligence Lv +1", "Increase Mana Acquisition by 10%", "Amplify ATK by 10%", "Increase ATK by 5% (All Classes)"] },
-  Summoner: { tooltip: "〔Spirit Lv +1〕 @ Every time the character gains [5] levels, Spirit Damage 〈3%〉 is 『added』", levels: ["Spirit Lv +1", "Decrease Spirit Cooldown by 20%", "Increase the number of Spirits by 35%", "Increase Spirit Damage by 20% (All Classes)"] },
-  Bishop: { tooltip: "〔Magic Bolt [&] Shield Lv +1〕 @ For each active Shield, ATK is {Amplified} by 〈10%〉 @ 『Shield remains active even when used in Combination Magic.』", levels: ["Guardian Angel Lv +1", "Decrease Shield Cooldown by 20%", "Increase the maximum number of Shields by 1", "Decrease Damage Taken by 5% (All Classes)"] },
-  Occultist: { tooltip: "〔Arcane Ray Lv +1〕 @ Every time the character gains [5] levels, Arcane Ray Damage 〈3%〉 is 『added』", levels: ["Arcane Ray Lv +1", "Decrease Arcane Ray Cooldown by 20%", "Increase the number of Arcane Rays by 35%", "Increase Arcane Ray Damage by 20% (All Classes)"] },
-  Druid: { tooltip: "〔Cyclone Lv +1〕 @ Every time the character gains [5] levels, Cyclone Damage 〈3%〉 is 『added』", levels: ["Cyclone Lv +1", "Decrease Cyclone Cooldown by 20%", "Increase the number of Cyclones by 1", "Increase Cyclone Damage by 20% (All Classes)"] },
-  Pyromancer: { tooltip: "〔Fireball Lv +1〕 @ Every time the character gains [5] levels, Fireball Damage 〈3%〉 is 『added』", levels: ["Fireball Lv +1", "Decrease Fireball Cooldown by 20%", "Increase the number of Fireballs by 1", "Increase Fireball Damage by 20% (All Classes)"] },
-  Sorcerer: { tooltip: "〔Electric Shock Lv +1〕 @ Every time the character gains [5] levels, Electric Shock Damage 〈3%〉 is 『added』", levels: ["Electric Shock Lv +1", "Decrease Electric Shock Cooldown by 20%", "Increase the number of Electric Shocks by 35%", "Increase Electric Shock Damage by 20% (All Classes)"] },
-  Alchemist: { tooltip: "〔Energy Bolt Lv +1〕 @ Every time the character gains [5] levels, Energy Bolt Damage 〈3%〉 is 『added』", levels: ["Energy Bolt Lv +1", "Decrease Energy Bolt Cooldown by 20%", "Increase the number of Energy Bolts by 35%", "Increase Energy Bolt Damage by 20% (All Classes)"] },
-  Scholar: { tooltip: "〔Start Level +3〕 @ Every time the character gains [1] level, All Magic Damage increases by 〈1%〉", levels: ["Doctor Lv +1", "Retrieve 〈30%〉 more Mana when retrieving Mana.", "〈50%〉 increased chance to have [4] Magic choices.", "Increase Mana Acquisition by 5% (All Classes)"] },
-  Witch: { tooltip: "〔Lava Zone Lv +1〕 @ Every time the character gains [5] levels, Lava Zone Damage 〈3%〉 is 『added』", levels: ["Lava Zone Lv +1", "Decrease Lava Zone Cooldown by 20%", "Increase the number of Lava Zones by 1", "Increase Lava Zone Damage by 20% (All Classes)"] },
-  Electromancer: { tooltip: "〔Electric Zone Lv +1〕 @ Every time the character gains [5] levels, Electric Zone Damage 〈3%〉 is 『added』", levels: ["Electric Zone Lv +1", "Decrease Electric Zone Damage Interval by 20%", "Increase Electric Zone Size by 25%", "Increase Electric Zone Damage by 20% (All Classes)"] },
-  Arbiter: { tooltip: "〔Tsunami Lv +1〕 @ Every time the character gains [5] levels, Tsunami Damage 〈3%〉 is 『added』", levels: ["Tsunami Lv +1", "Decrease Tsunami Cooldown by 20%", "Increase the number of Tsunamis by 35%", "Increase Tsunami Damage by 20% (All Classes)"] },
-  Archmage: { tooltip: "〔Start Level +3〕 @ [Combination Magic] Damage increases by 〈50%〉", levels: ["Magic Circle Lv +1", "Silent Casting Lv +1", "Increase [Combination Magic] Damage by 〈50%〉.", "Decrease All Magic Cooldown by 3% (All Classes)"] },
-  Archaeologist: { tooltip: "〔Magic Bolt Lv +1〕 @ A [Treasure Chest] is created for every [20] Character levels.", levels: ["Explorer Lv +1", "Increase Mana Acquisition by 10%", "[Treasure Chests] are created 〈10%〉 more frequently.", "Increase Item Pickup Range by 20% (All Classes)"] },
-  Magician: { tooltip: "〔Magic Bolt Lv +1〕 @ 〈20%〉 increased chance for a Magic Bolt to turn into a [random projectile].", levels: ["Magic Bolt Lv +1", "〈5%〉 increased chance for a Magic Bolt to be transformed into a [random projectile].", "〈5%〉 increased chance for a Magic Bolt to be transformed into a [random projectile].", "Increase Critical Strike Rate by 3% (All Classes)"] },
-  Mage: { tooltip: "〔Blizzard Lv +1〕 @ Every time the character gains [5] levels, Blizzard Damage 〈3%〉 is 『added』", levels: ["Blizzard Lv +1", "Decrease Blizzard Cooldown by 20%", "Increase the number of Blizzards by 35%", "Increase Blizzard Damage by 20% (All Classes)"] },
-  Battlemage: { tooltip: "〔Flash Shock Lv +1〕 @ Every time the character gains [5] levels, Flash Shock Damage 〈3%〉 is 『added』", levels: ["Flash Shock Lv +1", "Decrease Flash Shock Cooldown by 20%", "Increase Flash Shock Size by 25%", "Increase Flash Shock Damage by 20% (All Classes)"] },
-  Warlord: { tooltip: "〔Incineration Lv +1〕 @ Every time the character gains [5] levels, Incineration Damage 〈3%〉 is 『added』", levels: ["Incineration Lv +1", "Decrease Incineration Cooldown by 20%", "Increase Incineration Size by 25%", "Increase Incineration Damage by 20% (All Classes)"] },
-  "Black Mage": { tooltip: "〔Magic Bolt Lv +1〕 @ 〈10%〉 chance to cause an [Explosion] when killing an enemy. @ 『(Explosion Damage is 75% of the enemy's Max HP)』", levels: ["Arcane Effuse Lv +1", "〈5%〉 increased chance for enemies to [explode] when killed", "〈5%〉 increased chance for enemies to [explode] when killed", "Increase All Magic Size by 3% (All Classes)"] },
+  Wizard: { tooltip: { text: "〔Magic Bolt Lv +1〕 @ Every time the character gains [5] levels, Magic Bolt Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Magic Bolt Lv +1", color: "#32FFE1" }, { text: "Decrease Magic Bolt Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Magic Bolts by 1", color: "#6EDCFF" }, { text: "Increase Magic Bolt Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Astronomer: { tooltip: { text: "〔Satellite Lv +1〕 @ Every time the character gains [5] levels, Satellite Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Satellite Lv +1", color: "#32FFE1" }, { text: "Increase Satellite Rotation Speed by 50%", color: "#6EDCFF" }, { text: "Increase the number of Satellites by 35%", color: "#6EDCFF" }, { text: "Increase Satellite Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Cryomancer: { tooltip: { text: "〔Frost Nova Lv +1〕 @ Every time the character gains [5] levels, Frost Nova Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Frost Nova Lv +1", color: "#32FFE1" }, { text: "Decrease Frost Nova Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase Frost Nova Size by 25%", color: "#6EDCFF" }, { text: "Increase Frost Nova Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Shaman: { tooltip: { text: "〔Thunderstorm Lv +1〕 @ Every time the character gains [5] levels, Thunderstorm Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Thunderstorm Lv +1", color: "#32FFE1" }, { text: "Decrease Thunderstorm Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Thunderstorms by 35%", color: "#6EDCFF" }, { text: "Increase Thunderstorm Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Warlock: { tooltip: { text: "〔Meteor Lv +1〕 @ Every time the character gains [5] levels, Meteor Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Meteor Lv +1", color: "#32FFE1" }, { text: "Decrease Meteor Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Meteors by 1", color: "#6EDCFF" }, { text: "Increase Meteor Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Arcanist: { tooltip: { text: "〔Magic Bolt Lv +1〕 @ Every time the character gains [1] levels, All Magic Damage 〈1%〉 is {added} @ Reduce Magic Choices by 【1】 and disable [Mana Recovery]", color: "#EBEBEB" }, levels: [{ text: "Intelligence Lv +1", color: "#32FFE1" }, { text: "Increase Mana Acquisition by 10%", color: "#64FF32" }, { text: "Amplify ATK by 10%", color: "#FF76DE" }, { text: "Increase ATK by 5% (All Classes)", color: "#FF76DE" }] },
+  Summoner: { tooltip: { text: "〔Spirit Lv +1〕 @ Every time the character gains [5] levels, Spirit Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Spirit Lv +1", color: "#32FFE1" }, { text: "Decrease Spirit Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Spirits by 35%", color: "#6EDCFF" }, { text: "Increase Spirit Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Bishop: { tooltip: { text: "〔Magic Bolt [&] Shield Lv +1〕 @ For each active Shield, ATK is {Amplified} by 〈10%〉 @ 『Shield remains active even when used in Combination Magic.』", color: "#EBEBEB" }, levels: [{ text: "Guardian Angel Lv +1", color: "#EB96FF" }, { text: "Decrease Shield Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the maximum number of Shields by 1", color: "#6EDCFF" }, { text: "Decrease Damage Taken by 5% (All Classes)", color: "#FF76DE" }] },
+  Occultist: { tooltip: { text: "〔Arcane Ray Lv +1〕 @ Every time the character gains [5] levels, Arcane Ray Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Arcane Ray Lv +1", color: "#32FFE1" }, { text: "Decrease Arcane Ray Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Arcane Rays by 35%", color: "#6EDCFF" }, { text: "Increase Arcane Ray Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Druid: { tooltip: { text: "〔Cyclone Lv +1〕 @ Every time the character gains [5] levels, Cyclone Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Cyclone Lv +1", color: "#32FFE1" }, { text: "Decrease Cyclone Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Cyclones by 1", color: "#6EDCFF" }, { text: "Increase Cyclone Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Pyromancer: { tooltip: { text: "〔Fireball Lv +1〕 @ Every time the character gains [5] levels, Fireball Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Fireball Lv +1", color: "#32FFE1" }, { text: "Decrease Fireball Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Fireballs by 1", color: "#6EDCFF" }, { text: "Increase Fireball Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Sorcerer: { tooltip: { text: "〔Electric Shock Lv +1〕 @ Every time the character gains [5] levels, Electric Shock Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Electric Shock Lv +1", color: "#32FFE1" }, { text: "Decrease Electric Shock Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Electric Shocks by 35%", color: "#6EDCFF" }, { text: "Increase Electric Shock Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Alchemist: { tooltip: { text: "〔Energy Bolt Lv +1〕 @ Every time the character gains [5] levels, Energy Bolt Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Energy Bolt Lv +1", color: "#32FFE1" }, { text: "Decrease Energy Bolt Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Energy Bolts by 35%", color: "#6EDCFF" }, { text: "Increase Energy Bolt Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Scholar: { tooltip: { text: "〔Start Level +3〕 @ Every time the character gains [1] level, All Magic Damage increases by 〈1%〉", color: "#EBEBEB" }, levels: [{ text: "Doctor Lv +1", color: "#EB96FF" }, { text: "Retrieve 〈30%〉 more Mana when retrieving Mana.", color: "#EBEBEB" }, { text: "〈50%〉 increased chance to have [4] Magic choices.", color: "#EBEBEB" }, { text: "Increase Mana Acquisition by 5% (All Classes)", color: "#FF76DE" }] },
+  Witch: { tooltip: { text: "〔Lava Zone Lv +1〕 @ Every time the character gains [5] levels, Lava Zone Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Lava Zone Lv +1", color: "#32FFE1" }, { text: "Decrease Lava Zone Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Lava Zones by 1", color: "#6EDCFF" }, { text: "Increase Lava Zone Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Electromancer: { tooltip: { text: "〔Electric Zone Lv +1〕 @ Every time the character gains [5] levels, Electric Zone Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Electric Zone Lv +1", color: "#32FFE1" }, { text: "Decrease Electric Zone Damage Interval by 20%", color: "#6EDCFF" }, { text: "Increase Electric Zone Size by 25%", color: "#6EDCFF" }, { text: "Increase Electric Zone Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Arbiter: { tooltip: { text: "〔Tsunami Lv +1〕 @ Every time the character gains [5] levels, Tsunami Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Tsunami Lv +1", color: "#32FFE1" }, { text: "Decrease Tsunami Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Tsunamis by 35%", color: "#6EDCFF" }, { text: "Increase Tsunami Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Archmage: { tooltip: { text: "〔Start Level +3〕 @ [Combination Magic] Damage increases by 〈50%〉", color: "#EBEBEB" }, levels: [{ text: "Magic Circle Lv +1", color: "#32FFE1" }, { text: "Silent Casting Lv +1", color: "#EB96FF" }, { text: "Increase [Combination Magic] Damage by 〈50%〉.", color: "#EBEBEB" }, { text: "Decrease All Magic Cooldown by 3% (All Classes)", color: "#FF76DE" }] },
+  Archaeologist: { tooltip: { text: "〔Magic Bolt Lv +1〕 @ A [Treasure Chest] is created for every [20] Character levels.", color: "#EBEBEB" }, levels: [{ text: "Explorer Lv +1", color: "#32FFE1" }, { text: "Increase Mana Acquisition by 10%", color: "#6EDCFF" }, { text: "[Treasure Chests] are created 〈10%〉 more frequently.", color: "#EBEBEB" }, { text: "Increase Item Pickup Range by 20% (All Classes)", color: "#FF76DE" }] },
+  Magician: { tooltip: { text: "〔Magic Bolt Lv +1〕 @ 〈20%〉 increased chance for a Magic Bolt to turn into a [random projectile].", color: "#EBEBEB" }, levels: [{ text: "Magic Bolt Lv +1", color: "#32FFE1" }, { text: "〈5%〉 increased chance for a Magic Bolt to be transformed into a [random projectile].", color: "#EBEBEB" }, { text: "〈5%〉 increased chance for a Magic Bolt to be transformed into a [random projectile].", color: "#EBEBEB" }, { text: "Increase Critical Strike Rate by 3% (All Classes)", color: "#FF76DE" }] },
+  Mage: { tooltip: { text: "〔Blizzard Lv +1〕 @ Every time the character gains [5] levels, Blizzard Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Blizzard Lv +1", color: "#32FFE1" }, { text: "Decrease Blizzard Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase the number of Blizzards by 35%", color: "#6EDCFF" }, { text: "Increase Blizzard Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Battlemage: { tooltip: { text: "〔Flash Shock Lv +1〕 @ Every time the character gains [5] levels, Flash Shock Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Flash Shock Lv +1", color: "#32FFE1" }, { text: "Decrease Flash Shock Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase Flash Shock Size by 25%", color: "#6EDCFF" }, { text: "Increase Flash Shock Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  Warlord: { tooltip: { text: "〔Incineration Lv +1〕 @ Every time the character gains [5] levels, Incineration Damage 〈3%〉 is 『added』", color: "#EBEBEB" }, levels: [{ text: "Incineration Lv +1", color: "#32FFE1" }, { text: "Decrease Incineration Cooldown by 20%", color: "#6EDCFF" }, { text: "Increase Incineration Size by 25%", color: "#6EDCFF" }, { text: "Increase Incineration Damage by 20% (All Classes)", color: "#FF76DE" }] },
+  "Black Mage": { tooltip: { text: "〔Magic Bolt Lv +1〕 @ 〈10%〉 chance to cause an [Explosion] when killing an enemy. @ 『(Explosion Damage is 75% of the enemy's Max HP)』", color: "#EBEBEB" }, levels: [{ text: "Arcane Effuse Lv +1", color: "#32FFE1" }, { text: "〈5%〉 increased chance for enemies to [explode] when killed", color: "#6EDCFF" }, { text: "〈5%〉 increased chance for enemies to [explode] when killed", color: "#6EDCFF" }, { text: "Increase All Magic Size by 3% (All Classes)", color: "#FF76DE" }] },
 };
+
+/**
+ * Reads a class's own progression level out of `RunMeta.classLevels`, defaulting to 1 (the
+ * free baseline) for a class that isn't in the record yet — use this instead of indexing
+ * `classLevels[className]` directly so every caller applies the same default.
+ */
+export function getClassLevel(classLevels: Record<string, number>, className: string): number {
+  return classLevels[className] ?? 1;
+}
+
+/**
+ * `bonusTier` is 1-4, indexing into `levels` (i.e. Class Level `bonusTier + 1` — tier 1 is
+ * Lv2, tier 4 is Lv5) — **not** the same range as a class's own level from `getClassLevel`
+ * (1-5). Returns null for an out-of-range tier or a class with no extracted bonus data.
+ */
+export function getClassLevelBonus(className: string, bonusTier: number): ClassBonusLine | null {
+  const bonus = CLASS_BONUSES[className];
+  if (!bonus || bonusTier < 1 || bonusTier > 4) return null;
+  return bonus.levels[(bonusTier - 1) as 0 | 1 | 2 | 3];
+}
+
+/**
+ * The Lv1 flavor/scaling tooltip line for a class — see `ClassBonus.tooltip`'s doc comment.
+ * Was extracted but never rendered anywhere until this lookup was added; render it above
+ * the level list in `ClassSelectScreen.tsx`.
+ */
+export function getClassTooltip(className: string): ClassBonusLine | null {
+  return CLASS_BONUSES[className]?.tooltip ?? null;
+}
+
+/**
+ * All 4 of a class's bonuses (its Lv2-Lv5), always in order, regardless of which are
+ * unlocked — for a display that keeps every attribute visible and greys out the ones above
+ * that class's own currently selected level rather than hiding them (see
+ * `ClassSelectScreen.tsx`, which unlocks index `i` once `getClassLevel(classLevels,
+ * className) >= i + 2`, since Level 1 is free/empty). Also the intended entry point for a
+ * future stats engine — see `RunMeta.classLevels`'s doc comment in `types/game.ts` for why
+ * that lookup needs both the equipped class's active bonuses *and* every other leveled
+ * class's permanent Lv5 ("All Classes") bonus (no stat aggregation from this exists yet —
+ * stats are still manually mirrored from the player's own in-game screen, see `StatBlock` in
+ * `types/game.ts`).
+ */
+export function getAllClassLevelBonuses(className: string): ClassBonusLine[] {
+  const result: ClassBonusLine[] = [];
+  for (let tier = 1; tier <= 4; tier++) {
+    const bonus = getClassLevelBonus(className, tier);
+    if (bonus) result.push(bonus);
+  }
+  return result;
+}
