@@ -1,32 +1,53 @@
-# React + TypeScript + Vite
+# Magic Survival Run Companion
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A React + TypeScript companion app for tracking runs of the game **Magic
+Survival**: pick a class/subject, build a loadout of magics, artifacts,
+passives and fusions, log research, and track stats over the course of a run.
 
-Currently, two official plugins are available:
+All in-app text — UI chrome and game data alike — is in English, regardless
+of the source the game data was extracted from. See [CLAUDE.md](CLAUDE.md)
+for the full language rule and translation workflow.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech stack
 
-## React Compiler
+- [React 19](https://react.dev) + [TypeScript](https://www.typescriptlang.org)
+- [Vite](https://vite.dev) for dev server and build
+- [Zustand](https://github.com/pmndrs/zustand) for state
+- [Tailwind CSS](https://tailwindcss.com) for styling
+- [i18next](https://www.i18next.com) / react-i18next for text (`src/i18n/`)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting started
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Then open the URL Vite prints (defaults to `http://localhost:5173`).
+
+## Scripts
+
+- `npm run dev` — start the Vite dev server
+- `npm run build` — type-check and build for production
+- `npm run preview` — preview the production build locally
+- `npm run lint` — run Oxlint
+- `npm run i18n:dump` — regenerate `src/i18n/locales/en/gameData.json` from `src/data/*.ts`
+
+## Project structure
+
+- `src/data/` — game data (classes, magics, artifacts, passives, fusions,
+  research, etc.)
+- `src/components/` — screens and UI components
+- `src/engine/` — scoring, diminishing returns, and other run-tracking logic
+- `src/i18n/` — English translation strings (`translation.json` for UI
+  chrome, `gameData.json` for game data)
+- `src/store/` — Zustand store for run state
+- `public/assets/` — game sprites/images used by the UI
+- `reference/` — source spreadsheets/wiki notes used to build `src/data/`
+  (see `reference/README.md`)
+
+## Contributing data
+
+When adding or regenerating game data, follow the sourcing and translation
+rules in [CLAUDE.md](CLAUDE.md) — non-English source text must be translated
+to English before it lands in `src/data/`.
