@@ -18,9 +18,8 @@
 //
 //   node scripts/check-hardcoded-text.mjs
 
-import { readFileSync } from "node:fs";
-import { globSync } from "node:fs";
-import { resolve, dirname, relative } from "node:path";
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve, dirname, relative, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
@@ -29,7 +28,7 @@ const root = resolve(__dirname, "..");
 
 // Views only — this is where the "type it as plain text instead of a
 // translation key" mistake actually happens.
-const targets = ["src/components/**/*.tsx"];
+const targetDirs = ["src/components"];
 
 // JSX attributes that carry user-visible copy. Not an exhaustive list of every
 // JSX attribute — deliberately narrow to the ones known to hold text in this
@@ -42,14 +41,22 @@ function hasLetters(value) {
   return /\p{L}/u.test(value);
 }
 
-function collectFiles(patterns) {
-  const files = new Set();
-  for (const pattern of patterns) {
-    for (const file of globSync(pattern, { cwd: root, exclude: ["**/node_modules/**"] })) {
-      files.add(file);
+function walk(dirRelPath, files) {
+  const dirAbsPath = resolve(root, dirRelPath);
+  for (const entry of readdirSync(dirAbsPath, { withFileTypes: true })) {
+    const entryRelPath = join(dirRelPath, entry.name);
+    if (entry.isDirectory()) {
+      walk(entryRelPath, files);
+    } else if (entry.isFile() && entry.name.endsWith(".tsx")) {
+      files.push(entryRelPath.split("\\").join("/"));
     }
   }
-  return [...files].sort();
+}
+
+function collectFiles(dirs) {
+  const files = [];
+  for (const dir of dirs) walk(dir, files);
+  return files.sort();
 }
 
 function isInsideTCall(node) {
@@ -112,7 +119,7 @@ function scanFile(relPath) {
   return hits;
 }
 
-const files = collectFiles(targets);
+const files = collectFiles(targetDirs);
 let totalHits = 0;
 
 for (const file of files) {
