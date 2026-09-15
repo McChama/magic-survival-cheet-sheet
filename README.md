@@ -51,3 +51,18 @@ Then open the URL Vite prints (defaults to `http://localhost:5173`).
 When adding or regenerating game data, follow the sourcing and translation
 rules in [CLAUDE.md](CLAUDE.md) — non-English source text must be translated
 to English before it lands in `src/data/`.
+
+## Disclaimer
+
+This is an unofficial, non-commercial fan project made for the Magic
+Survival community. It is not affiliated with, endorsed by, or sponsored by
+the game's developers.
+
+All game names, artwork, sprites, and other assets referenced or displayed
+by this app belong to their original creators/publisher — full credit and
+rights remain with them. This project does not claim ownership of any such
+assets and exists solely to help fellow players track their runs. If you
+enjoy Magic Survival, please support the official game and its creators.
+
+If you are a rights holder and have concerns about this project, please
+open an issue and it will be addressed promptly.
