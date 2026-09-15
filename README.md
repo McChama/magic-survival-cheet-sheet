@@ -4,9 +4,8 @@ A React + TypeScript companion app for tracking runs of the game **Magic
 Survival**: pick a class/subject, build a loadout of magics, artifacts,
 passives and fusions, log research, and track stats over the course of a run.
 
-All in-app text — UI chrome and game data alike — is in English, regardless
-of the source the game data was extracted from. See [CLAUDE.md](CLAUDE.md)
-for the full language rule and translation workflow.
+All in-app text — UI chrome and game data alike — is in English. See
+[CLAUDE.md](CLAUDE.md) for the full language rule and translation workflow.
 
 ## Tech stack
 
