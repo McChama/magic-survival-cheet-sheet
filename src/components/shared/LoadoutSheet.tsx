@@ -189,6 +189,7 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
         <div className="grid grid-cols-5 gap-2.5">
           {filtered.map((option) => {
             const owned = isOwned(option);
+            const isSelected = lastPicked?.id === option.id;
             const ring = owned ? (option.item ? RARITY_RING[option.item.rarity] : RING_BY_KIND[kind]) : "rgba(255,255,255,.10)";
             const label = gt(optionNameKey(option), option.label);
             return (
@@ -197,8 +198,8 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
                 type="button"
                 title={label}
                 onClick={() => toggle(option)}
-                className="relative aspect-square rounded-[7px] bg-[#0d0d10] cursor-pointer flex items-center justify-center p-0 overflow-hidden"
-                style={{ border: `1px solid ${ring}` }}
+                className={`relative aspect-square rounded-[7px] bg-[#0d0d10] cursor-pointer flex items-center justify-center p-0 overflow-hidden transition-transform duration-150 ${isSelected ? "scale-110" : "scale-100"}`}
+                style={{ border: isSelected ? "2px solid #fff" : `1px solid ${ring}` }}
               >
                 {option.image ? <OptionIcon src={option.image} alt={label} /> : <span className="text-[#e8e8e2]/30 text-2xl">?</span>}
                 {owned && (

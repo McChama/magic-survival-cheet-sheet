@@ -102,6 +102,27 @@ flips a `failed` state to swap in a text fallback (see `ResearchScreen`'s
 `NodeIcon` — the visible masked `span` is a sibling of an invisible `<img>`
 used purely for error detection).
 
+## Selection feedback: zoom, plus a border for grid tiles
+
+Any selectable item — a Subject, a Class, a Research node, an Artifact/Magic
+tile in `LoadoutSheet` — scales up slightly when it's the selected one:
+`scale-110` (vs. `scale-100` when not selected) with `transition-transform
+duration-150`, on the item's own button/wrapper element (transforms don't
+affect layout, so this never reflows the grid around it). This is the single
+shared cue for "this is the one you're looking at" across every picker.
+
+`LoadoutSheet`'s Artifact/Magic tiles carry a second, independent cue on top
+of the zoom: a bright white border (`border-2 border-white`) when the tile is
+the current `lastPicked`, distinct from the existing rarity/ownership ring
+color (`RARITY_RING`/`RING_BY_KIND`) that border normally shows — the white
+selection border always wins over the rarity color while an item is selected,
+since "which one did I just tap" and "what rarity/ownership is this" are two
+different questions the tile has to answer at once, unlike Subject/Class/
+Research where there's only one selected thing on screen and its scale is
+enough. This border rule is specific to `LoadoutSheet`'s dense grid; the other
+pickers show only one full-size preview + name/description below the grid, so
+the zoom alone is unambiguous there.
+
 ## Descriptive text sizing
 
 Short flavor/description text (a research node's effect line, a class
