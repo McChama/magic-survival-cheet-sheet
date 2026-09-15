@@ -3,31 +3,55 @@ const CLICK_SOUND_VOLUME = 0.1 // 0 (silent) to 1 (full volume)
 const CLICKABLE_SELECTOR =
   'button, a[href], [role="button"], [role="link"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="radio"], [role="switch"], input[type="button"], input[type="submit"], input[type="reset"], select, summary, [data-ui-sound]'
 
-let audioPool: HTMLAudioElement[] = []
-let poolIndex = 0
-const POOL_SIZE = 6
+let audioContext: AudioContext | null = null
+let audioBuffer: AudioBuffer | null = null
+let loadPromise: Promise<AudioBuffer | null> | null = null
 
-function getAudioPool(): HTMLAudioElement[] {
-  if (audioPool.length === 0) {
-    audioPool = Array.from({ length: POOL_SIZE }, () => {
-      const audio = new Audio(CLICK_SOUND_SRC)
-      audio.preload = 'auto'
-      audio.volume = CLICK_SOUND_VOLUME
-      return audio
-    })
+function getAudioContext(): AudioContext {
+  if (!audioContext) {
+    audioContext = new AudioContext()
   }
-  return audioPool
+  return audioContext
+}
+
+async function loadClickBuffer(): Promise<AudioBuffer | null> {
+  if (audioBuffer) return audioBuffer
+  if (!loadPromise) {
+    loadPromise = fetch(CLICK_SOUND_SRC)
+      .then((response) => response.arrayBuffer())
+      .then((arrayBuffer) => getAudioContext().decodeAudioData(arrayBuffer))
+      .then((buffer) => {
+        audioBuffer = buffer
+        return buffer
+      })
+      .catch(() => null)
+  }
+  return loadPromise
 }
 
 function playClickSound() {
-  const pool = getAudioPool()
-  const audio = pool[poolIndex]
-  poolIndex = (poolIndex + 1) % pool.length
-  audio.currentTime = 0
-  void audio.play().catch(() => {})
+  const context = getAudioContext()
+  if (context.state === 'suspended') {
+    void context.resume()
+  }
+
+  if (audioBuffer) {
+    const source = context.createBufferSource()
+    source.buffer = audioBuffer
+    const gain = context.createGain()
+    gain.gain.value = CLICK_SOUND_VOLUME
+    source.connect(gain)
+    gain.connect(context.destination)
+    source.start(0)
+  } else {
+    // Buffer not decoded yet (first click raced the async load) — play once it's ready.
+    void loadClickBuffer().then(() => playClickSound())
+  }
 }
 
 export function initUiClickSound() {
+  void loadClickBuffer()
+
   document.addEventListener(
     'click',
     (event) => {
