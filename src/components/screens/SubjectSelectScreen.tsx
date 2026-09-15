@@ -158,7 +158,7 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
                   key={name}
                   type="button"
                   onClick={() => setPreviewName(name)}
-                  className="relative bg-transparent border-none p-0 cursor-pointer flex flex-col items-center justify-end h-full flex-initial min-w-0 font-[inherit]"
+                  className={`relative bg-transparent border-none p-0 cursor-pointer flex flex-col items-center justify-end h-full flex-initial min-w-0 font-[inherit] origin-bottom transition-transform duration-150 ${isSelected ? "scale-110" : "scale-100"}`}
                 >
                   <SubjectSilhouette name={name} label={label} selected={isSelected} applied={isAppliedSubject} />
                 </button>

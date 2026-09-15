@@ -174,7 +174,7 @@ export function ResearchScreen({ onClose }: ResearchScreenProps) {
                   type="button"
                   onClick={() => setSelectedId(node.id)}
                   title={nodeLabel}
-                  className="h-full flex-none bg-transparent border-none p-0 cursor-pointer flex flex-col items-center justify-center gap-1 font-[inherit]"
+                  className={`h-full flex-none bg-transparent border-none p-0 cursor-pointer flex flex-col items-center justify-center gap-1 font-[inherit] transition-transform duration-150 ${isSelected ? "scale-110" : "scale-100"}`}
                   style={{ width: `calc((100% - ${RESEARCH_ROW_GAP_REM * (RESEARCH_ROW_COLUMNS - 1)}rem) / ${RESEARCH_ROW_COLUMNS})` }}
                 >
                   <span className="h-[70%] aspect-square max-w-full flex items-center justify-center">

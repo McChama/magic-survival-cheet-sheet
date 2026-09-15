@@ -19,6 +19,24 @@ import { GameText } from "../shared/GameText";
 const CLASS_LEVEL_COUNT = 5;
 const LOCKED_COLOR = "rgba(232,232,226,.3)";
 
+/**
+ * Each class's own icon tint tracks its own Class Level (1-5, via `getClassLevel`) — not
+ * whether it's the one currently highlighted in the grid (that's conveyed by `opacity`
+ * instead, kept as a separate dimension so leveling a class doesn't erase the "which one am
+ * I looking at" cue). Levels 2-4 reuse the exact in-game hex colors `CLASS_BONUSES`' own
+ * lines already carry (green/celeste/pink — see `classes.ts`), so this palette isn't
+ * invented; Level 5 is deliberately a more saturated gold than the pale `#efe18a` used
+ * elsewhere for "has progress"/pip-fill, since Level 5 needs to read as a distinct, stronger
+ * tier rather than reusing that same lighter yellow.
+ */
+const CLASS_LEVEL_TINTS: Record<number, string> = {
+  1: "#ffffff",
+  2: "#64FF32",
+  3: "#6EDCFF",
+  4: "#FF76DE",
+  5: "rgb(238, 204, 24)",
+};
+
 function Pip({ filled }: { filled: boolean }) {
   return (
     <span
@@ -123,20 +141,21 @@ export function ClassSelectScreen({ onClose, onContinue }: ClassSelectScreenProp
           {CLASSES.map((name) => {
             const isSelected = characterClass === name;
             const label = gt(`class.${classSlug(name)}.name`, name);
+            const tint = CLASS_LEVEL_TINTS[getClassLevel(classLevels, name)];
             return (
               <button
                 key={name}
                 type="button"
                 onClick={() => setCharacterClass(name)}
                 title={label}
-                className="relative bg-transparent border-none p-0 cursor-pointer flex items-center justify-center w-[calc((100%-4rem)/5)] aspect-square"
+                className={`relative bg-transparent border-none p-0 cursor-pointer flex items-center justify-center w-[calc((100%-4rem)/5)] aspect-square transition-transform duration-150 ${isSelected ? "scale-110" : "scale-100"}`}
               >
                 <span
                   role="img"
                   aria-label={label}
                   className="block w-full h-full"
                   style={{
-                    backgroundColor: isSelected ? "#efe18a" : "#ffffff",
+                    backgroundColor: tint,
                     WebkitMaskImage: `url(${classImage(`${classSlug(name)}.png`)})`,
                     maskImage: `url(${classImage(`${classSlug(name)}.png`)})`,
                     WebkitMaskSize: "contain",
