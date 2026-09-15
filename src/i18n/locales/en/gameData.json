@@ -1,0 +1,1206 @@
+{
+  "class": {
+    "wizard": {
+      "name": "Wizard"
+    },
+    "astronomer": {
+      "name": "Astronomer"
+    },
+    "cryomancer": {
+      "name": "Cryomancer"
+    },
+    "shaman": {
+      "name": "Shaman"
+    },
+    "warlock": {
+      "name": "Warlock"
+    },
+    "arcanist": {
+      "name": "Arcanist"
+    },
+    "summoner": {
+      "name": "Summoner"
+    },
+    "bishop": {
+      "name": "Bishop"
+    },
+    "occultist": {
+      "name": "Occultist"
+    },
+    "druid": {
+      "name": "Druid"
+    },
+    "pyromancer": {
+      "name": "Pyromancer"
+    },
+    "sorcerer": {
+      "name": "Sorcerer"
+    },
+    "alchemist": {
+      "name": "Alchemist"
+    },
+    "scholar": {
+      "name": "Scholar"
+    },
+    "witch": {
+      "name": "Witch"
+    },
+    "electromancer": {
+      "name": "Electromancer"
+    },
+    "arbiter": {
+      "name": "Arbiter"
+    },
+    "archmage": {
+      "name": "Archmage"
+    },
+    "archaeologist": {
+      "name": "Archaeologist"
+    },
+    "magician": {
+      "name": "Magician"
+    },
+    "mage": {
+      "name": "Mage"
+    },
+    "battlemage": {
+      "name": "Battlemage"
+    },
+    "warlord": {
+      "name": "Warlord"
+    },
+    "blackmage": {
+      "name": "Black Mage"
+    }
+  },
+  "subject": {
+    "wizard": {
+      "name": "Wizard",
+      "description": "Freeshooter",
+      "trait": "Increase Magic Bolt Damage by 5% (All Classes)"
+    },
+    "astronomer": {
+      "name": "Astronomer",
+      "description": "Core Energy",
+      "trait": "Increase Satellite Damage by 5% (All Classes)"
+    },
+    "cryomancer": {
+      "name": "Cryomancer",
+      "description": "Moon Crystal",
+      "trait": "Increase Frost Nova Damage by 5% (All Classes)"
+    },
+    "shaman": {
+      "name": "Shaman",
+      "description": "Mjolnir",
+      "trait": "Increase Thunderstorm Damage by 5% (All Classes)"
+    },
+    "warlock": {
+      "name": "Warlock",
+      "description": "Dimensional Gate",
+      "trait": "Increase Meteor Damage by 5% (All Classes)"
+    },
+    "arcanist": {
+      "name": "Arcanist",
+      "description": "Mana Ore",
+      "trait": "Increase ATK by 2% (All Classes)"
+    },
+    "summoner": {
+      "name": "Summoner",
+      "description": "Magic Wand",
+      "trait": "Increase Spirit Damage by 5% (All Classes)"
+    },
+    "bishop": {
+      "name": "Bishop",
+      "description": "Aegis",
+      "trait": "Decrease Damage Taken by 2% (All Classes)"
+    },
+    "occultist": {
+      "name": "Occultist",
+      "description": "Otherworldly Tentacles",
+      "trait": "Increase Arcane Ray Damage by 5% (All Classes)"
+    },
+    "druid": {
+      "name": "Druid",
+      "description": "Palm Leaf Fan",
+      "trait": "Increase Cyclone Damage by 5% (All Classes)"
+    },
+    "pyromancer": {
+      "name": "Pyromancer",
+      "description": "Phoenix's Bow",
+      "trait": "Increase Fireball Damage by 5% (All Classes)"
+    },
+    "sorcerer": {
+      "name": "Sorcerer",
+      "description": "Electric Cable",
+      "trait": "Increase Electric Shock Damage by 5% (All Classes)"
+    },
+    "alchemist": {
+      "name": "Alchemist",
+      "description": "Machine Arm",
+      "trait": "Increase Energy Bolt Damage by 5% (All Classes)"
+    },
+    "scholar": {
+      "name": "Scholar",
+      "description": "Starlight",
+      "trait": "Increase Mana Acquisition by 2% (All Classes)"
+    },
+    "witch": {
+      "name": "Witch",
+      "description": "Sulfur",
+      "trait": "Increase Lava Zone Damage by 5% (All Classes)"
+    },
+    "electromancer": {
+      "name": "Electromancer",
+      "description": "Robot",
+      "trait": "Increase Electric Zone Damage by 5% (All Classes)"
+    },
+    "arbiter": {
+      "name": "Arbiter",
+      "description": "Wave-calming Flute",
+      "trait": "Increase Tsunami Damage by 5% (All Classes)"
+    },
+    "archmage": {
+      "name": "Archmage",
+      "description": "Black Cat",
+      "trait": "Decrease All Magic Cooldown by 1% (All Classes)"
+    },
+    "archaeologist": {
+      "name": "Archaeologist",
+      "description": "Pyramid",
+      "trait": "Increase Item Pickup Range by 5% (All Classes)"
+    },
+    "magician": {
+      "name": "Magician",
+      "description": "Ether Arrow",
+      "trait": "Increase Critical Strike Rate by 1% (All Classes)"
+    },
+    "mage": {
+      "name": "Mage",
+      "description": "Snowflake Crown",
+      "trait": "Increase Blizzard Damage by 5% (All Classes)"
+    },
+    "battlemage": {
+      "name": "Battlemage",
+      "description": "Gàe Bolg",
+      "trait": "Increase Flash Shock Damage by 5% (All Classes)"
+    },
+    "warlord": {
+      "name": "Warlord",
+      "description": "Dragon's Breath",
+      "trait": "Increase Incineration Damage by 5% (All Classes)"
+    },
+    "blackmage": {
+      "name": "Black Mage",
+      "description": "Exorcism",
+      "trait": "Increase All Magic Size by 2% (All Classes)"
+    },
+    "jackolantern": {
+      "name": "Jack o' Lantern",
+      "description": "Lantern",
+      "trait": "Increase Evasion by 1% (All Classes)"
+    }
+  },
+  "item": {
+    "asi": {
+      "name": "ASI"
+    },
+    "diamante": {
+      "name": "Diamond"
+    },
+    "virus": {
+      "name": "Virus",
+      "specialEffect": "Reduces the [Max HP] of elite monsters by 〈10%〉."
+    },
+    "guillotina": {
+      "name": "Guillotine",
+      "specialEffect": "Deals 〈15%〉 [Additional Damage] to enemies whose [HP] is 〈75%〉 or higher."
+    },
+    "nomuerto": {
+      "name": "Undead",
+      "specialEffect": "[Revive] 〈2〉 more times. Decreases Max HP by 25%"
+    },
+    "electromagneto": {
+      "name": "Electromagnet",
+      "specialEffect": "Increases Electric Zone Damage by 50% Increases Satellite Damage by 50%"
+    },
+    "carne": {
+      "name": "Meat",
+      "specialEffect": "Generates [Life Orbs] near the character (Cooldown: 30s)"
+    },
+    "oculus": {
+      "name": "Oculus",
+      "specialEffect": "Increases [Critical Rate] by 〈1%〉 for every 〈30%〉 of Item Pickup Range"
+    },
+    "carnaval": {
+      "name": "Carnival",
+      "specialEffect": "Increases [Critical Rate] by 〈1%〉 for every 〈3%〉 of Evasion"
+    },
+    "desperado": {
+      "name": "Desperado",
+      "specialEffect": "All damage dealt to enemies increases by 〈50%〉 for [8 seconds]. (Cooldown: 8s)"
+    },
+    "bloodpack": {
+      "name": "Blood Pack"
+    },
+    "cogwheel": {
+      "name": "Cogwheel",
+      "specialEffect": "Reduces the cooldown of [all Artifacts] by 〈20%〉."
+    },
+    "hourglass": {
+      "name": "Hourglass"
+    },
+    "forcefield": {
+      "name": "Force Field",
+      "specialEffect": "When taking damage, blocks it and becomes [Invincible] for 〈3 seconds〉 (Cooldown: 60s)"
+    },
+    "shadowcape": {
+      "name": "Shadow Cape"
+    },
+    "manaore": {
+      "name": "Mana Ore"
+    },
+    "creation": {
+      "name": "Creation",
+      "specialEffect": "Every [5th] cast of a spell reduces its [Cooldown] by 〈half〉."
+    },
+    "totem": {
+      "name": "Totem",
+      "specialEffect": "Increases Cyclone Damage by 30% Reduces Cyclone Cooldown by 10%"
+    },
+    "gunpowder": {
+      "name": "Gunpowder"
+    },
+    "assassination": {
+      "name": "Assassination",
+      "specialEffect": "If an enemy has never taken damage, deals a [Critical Strike]."
+    },
+    "spellbag": {
+      "name": "Spell Bag"
+    },
+    "sample": {
+      "name": "Sample",
+      "specialEffect": "Reduces the [Max HP] of all enemies by 〈3%〉."
+    },
+    "ruby": {
+      "name": "Ruby"
+    },
+    "target": {
+      "name": "Target"
+    },
+    "hppotion": {
+      "name": "HP Potion",
+      "specialEffect": "Recovers 〈50%〉 [HP] over 3 seconds if HP is at [25%] or lower. (Cooldown: 50s)"
+    },
+    "philosopherstone": {
+      "name": "Philosopher's Stone",
+      "specialEffect": "Generates a large amount of [Mana Orbs]"
+    },
+    "broom": {
+      "name": "Broom"
+    },
+    "uranium": {
+      "name": "Uranium",
+      "specialEffect": "Reduces HP Regen per second by 0.25%"
+    },
+    "tarotcard": {
+      "name": "Tarot Card",
+      "specialEffect": "Learns 〈3〉 random [Magics]."
+    },
+    "fourleafclover": {
+      "name": "Four-Leaf Clover",
+      "specialEffect": "Performs a [Critical Strike] every time an enemy is damaged 〈5〉 times."
+    },
+    "mandrake": {
+      "name": "Mandrake"
+    },
+    "gravityorb": {
+      "name": "Gravity Orb",
+      "specialEffect": "Generates a [Wave] that briefly slows enemy movement speed (Cooldown: 20s)"
+    },
+    "worldtreeleaf": {
+      "name": "World Tree Leaf",
+      "specialEffect": "Generates [World Tree Fruit] near the character (Cooldown: 100s)"
+    },
+    "magicsword": {
+      "name": "Magic Sword",
+      "specialEffect": "[Instakills] an enemy whose HP is below 〈20%〉."
+    },
+    "opulence": {
+      "name": "Opulence",
+      "specialEffect": "Generates 〈3〉 [Treasure Chests] and 〈1〉 [Relic Box] nearby"
+    },
+    "amplifier": {
+      "name": "Amplifier",
+      "specialEffect": "All Magic Size increases x1.28"
+    },
+    "aumento": {
+      "name": "Rose",
+      "specialEffect": "Deals 〈10%〉 [Additional Damage] to enemies whose [HP] is 〈75%〉 or higher."
+    },
+    "accelerator": {
+      "name": "Accelerator",
+      "specialEffect": "Reduces [All Magic Cooldown] by 〈1%〉 for every 〈3%〉 increase in Movement Speed."
+    },
+    "supermente": {
+      "name": "Overmind",
+      "specialEffect": "Increases 〔All Magic Damage〕 by 〈15%〉 for each [Active Magic] that has reached [Max Level]"
+    },
+    "mooncrystal": {
+      "name": "Moon Crystal",
+      "specialEffect": "Permanently reduces the [Movement Speed] of an enemy that has been [frozen] by 〈10%〉. Increases Frost Nova Damage by 50%"
+    },
+    "pocketwatch": {
+      "name": "Pocket Watch"
+    },
+    "mortarboard": {
+      "name": "Mortarboard",
+      "specialEffect": "〈33%〉 increased chance to have [4] Magic choices."
+    },
+    "pandorabox": {
+      "name": "Pandora's Box",
+      "specialEffect": "Casts one of the following Magics randomly: 《Cyclone, Meteor, Tsunami》. (Cooldown: 5s)"
+    },
+    "ether": {
+      "name": "Ether",
+      "specialEffect": "Gain 〈1%〉 [mana] per second."
+    },
+    "clockwork": {
+      "name": "Clockwork",
+      "specialEffect": "[Stops] all enemies near the character for 〈2 seconds〉. (Cooldown: 18s)"
+    },
+    "genomemap": {
+      "name": "Genome Map",
+      "specialEffect": "Reduces the [Max HP] of all enemies by 〈20%〉."
+    },
+    "deathbell": {
+      "name": "Death's Bell",
+      "specialEffect": "If {444} [Mana Orbs] are obtained, all nearby enemies disappear"
+    },
+    "mutagen": {
+      "name": "Mutagen",
+      "specialEffect": "[Max HP] of [Large Monsters] is reduced by 〈15%〉."
+    },
+    "spiderweb": {
+      "name": "Spiderweb",
+      "specialEffect": "Reduces the [Movement Speed] of all enemies by 〈10%〉."
+    },
+    "crucifix": {
+      "name": "Crucifix"
+    },
+    "secondheart": {
+      "name": "Second Heart",
+      "specialEffect": "[Revive] 〈1〉 more time."
+    },
+    "lantern": {
+      "name": "Lantern",
+      "specialEffect": "Increases [Mana Orb] Acquisition by 〈10%〉."
+    },
+    "magicwand": {
+      "name": "Magic Wand",
+      "specialEffect": "Increases [Damage] by 〈10%〉 per 《Spirit》. Increases Spirit Number by 2"
+    },
+    "sellomagico": {
+      "name": "Magic Seal",
+      "specialEffect": "[Limits] Damage taken from a single hit to 〈30%〉 of the character's [Max HP]."
+    },
+    "spacetimecircuit": {
+      "name": "Space-time Circuit",
+      "specialEffect": "Time flows 〈24%〉 faster. After obtaining it, increases [Gold Acquisition] by 〈24%〉."
+    },
+    "keyring": {
+      "name": "Keyring",
+      "specialEffect": "Get a chance to swap out an [artifact] from a normal Treasure Chest. (Available: 3 times)"
+    },
+    "etherarrow": {
+      "name": "Ether Arrow",
+      "specialEffect": "Reduces Magic Bolt Cooldown by 20% Reduces Spirit Cooldown by 20%"
+    },
+    "reaperscythe": {
+      "name": "Reaper's Scythe",
+      "specialEffect": "〈8%〉 chance to {instakill} an enemy when dealing Damage to it for the first time. Reduces the [Max HP] of all enemies by 〈13%〉."
+    },
+    "blackcat": {
+      "name": "Black Cat"
+    },
+    "watchereye": {
+      "name": "Watcher's Eye",
+      "specialEffect": "Causes a giant [Explosion] upon obtaining a [Life Orb]."
+    },
+    "ironmaiden": {
+      "name": "Iron Maiden",
+      "specialEffect": "〈15%〉 chance to cause an [Explosion] when killing an enemy. (Explosion Damage is 75% of the enemy's Max HP)"
+    },
+    "hydra": {
+      "name": "Hydra",
+      "specialEffect": "Each time damage is dealt to an enemy, its current HP is reduced by 〈1%〉. (Triggers up to 25 times per enemy)"
+    },
+    "dragonscale": {
+      "name": "Dragonscale"
+    },
+    "manashield": {
+      "name": "Mana Shield",
+      "specialEffect": "Reduces [Damage Taken] by 〈50%〉 of the current mana percentage."
+    },
+    "ballista": {
+      "name": "Ballista",
+      "specialEffect": "Deals 〈50%〉 [Additional Damage] to enemies whose [HP] is 〈75%〉 or higher."
+    },
+    "organicshield": {
+      "name": "Organic Shield",
+      "specialEffect": "Obtaining a [Life Orb] increases [HP] by an amount equal to the Recovery bonus. @ The HP bonus cannot exceed [Max HP]."
+    },
+    "storybook": {
+      "name": "Storybook",
+      "specialEffect": "Reduces the character's [Size] by 〈25%〉."
+    },
+    "aegis": {
+      "name": "Aegis",
+      "specialEffect": "{Amplifies} [ATK] by 〈3%〉 for every [10%] of Damage Taken."
+    },
+    "merlincape": {
+      "name": "Merlin's Cape",
+      "specialEffect": "{Amplifies} [ATK] by 〈25%〉 of the current mana percentage."
+    },
+    "wraith": {
+      "name": "Wraith",
+      "specialEffect": "[Passes through] all enemies and obstacles."
+    },
+    "executionerax": {
+      "name": "Executioner's Ax"
+    },
+    "aurora": {
+      "name": "Aurora"
+    },
+    "energianuclear": {
+      "name": "Core Energy",
+      "specialEffect": "《Satellites》 [explode] when they deal Damage to enemies. Increases Satellite Number by 2"
+    },
+    "magicscroll": {
+      "name": "Magic Scroll"
+    },
+    "necronomicon": {
+      "name": "Necronomicon",
+      "specialEffect": "The character's [Max HP] cannot be more than 【50%】 of [Max HP]."
+    },
+    "singularity": {
+      "name": "Singularity",
+      "specialEffect": "All [Mana Orbs (small)] are converted into [(medium)]."
+    },
+    "akashicrecord": {
+      "name": "Akashic Records",
+      "specialEffect": "Amplifies [ATK] by 〈1%〉 for every [2] current levels. Increases [Current Level] and [Max Level] by 〈5〉"
+    },
+    "dna": {
+      "name": "DNA",
+      "specialEffect": "For each [Obelisk] obtained: {Amplify} [ATK] by 〈8%〉, [Max HP] by an additional 〈8%〉 (Efficiency decreases by 15% per application)"
+    },
+    "otherworldlytentacle": {
+      "name": "Otherworldly Tentacles",
+      "specialEffect": "Increases [Damage] by 8% per 《Arcane Ray》 Reduces Arcane Ray Cooldown by 10%"
+    },
+    "golemcore": {
+      "name": "Golem Core",
+      "specialEffect": "The screen does not turn red even when the character is [near death]."
+    },
+    "rainbow": {
+      "name": "Rainbow"
+    },
+    "cube": {
+      "name": "Cube",
+      "specialEffect": "The [Level] and [Max Level] of all [Normal Passive Magic] increase by 〈1〉."
+    },
+    "siegehammer": {
+      "name": "Siege Hammer",
+      "specialEffect": "Deals 〈20%〉 {Additional Damage} if an attack is not a Critical Strike."
+    },
+    "cauldron": {
+      "name": "Cauldron",
+      "specialEffect": "Increases [Damage] of the following Magic by 〈35%〉. Fireball, Meteor, Incineration, Lava Zone"
+    },
+    "lightning": {
+      "name": "Lightning",
+      "specialEffect": "Increases [Damage] of the following Magic by 〈35%〉. Thunderstorm, Electric Shock, Electric Zone, Flash Shock"
+    },
+    "weathercontroller": {
+      "name": "Weather Controller",
+      "specialEffect": "Increases [Damage] of the following Magic by 〈35%〉. Cyclone, Blizzard, Tsunami, Frost Nova"
+    },
+    "manascepter": {
+      "name": "Mana Scepter",
+      "specialEffect": "Increases [Damage] of the following Magic by 〈35%〉. Energy Bolt, Arcane Ray, Spirit, Satellite"
+    },
+    "magicbullet": {
+      "name": "Magic Bullet",
+      "specialEffect": "Increases Magic Bolt Damage by 30% Increases Magic Bolt Number by 1"
+    },
+    "celestialcalendar": {
+      "name": "Celestial Calendar",
+      "specialEffect": "Every 〈3〉 casts of 《Meteor》 increases the [power] of the next Meteor by 〈x1.5〉."
+    },
+    "battery": {
+      "name": "Battery",
+      "specialEffect": "Increases Electric Zone Damage by 30% Reduces Electric Zone Damage Interval by 15%"
+    },
+    "magitechmodule": {
+      "name": "Magitech Module",
+      "specialEffect": "〈22%〉 chance for an 《Energy Bolt》 to [split] into 〈2〉."
+    },
+    "torch": {
+      "name": "Torch",
+      "specialEffect": "Reduces Fireball Cooldown by 15% Reduces Incineration Cooldown by 15%"
+    },
+    "lightningrod": {
+      "name": "Lightning Rod",
+      "specialEffect": "Reduces Thunderstorm Cooldown by 15% Reduces Electric Shock Cooldown by 15%"
+    },
+    "snowman": {
+      "name": "Snowman",
+      "specialEffect": "Reduces Blizzard Cooldown by 15% Reduces Frost Nova Cooldown by 15%"
+    },
+    "firefly": {
+      "name": "Firefly",
+      "specialEffect": "Increases Spirit Number by 2"
+    },
+    "glassorb": {
+      "name": "Glass Orb",
+      "specialEffect": "Increases Satellite Number by 2"
+    },
+    "crystalprism": {
+      "name": "Crystal Prism",
+      "specialEffect": "Increases Arcane Ray Number by 2"
+    },
+    "phoenixbow": {
+      "name": "Phoenix's Bow",
+      "specialEffect": "Deals 〈50%〉 [Additional Damage] to an enemy [directly] hit by a 《Fireball》. Increases Fireball Penetration by 1"
+    },
+    "mjolnir": {
+      "name": "Mjolnir",
+      "specialEffect": "Increases Thunderstorm Number by 50%"
+    },
+    "dimensionalgate": {
+      "name": "Dimensional Gate",
+      "specialEffect": "〈20%〉 chance to cast 《Meteor》 〈1〉 extra time when cast. Reduces Meteor Cooldown by 25%"
+    },
+    "palmleaffan": {
+      "name": "Palm Leaf Fan",
+      "specialEffect": "Every 〈5〉 casts of 《Cyclone》 increases the @ [Damage] and [Size] of the next Cyclone by 〈x2〉. Increases Cyclone Damage by 50%"
+    },
+    "electriccable": {
+      "name": "Electric Cable",
+      "specialEffect": "Increases Electric Shock Damage by 50% Increases Electric Shock Number by 2"
+    },
+    "machinearm": {
+      "name": "Machine Arm",
+      "specialEffect": "Increases Energy Bolt Damage by 35% Increases Energy Bolt Number by 35%"
+    },
+    "dragonbreath": {
+      "name": "Dragon's Breath",
+      "specialEffect": "Each time an enemy is damaged by 《Incineration》 @ it takes 〈1%〉 Additional Damage. Increases Incineration Damage by 50%"
+    },
+    "snowflakecrown": {
+      "name": "Snowflake Crown",
+      "specialEffect": "Each 《Blizzard》 increases its [Damage] by 〈1%〉. Increases Blizzard Number by 30%"
+    },
+    "wavecalmingflute": {
+      "name": "Wave-calming Flute",
+      "specialEffect": "Each cast of 《Tsunami》 increases its [Damage] by 〈12%〉, @ and reduces its [cooldown] by 〈12%〉. This effect [resets] after stacking [4 times]."
+    },
+    "circularsawblade": {
+      "name": "Circular Sawblade",
+      "specialEffect": "Each hit with 《Satellite》 increases additional damage to the enemy by 〈0.5%〉 (Max Stack: 50%)"
+    },
+    "sulfur": {
+      "name": "Sulfur",
+      "specialEffect": "《Lava Zone》 increases its Size by 〈2%〉 every second. Increases Lava Zone Damage by 80%"
+    },
+    "ancienttreestaff": {
+      "name": "Ancient Tree Staff",
+      "specialEffect": "Reduces Magic Circle Cooldown by 25%"
+    },
+    "gaebolg": {
+      "name": "Gàe Bolg",
+      "specialEffect": "Increases Flash Shock Damage by 100%"
+    },
+    "candlestick": {
+      "name": "Candlestick",
+      "specialEffect": "Increases Fireball Number by 1 Increases Meteor Number by 1"
+    },
+    "clairvoyance": {
+      "name": "Clairvoyance",
+      "specialEffect": "Increases the character's [vision range] by 〈10%〉."
+    },
+    "sacrosanct": {
+      "name": "Sacrosanct",
+      "specialEffect": "If [HP] is above [75%], [ATK] is {Amplified} by 〈75%〉"
+    },
+    "brand": {
+      "name": "Brand",
+      "specialEffect": "Deals 〈15%〉 [Additional Damage] to enemies that have survived for [5 seconds]."
+    },
+    "geometry": {
+      "name": "Geometry",
+      "specialEffect": "Always recovers 〈100%〉 mana when recovering mana. @ You lose 【1】 mana recovery chance."
+    },
+    "harmony": {
+      "name": "Harmony"
+    },
+    "dragonmagic": {
+      "name": "Dragon's Magic"
+    },
+    "joker": {
+      "name": "Joker",
+      "specialEffect": "[50%] chance to stack 〈1〉 additional multiplier upon landing a Critical Strike."
+    },
+    "titanpower": {
+      "name": "Titan's Power",
+      "specialEffect": "Increases ATK x1.5"
+    },
+    "manacircuit": {
+      "name": "Mana Circuit",
+      "specialEffect": "{Amplifies} [ATK] by 〈1%〉 whenever you obtain a [Mana Orb]. @ The stack resets every [5 seconds]."
+    },
+    "mirror": {
+      "name": "Mirror",
+      "specialEffect": "Increases the [number] of the following Magic by 〈1〉. Energy Bolt, Arcane Ray, Spirit, Satellite"
+    },
+    "toycastle": {
+      "name": "Toy Castle",
+      "specialEffect": "Reduces the [Max HP] of elite monsters by 〈15%〉. The [Size] of Elite Monsters is reduced by 〈15%〉"
+    },
+    "gaia": {
+      "name": "Gaia",
+      "specialEffect": "Increases [ATK] by 〈3%〉 for every [20] Max HP."
+    },
+    "hunter": {
+      "name": "Hunter",
+      "specialEffect": "{Amplifies} [ATK] by 〈1%〉 for every [100 enemies] defeated. @ The stack resets when Amplification reaches [25%]."
+    },
+    "treasuremap": {
+      "name": "Treasure Map",
+      "specialEffect": "Creates 〈2〉 [Treasure Chests] at a random location."
+    },
+    "cyborg": {
+      "name": "Cyborg",
+      "specialEffect": "It is not possible to recover HP with [Life Orbs]."
+    },
+    "pyramid": {
+      "name": "Pyramid",
+      "specialEffect": "[ATK] is {Amplified} by 〈3%〉 for each [Synergy] activated."
+    },
+    "domainofpower": {
+      "name": "Domain of Power",
+      "specialEffect": "Gain 〈1〉 more chance of [Magic Combination]. Increases [Max Level] by 〈1〉."
+    },
+    "llamademana": {
+      "name": "Mana Flame"
+    },
+    "crow": {
+      "name": "Crow"
+    },
+    "warflag": {
+      "name": "War Flag",
+      "specialEffect": "{Amplifies} [ATK] by 〈2%〉 for every second the character stays in the same place. (Max Stack: 20%)"
+    },
+    "exorcism": {
+      "name": "Exorcism",
+      "specialEffect": "Reduces the [Max HP] of all enemies by 〈3%〉. Increases Mana Acquisition from killing enemies by 20%"
+    },
+    "spellcape": {
+      "name": "Spell Cape"
+    },
+    "breeze": {
+      "name": "Breeze"
+    },
+    "sapphire": {
+      "name": "Sapphire"
+    },
+    "holychest": {
+      "name": "Holy Chest",
+      "specialEffect": "Reduces the [Max HP] of all enemies by 〈10%〉. Activates a random [Rune] effect. (Cooldown: 45s)"
+    },
+    "crown": {
+      "name": "Crown",
+      "specialEffect": "{Amplifies} [ATK] by 〈1%〉 for each [Epic] artifact you own. {Amplifies} [ATK] by 〈5%〉 for each [Special] artifact you own."
+    },
+    "bomb": {
+      "name": "Bomb"
+    },
+    "fairy": {
+      "name": "Fairy",
+      "specialEffect": "The {Enchant} effect becomes 〈2X〉."
+    },
+    "radar": {
+      "name": "Radar"
+    },
+    "holygrail": {
+      "name": "Holy Grail"
+    },
+    "aimagic": {
+      "name": "AI Magic",
+      "specialEffect": "Learns 〈4〉 random [Magics]."
+    },
+    "harp": {
+      "name": "Harp"
+    },
+    "magicgrimoire": {
+      "name": "Magic Grimoire"
+    },
+    "ouroboros": {
+      "name": "Ouroboros"
+    },
+    "dragontongue": {
+      "name": "Dragontongue",
+      "specialEffect": "Increases the Damage of [Magic Combinations] by 〈40%〉."
+    },
+    "imp": {
+      "name": "Imp",
+      "specialEffect": "Max HP of Boss Wave Monsters is reduced by 10% Max HP of Normal Wave Monsters increases by 10%"
+    },
+    "maskedball": {
+      "name": "Masked Ball"
+    },
+    "stainedglass": {
+      "name": "Stained Glass",
+      "specialEffect": "Increases the duration of [Rune] effects by 〈25%〉."
+    },
+    "mimic": {
+      "name": "Mimic",
+      "specialEffect": "Causes an [Explosion] upon obtaining a [Treasure Chest], @ and creates 〈10〉 [random items] nearby."
+    },
+    "halo": {
+      "name": "Halo"
+    },
+    "basilisk": {
+      "name": "Basilisk",
+      "specialEffect": "Reduces the [Max HP] of all enemies by 〈10%〉."
+    },
+    "alineacion": {
+      "name": "Roster",
+      "specialEffect": "After eliminating [100 enemies], any Damage dealt to the next 〈50〉 {instakills} them."
+    },
+    "werewolf": {
+      "name": "Werewolf",
+      "specialEffect": "Eliminating [2500] enemies activates the {Berserk Rune} effect."
+    },
+    "abyss": {
+      "name": "Abyss",
+      "specialEffect": "Converts half of Mana Acquisition Rate into [ATK] through [Conversion]"
+    },
+    "eclipse": {
+      "name": "Eclipse",
+      "specialEffect": "Deals a maximum of 〈50%〉 of the target's lost HP as {Additional Damage}."
+    },
+    "excalibur": {
+      "name": "Excalibur",
+      "specialEffect": "An [Aura] is generated around the character, dealing 〈25%〉 [Additional Damage] to enemies within its range."
+    },
+    "goldenroulette": {
+      "name": "Golden Roulette",
+      "specialEffect": "Obtain 〈1〉 random [legendary artifact]."
+    },
+    "jetengine": {
+      "name": "Jet Engine",
+      "specialEffect": "While moving, [ATK] is {Amplified} by 〈20%〉."
+    },
+    "wizardhat": {
+      "name": "Wizard's Hat",
+      "specialEffect": "For every [2%] of All Magic Cooldown Reduction, [ATK] increases by 〈1%〉"
+    },
+    "longinusspear": {
+      "name": "Longinus' Spear",
+      "specialEffect": "Strikes with a powerful lightning bolt (Cooldown: 9s)"
+    },
+    "nexus": {
+      "name": "Nexus",
+      "specialEffect": "Select an [Attack Magic] to increase its [Damage] by 〈240%〉"
+    },
+    "dragonheart": {
+      "name": "Dragon's Heart",
+      "specialEffect": "Amplifies ATK x1.3"
+    },
+    "matriz": {
+      "name": "Matrix",
+      "specialEffect": "Increases 〔All Magic Damage〕 by 〈20%〉 of the total [All Magic Size and Duration] + [Cooldown Reduction]"
+    },
+    "robot": {
+      "name": "Robot",
+      "specialEffect": "《Electric Zone》 deals 0.5% [Additional Damage] per character level"
+    },
+    "mercurio": {
+      "name": "Mercury",
+      "specialEffect": "Increases [Mana Orb] Acquisition by 〈20%〉."
+    },
+    "fuentemagica": {
+      "name": "Magic Fountain",
+      "specialEffect": "Amplifies [ATK] by 〈1%〉 for every [200] [Mana Orbs] you hold (Max Stack: 20%)"
+    },
+    "quimera": {
+      "name": "Chimera",
+      "specialEffect": "Reduces Flash Shock Cooldown by 15% Reduces Lava Zone Cooldown by 15% Reduces Tsunami Cooldown by 15%"
+    },
+    "elfrancotiradorlibre": {
+      "name": "Freeshooter",
+      "specialEffect": "Increases Magic Bolt Damage by 100%"
+    },
+    "shuriken": {
+      "name": "Shuriken",
+      "specialEffect": "Increases Magic Bolt Critical Rate by 15% Increases Spirit Critical Rate by 15%"
+    },
+    "condesa": {
+      "name": "Countess",
+      "specialEffect": "Triggers an [Explosion] upon defeating Elite Monsters (Explosion Damage is 30% of the enemy's Max HP)"
+    },
+    "salamandra": {
+      "name": "Salamander",
+      "specialEffect": "Increases Incineration Number by 5 Increases Lava Zone Number by 1"
+    },
+    "creadoradeviudas": {
+      "name": "Widowmaker",
+      "specialEffect": "Increases [Critical Multiplier] based on [Critical Rate]"
+    },
+    "ramodeflores": {
+      "name": "Bouquet",
+      "specialEffect": "All products sold by the [Merchant] receive a 〈20%〉 {Discount}"
+    },
+    "plasma": {
+      "name": "Plasma",
+      "specialEffect": "Reduces All Magic Size by 20%"
+    },
+    "ocultismo": {
+      "name": "Occultism",
+      "specialEffect": "[Max HP] increases in proportion to the [Reduction of Enemies' Max HP]. Reduces the [Max HP] of all enemies by 〈5%〉."
+    },
+    "buho": {
+      "name": "Owl",
+      "specialEffect": "[Current Level] increases by 〈3〉"
+    },
+    "moneda": {
+      "name": "Coin",
+      "specialEffect": "Obtain 〈□〉 《Mana Orb Resource》. Obtain 《Mana Orb Resource》"
+    },
+    "unicornio": {
+      "name": "Unicorn",
+      "specialEffect": "Offers a {Special Passive Option}"
+    },
+    "skadi": {
+      "name": "Skadi",
+      "specialEffect": "Increases Blizzard Damage by 50% Increases Frost Nova Damage by 50%"
+    },
+    "starlight": {
+      "name": "Starlight"
+    },
+    "goblin": {
+      "name": "Goblin",
+      "specialEffect": "Obtain □ Mana Orb Resource. Obtain a large amount of Mana Orb Resources."
+    },
+    "magiaavanzada-passive": {
+      "name": "Advanced Magic",
+      "specialEffect": "Increases the Damage of [Magic Combinations] by 〈15%〉."
+    },
+    "intelligence-passive": {
+      "name": "Intelligence"
+    },
+    "fastcasting-passive": {
+      "name": "Fast Casting"
+    },
+    "vitality-passive": {
+      "name": "Vitality"
+    },
+    "haste-passive": {
+      "name": "Haste"
+    },
+    "arcaneeffuse-passive": {
+      "name": "Arcane Effuse"
+    },
+    "concentration-passive": {
+      "name": "Concentration"
+    },
+    "snipe-passive": {
+      "name": "Snipe"
+    },
+    "explorer-passive": {
+      "name": "Explorer"
+    },
+    "ruptura-passive": {
+      "name": "Rupture"
+    },
+    "lordoffire": {
+      "name": "Lord of Fire",
+      "specialEffect": "Increases the [Damage] of the following Magic by 〈25%〉. Fireball, Meteor, Incineration, Lava Zone"
+    },
+    "stormyclouds": {
+      "name": "Stormy Clouds",
+      "specialEffect": "Increases the [Damage] of the following Magic by 〈25%〉. Thunderstorm, Electric Shock, Electric Zone, Flash Shock"
+    },
+    "naturewrath": {
+      "name": "Nature's Wrath",
+      "specialEffect": "Increases the [Damage] of the following Magic by 〈25%〉. Cyclone, Blizzard, Tsunami, Frost Nova"
+    },
+    "energyengineering": {
+      "name": "Energy Engineering",
+      "specialEffect": "Increases the [Damage] of the following Magic by 〈25%〉. Energy Bolt, Arcane Ray, Spirit, Satellite"
+    },
+    "arcana": {
+      "name": "Arcana"
+    },
+    "guardianangel": {
+      "name": "Guardian Angel",
+      "specialEffect": "[Revive] 〈1〉 more time."
+    },
+    "silentcasting": {
+      "name": "Silent Casting"
+    },
+    "warmagic": {
+      "name": "War Magic"
+    },
+    "timekeeper": {
+      "name": "Timekeeper",
+      "specialEffect": "Increases the duration of [Rune] effects by 〈12%〉."
+    },
+    "pioneer": {
+      "name": "Pioneer"
+    },
+    "smite": {
+      "name": "Smite"
+    },
+    "seal": {
+      "name": "Seal",
+      "specialEffect": "Decreases the [Move Speed] of all enemies by 〈8%〉."
+    },
+    "curse": {
+      "name": "Curse",
+      "specialEffect": "Decreases the [Max HP] of all enemies by 〈6%〉."
+    },
+    "chakra": {
+      "name": "Chakra"
+    },
+    "manafactory": {
+      "name": "Mana Factory",
+      "specialEffect": "[Mana Orbs] are created 〈20%〉 more frequently."
+    },
+    "doctor": {
+      "name": "Doctor",
+      "specialEffect": "Increases the [Max Level] by 〈3〉."
+    },
+    "bloodmagic": {
+      "name": "Blood Magic",
+      "specialEffect": "Decreases HP Regen per sec. by 0.25%"
+    },
+    "adrenaline": {
+      "name": "Adrenaline",
+      "specialEffect": "Increases ATK, Critical Strike Rate, and Movement Speed by 5%"
+    },
+    "juggernaut": {
+      "name": "Juggernaut"
+    },
+    "priest": {
+      "name": "Priest",
+      "specialEffect": "Decreases the [Max HP] of all enemies by 〈3%〉."
+    },
+    "eldritch": {
+      "name": "Eldritch",
+      "specialEffect": "Decreases the [Max HP] of Elite Monsters by 〈10%〉."
+    },
+    "noblesse": {
+      "name": "Noblesse",
+      "specialEffect": "Creates 〈1〉 [Treasure Chest] nearby."
+    },
+    "maestrotaoista": {
+      "name": "Taoist",
+      "specialEffect": "Increases the level of all [Additional Passive] spells by 〈1〉"
+    },
+    "florista": {
+      "name": "Florist",
+      "specialEffect": "All items sold by the [Merchant] receive a 〈7%〉 {Discount}"
+    }
+  },
+  "magic": {
+    "thunderstorm": {
+      "name": "Thunderstorm"
+    },
+    "meteor": {
+      "name": "Meteor"
+    },
+    "spirit": {
+      "name": "Spirit"
+    },
+    "electricShock": {
+      "name": "Electric Shock"
+    },
+    "energyBolt": {
+      "name": "Energy Bolt"
+    },
+    "arcaneRay": {
+      "name": "Arcane Ray"
+    },
+    "blizzard": {
+      "name": "Blizzard"
+    },
+    "fireball": {
+      "name": "Fireball"
+    },
+    "flashShock": {
+      "name": "Flash Shock"
+    },
+    "magicBolt": {
+      "name": "Magic Bolt"
+    },
+    "satellite": {
+      "name": "Satellite"
+    },
+    "cyclone": {
+      "name": "Cyclone"
+    },
+    "incineration": {
+      "name": "Incineration"
+    },
+    "lavaZone": {
+      "name": "Lava Zone"
+    },
+    "electricZone": {
+      "name": "Electric Zone"
+    },
+    "tsunami": {
+      "name": "Tsunami"
+    },
+    "frostNova": {
+      "name": "Frost Nova"
+    },
+    "shield": {
+      "name": "Shield"
+    },
+    "armageddon": {
+      "name": "Armageddon"
+    },
+    "intelligence": {
+      "name": "Intelligence"
+    },
+    "magicCircle": {
+      "name": "Magic Circle"
+    },
+    "cloaking": {
+      "name": "Cloaking"
+    }
+  },
+  "research": {
+    "intelligence": {
+      "name": "Intelligence"
+    },
+    "vitality": {
+      "name": "Vitality"
+    },
+    "manarefining": {
+      "name": "Mana Refining"
+    },
+    "fastcasting": {
+      "name": "Fast Casting"
+    },
+    "snipe": {
+      "name": "Snipe"
+    },
+    "resistance": {
+      "name": "Resistance"
+    },
+    "agility": {
+      "name": "Agility"
+    },
+    "haste": {
+      "name": "Haste"
+    },
+    "regeneration": {
+      "name": "Regeneration"
+    },
+    "explorer": {
+      "name": "Explorer"
+    },
+    "arcaneeffuse": {
+      "name": "Arcane Effuse"
+    },
+    "concentration": {
+      "name": "Concentration"
+    },
+    "recycle": {
+      "name": "Recycle"
+    },
+    "analysis": {
+      "name": "Analysis"
+    },
+    "blessing": {
+      "name": "Blessing"
+    },
+    "awakening": {
+      "name": "Awakening"
+    },
+    "growth": {
+      "name": "Growth"
+    },
+    "support": {
+      "name": "Support"
+    },
+    "luck": {
+      "name": "Luck"
+    },
+    "loot": {
+      "name": "Loot"
+    },
+    "haggle": {
+      "name": "Haggle"
+    },
+    "startingFunds": {
+      "name": "Starting Funds"
+    }
+  },
+  "stat": {
+    "atk": {
+      "label": "ATK"
+    },
+    "amplifyAtk": {
+      "label": "Amplify ATK"
+    },
+    "critRate": {
+      "label": "Critical Strike Rate"
+    },
+    "critMultiplier": {
+      "label": "Crit. Multiplier"
+    },
+    "magicDamage": {
+      "label": "All Magic Damage"
+    },
+    "magicSize": {
+      "label": "All Magic Size"
+    },
+    "magicDuration": {
+      "label": "All Magic Duration"
+    },
+    "cooldown": {
+      "label": "All Magic Cooldown"
+    },
+    "hp": {
+      "label": "HP"
+    },
+    "hpRegen": {
+      "label": "HP Regen per sec."
+    },
+    "lifeOrbRecovery": {
+      "label": "Life Orb HP Recovery"
+    },
+    "damageTaken": {
+      "label": "Damage Taken"
+    },
+    "evasion": {
+      "label": "Evasion"
+    },
+    "moveSpeed": {
+      "label": "Movement Speed"
+    },
+    "manaAcquisition": {
+      "label": "Mana Acquisition"
+    },
+    "itemPickupRange": {
+      "label": "Item Pickup Range"
+    },
+    "enemyMaxHp": {
+      "label": "Enemy Max HP"
+    }
+  }
+}

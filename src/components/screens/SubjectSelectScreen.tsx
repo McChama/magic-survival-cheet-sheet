@@ -103,7 +103,7 @@ function SubjectDetailDivider() {
 }
 
 export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation("translation");
   const gt = useGameDataText();
   const appliedSubject = useRunStore((s) => s.run.meta.subject);
   const setSubject = useRunStore((s) => s.setSubject);
@@ -210,8 +210,8 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
 
         <SubjectDetailDivider />
 
-        <div style={{ fontSize: rem(16), color: "rgba(232,232,226,.78)", textAlign: "center" }}>
-          {description || t("subject.noDetail")}
+        <div style={{ fontSize: rem(16), color: "#efc84f", textAlign: "center" }}>
+          {description ? `${description} ${t("subject.startingArtifactCount", { count: 1 })}` : t("subject.noDetail")}
         </div>
         <div style={{ fontSize: rem(16), color: "#e88fc0", textAlign: "center" }}>
           {trait || t("subject.noDetail")}

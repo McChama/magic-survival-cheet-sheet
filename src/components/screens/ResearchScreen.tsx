@@ -49,7 +49,7 @@ function Pip({ filled, size, tone }: { filled: boolean; size: number; tone: stri
 }
 
 export function ResearchScreen({ onClose }: ResearchScreenProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation("translation");
   const gt = useGameDataText();
   const run = useRunStore((s) => s.run);
   const addResearchPoints = useRunStore((s) => s.addResearchPoints);

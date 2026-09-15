@@ -121,7 +121,7 @@ const TITLE_KEY_BY_KIND: Record<QuickAddKind, string> = {
 };
 
 export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation("translation");
   const gt = useGameDataText();
   const run = useRunStore((s) => s.run);
   const equipItem = useRunStore((s) => s.equipItem);

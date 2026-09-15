@@ -23,7 +23,7 @@ function MagicIcon({ src, alt }: { src: string; alt: string }) {
 }
 
 export function RunDashboardScreen({ onChangeClass }: RunDashboardScreenProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation("translation");
   const gt = useGameDataText();
   const run = useRunStore((s) => s.run);
   const setCurrentLevel = useRunStore((s) => s.setCurrentLevel);

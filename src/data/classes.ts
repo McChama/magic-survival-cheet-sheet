@@ -83,12 +83,25 @@ export const SUBJECTS: string[] = [
 
 /**
  * Per-Subject detail copy shown on the Test Subject select screen (description +
- * highlighted trait line below the name). Sourced from
- * https://magic-survival-rpg.fandom.com/wiki/Subject (2026-09-14) — `description` is the
- * starting Artifact this Subject grants plus that artifact's own effect text; `trait` is
- * the permanent stat bonus unlocked just from buying the Subject for 800 gems (kept even
- * if the Subject isn't the one selected for the run). Both fields are the wiki's own
- * English text, unedited beyond joining its multi-line effect text into one sentence.
+ * highlighted trait line below the name). Sourced directly from the game's own English
+ * dictionary (`eng_Dictionary_Class.txt` inside `data.unity3d`, ids 41-65 — Subjects are
+ * "실험체"/"Experimental Subject" rows in the same file that also holds Classes, ids 1-24)
+ * rather than the wiki, since the in-game text is much terser than the wiki's rewritten
+ * sentences: `description` is just the bare name of the starting Artifact this Subject
+ * grants (already in `artifacts.ts` — cross-checked by matching each row's numeric artifact
+ * reference against that file's `// source id N` comments, all 24 matched exactly); `trait`
+ * is the game's own one-line permanent stat bonus text, unpicked from the wiki's shorter
+ * paraphrase (e.g. "Increase Satellite Damage by 5% (All Classes)", not "Satellite Damage
+ * +5%"). This corrected two wrong artifact names the wiki's Subject page had: Scholar grants
+ * **Starlight**, not "Philosopher's Stone"; Archaeologist grants **Pyramid**, not "Mimic"
+ * (both "Philosopher's Stone" and "Mimic" are real, different artifacts already in
+ * `artifacts.ts` — just not the ones these two Subjects actually give).
+ *
+ * Wizard is the one exception: its dictionary row has no artifact-name line at all (only
+ * the trait line), even though the wiki and `artifacts.ts` (source id 209, "Freeshooter")
+ * agree Wizard should grant one — left as `description: "Freeshooter"` on that outside
+ * evidence, but flagged here since it's the one entry not confirmed by this row's own
+ * numeric artifact reference the way all 24 others were.
  */
 export interface SubjectDetail {
   description?: string;
@@ -96,87 +109,83 @@ export interface SubjectDetail {
 }
 
 export const SUBJECT_DETAILS: Record<string, SubjectDetail> = {
-  Wizard: { description: "Starts with The Freeshooter: Increase Magic Bolt Damage by 100%.", trait: "Magic Bolt Damage +5%" },
-  Astronomer: { description: "Starts with Core Energy: Satellites explode whenever they deal damage to enemies. Increase the number of Satellites by 2.", trait: "Satellite Damage +5%" },
-  Cryomancer: { description: "Starts with Moon Crystal: Permanently decreases the Movement Speed of an enemy who was first frozen by 10%. Increase Frost Nova Damage by 50%.", trait: "Frost Nova Damage +5%" },
-  Shaman: { description: "Starts with Mjolnir: Increase the number of Thunderstorms by 50%.", trait: "Thunderstorm Damage +5%" },
-  Warlock: { description: "Starts with Dimensional Gate: 20% chance to cast Meteor 1 more time when cast. Decrease Meteor Cooldown by 25%.", trait: "Meteor Damage +5%" },
-  Arcanist: { description: "Starts with Mana Ore: Increase ATK by 25%.", trait: "ATK +2%" },
-  Summoner: { description: "Starts with Magic Wand: Increase Damage by 10% per Spirit. Increase the number of Spirits by 2.", trait: "Spirit Damage +5%" },
-  Bishop: { description: "Starts with Aegis: Amplify ATK by 3% for every 10% of Damage Taken. Decrease Damage Taken by 10%.", trait: "Damage Taken -2%" },
-  Occultist: { description: "Starts with Otherworldly Tentacles: Increase Damage by 8% per Arcane Ray. Reduce Arcane Ray Cooldown by 10%.", trait: "Arcane Ray Damage +5%" },
-  Druid: { description: "Starts with Palm Leaf Fan: Every 5 casts of Cyclone increases the next Cyclone's Damage and Size by 2X. Increase Cyclone Damage by 50%.", trait: "Cyclone Damage +5%" },
-  Pyromancer: { description: "Starts with Phoenix's Bow: Deal 50% Additional Damage to an enemy directly hit by a Fireball. Increase Fireball Penetration by 1.", trait: "Fireball Damage +5%" },
-  Sorcerer: { description: "Starts with Electric Cable: Increase Electric Shock Damage by 50%. Increase the number of Electric Shocks by 2.", trait: "Electric Shock Damage +5%" },
-  Alchemist: { description: "Starts with Machine Arm: Increase Energy Bolt Damage by 35%. Increase the number of Energy Bolts by 35%.", trait: "Energy Bolt Damage +5%" },
-  Scholar: { description: "Starts with Philosopher's Stone: Generate a large number of Mana Orbs. Amplify ATK by 10%.", trait: "Mana Acquisition +2%" },
-  Witch: { description: "Starts with Sulfur: Lava Zone increases in size by 2% every second. Increase Lava Zone Damage by 80%.", trait: "Lava Zone Damage +5%" },
-  Electromancer: { description: "Starts with Robot: Electric Zone deals 0.5% Additional Damage per character level.", trait: "Electric Zone Damage +5%" },
-  Arbiter: { description: "Starts with Wave-calming Flute: Each cast of Tsunami increases Damage by 12% and decreases Cooldown by 12%. This effect resets after stacking 4 times.", trait: "Tsunami Damage +5%" },
-  Archmage: { description: "Starts with Black Cat: Decrease All Magic Cooldown by 9%.", trait: "All Magic Cooldown -1%" },
-  Archaeologist: { description: "Starts with Mimic: Cause an Explosion when obtaining a Treasure Chest, and create 10 random items nearby.", trait: "Item Pickup Range +5%" },
-  Magician: { description: "Starts with Ether Arrow: Decrease Magic Bolt Cooldown by 20%. Decrease Spirit Cooldown by 20%.", trait: "Critical Strike Rate +1%" },
-  Mage: { description: "Starts with Snowflake Crown: Each Blizzard increases Damage by 1%. Increase the number of Blizzards by 30%.", trait: "Blizzard Damage +5%" },
-  Battlemage: { description: "Starts with Gàe Bolg: Increase Flash Shock Damage by 100%.", trait: "Flash Shock Damage +5%" },
-  Warlord: { description: "Starts with Dragon's Breath: Each time an enemy is damaged by Incineration, the enemy receives 1% additional damage. Increase Incineration Damage by 50%.", trait: "Incineration Damage +5%" },
-  "Black Mage": { description: "Starts with Exorcism: Decrease the Max HP of all enemies by 3%. Increase Mana Acquisition from killing enemies by 20%.", trait: "All Magic Size +2%" },
-  "Jack o' Lantern": { description: "Starts with Lantern: Increase Mana Orb Acquisition by 10%. Increase Item Pickup Range by 20%.", trait: "Evasion +1%" },
+  Wizard: { description: "Freeshooter", trait: "Increase Magic Bolt Damage by 5% (All Classes)" },
+  Astronomer: { description: "Core Energy", trait: "Increase Satellite Damage by 5% (All Classes)" },
+  Cryomancer: { description: "Moon Crystal", trait: "Increase Frost Nova Damage by 5% (All Classes)" },
+  Shaman: { description: "Mjolnir", trait: "Increase Thunderstorm Damage by 5% (All Classes)" },
+  Warlock: { description: "Dimensional Gate", trait: "Increase Meteor Damage by 5% (All Classes)" },
+  Arcanist: { description: "Mana Ore", trait: "Increase ATK by 2% (All Classes)" },
+  Summoner: { description: "Magic Wand", trait: "Increase Spirit Damage by 5% (All Classes)" },
+  Bishop: { description: "Aegis", trait: "Decrease Damage Taken by 2% (All Classes)" },
+  Occultist: { description: "Otherworldly Tentacles", trait: "Increase Arcane Ray Damage by 5% (All Classes)" },
+  Druid: { description: "Palm Leaf Fan", trait: "Increase Cyclone Damage by 5% (All Classes)" },
+  Pyromancer: { description: "Phoenix's Bow", trait: "Increase Fireball Damage by 5% (All Classes)" },
+  Sorcerer: { description: "Electric Cable", trait: "Increase Electric Shock Damage by 5% (All Classes)" },
+  Alchemist: { description: "Machine Arm", trait: "Increase Energy Bolt Damage by 5% (All Classes)" },
+  Scholar: { description: "Starlight", trait: "Increase Mana Acquisition by 2% (All Classes)" },
+  Witch: { description: "Sulfur", trait: "Increase Lava Zone Damage by 5% (All Classes)" },
+  Electromancer: { description: "Robot", trait: "Increase Electric Zone Damage by 5% (All Classes)" },
+  Arbiter: { description: "Wave-calming Flute", trait: "Increase Tsunami Damage by 5% (All Classes)" },
+  Archmage: { description: "Black Cat", trait: "Decrease All Magic Cooldown by 1% (All Classes)" },
+  Archaeologist: { description: "Pyramid", trait: "Increase Item Pickup Range by 5% (All Classes)" },
+  Magician: { description: "Ether Arrow", trait: "Increase Critical Strike Rate by 1% (All Classes)" },
+  Mage: { description: "Snowflake Crown", trait: "Increase Blizzard Damage by 5% (All Classes)" },
+  Battlemage: { description: "Gàe Bolg", trait: "Increase Flash Shock Damage by 5% (All Classes)" },
+  Warlord: { description: "Dragon's Breath", trait: "Increase Incineration Damage by 5% (All Classes)" },
+  "Black Mage": { description: "Exorcism", trait: "Increase All Magic Size by 2% (All Classes)" },
+  "Jack o' Lantern": { description: "Lantern", trait: "Increase Evasion by 1% (All Classes)" },
 };
 
 /**
  * Per-Class level-up bonuses (Research Material spent on a class grants these as it hits
  * Lv2/3/4/5), shown on the Class select screen once someone wires it in — not implemented
- * yet, just extracted. Sourced from
- * https://magic-survival-rpg.fandom.com/wiki/Classes (2026-09-14), which already uses this
- * project's exact class names (unlike the older community spreadsheet at
- * reference/Magic Survival Information Spreadsheet [0.935] - Classes.csv, which uses
- * different names for some classes — e.g. "Arcane Scholar" for Arcanist, "Mystic" for
- * Occultist — see reference/game-data-sources.md for the full name-mapping note and a
- * flagged wiki transcription artifact affecting 3 classes).
+ * yet, just extracted. Sourced directly from the game's own English dictionary
+ * (`eng_Dictionary_Class.txt` inside `data.unity3d`, ids 1-24), the same file
+ * `SUBJECT_DETAILS` above comes from — this replaced an earlier wiki-sourced version of
+ * this data (https://magic-survival-rpg.fandom.com/wiki/Classes) once the real dictionary
+ * turned up, since the wiki rewrites the text into full sentences the game never actually
+ * shows (see `SUBJECT_DETAILS`'s doc comment for the same issue on the Subject side). All
+ * text below is the game's own English, verbatim, including its own
+ * 【】〈〉《》[]{}『』〔〕@ marker formatting (same convention `artifacts.ts`/`passives.ts` use —
+ * see CLAUDE.md's language rule) — `@` marks a line break within a single displayed field.
  *
- * `note` is the passive scaling text shown as a tooltip alongside the Lv1 bonus (e.g. "every
- * N levels, damage +X%"). `bonuses` is every other bullet, in order — Lv1 (sometimes folded
- * into `note`'s bullet instead, for classes whose Lv1 grants something other than a plain
- * "<Magic> Lv +1") through the permanent bonus unlocked at max level. Most classes have
- * exactly 4 entries in `bonuses`; a few (Bishop, Scholar, Archmage) have 5 because their Lv1
- * bonus wasn't folded into the summary bullet the way the others were — kept as scraped
- * rather than forced into a uniform shape.
+ * `tooltip` is the line shown for the Lv1 bonus, which for most classes names the ability
+ * in 〔brackets〕 plus a passive per-level scaling note (e.g. "every 5 levels, damage +3%").
+ * `levels` is the 4 bonuses granted at Lv1 through Lv4 (Lv4 is always the permanent
+ * "(All Classes)" one), in order. A few classes (Arcanist, Archaeologist, Black Mage) have a
+ * `tooltip` that names "Magic Bolt" even though their own Lv1 bonus in `levels[0]` is
+ * something else (Intelligence/Explorer/Arcane Effuse) — confirmed real, not a data error:
+ * the dictionary genuinely shows that flavor line for all three, most likely leftover
+ * design-doc text never updated.
  */
 export interface ClassBonus {
-  note: string;
-  bonuses: string[];
+  tooltip: string;
+  levels: [string, string, string, string];
 }
 
 export const CLASS_BONUSES: Record<string, ClassBonus> = {
-  Wizard: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Magic Bolt Lv +1", "Cooldown -20%", "Number +1", "Damage +20% (permanent)"] },
-  Astronomer: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Satellite Lv +1", "Rotation Speed +50%", "Number +35%", "Damage +20% (permanent)"] },
-  Cryomancer: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Frost Nova Lv +1", "Cooldown -20%", "Size +25%", "Damage +20% (permanent)"] },
-  Shaman: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Thunderstorm Lv +1", "Cooldown -20%", "Number +35%", "Damage +20% (permanent)"] },
-  Warlock: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Meteor Lv +1", "Cooldown -20%", "Number +35%", "Damage +20% (permanent)"] },
-  // Wiki's entry opens with a stray "Magic Bolt Lv +1" bullet that doesn't match Arcanist's
-  // own granted ability (Intelligence) or the community spreadsheet's version — dropped as
-  // an apparent copy/paste artifact from the Wizard row. See reference/game-data-sources.md.
-  Arcanist: { note: "Every 1 level, All Magic Damage 1% is added. Reduce Magic Choices by 1 and disable Mana Recovery.", bonuses: ["Intelligence Lv +1", "Mana Acquisition +10%", "Amplify ATK +10%", "ATK +5% (permanent)"] },
-  Summoner: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Spirit Lv +1", "Cooldown -20%", "Number +35%", "Damage +20% (permanent)"] },
-  Bishop: { note: "For each active Shield, ATK is Amplified by 10%", bonuses: ["Magic Bolt & Shield Lv +1", "Guardian Angel (Revive 1 more time. Increase Max HP by 30%)", "Cooldown -20%", "Number +1", "Damage Taken -5% (permanent)"] },
-  Occultist: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Arcane Ray Lv +1", "Cooldown -20%", "Number +35%", "Damage +20% (permanent)"] },
-  Druid: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Cyclone Lv +1", "Cooldown -20%", "Number +1", "Damage +20% (permanent)"] },
-  Pyromancer: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Fireball Lv +1", "Cooldown -20%", "Number +1", "Damage +20% (permanent)"] },
-  Sorcerer: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Electric Shock Lv +1", "Cooldown -20%", "Number +35%", "Damage +20% (permanent)"] },
-  Alchemist: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Energy Bolt Lv +1", "Cooldown -20%", "Number +35%", "Damage +20% (permanent)"] },
-  Scholar: { note: "Every 1 level, All Magic Damage +1%", bonuses: ["Start Level +3", "Doctor (Increase Max Level by 3)", "Mana Recovery +30%", "Chance to have 4 Magic choices +50%", "Mana Acquisition +5% (permanent)"] },
-  Witch: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Lava Zone Lv +1", "Cooldown -20%", "Number +1", "Damage +20% (permanent)"] },
-  Electromancer: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Electric Zone Lv +1", "Damage Interval -20%", "Size +25%", "Damage +20% (permanent)"] },
-  Arbiter: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Tsunami Lv +1", "Cooldown -20%", "Number +35%", "Damage +20% (permanent)"] },
-  Archmage: { note: "Combination Magic Damage +50%", bonuses: ["Start Level +3", "Magic Circle Lv +1", "Silent Casting (Decrease All Magic Cooldown by 7%)", "Combination Magic Damage +50%", "All Magic Cooldown -3% (permanent)"] },
-  // Same stray-bullet issue as Arcanist: dropped a leading "Magic Bolt Lv +1" that doesn't
-  // match Archaeologist's own granted ability (Explorer).
-  Archaeologist: { note: "Every 15 levels, Treasure Chest is created", bonuses: ["Explorer Lv +1", "Mana Acquisition +10%", "Treasure Chest Frequency +10%", "Item Pickup Range +20% (permanent)"] },
-  Magician: { note: "Chance for a Magic Bolt to turn into a random projectile +20% (Electric Shock, Fireball, Spirit, or Energy Bolt)", bonuses: ["Magic Bolt Lv +1", "Chance for a Magic Bolt to turn into a random projectile +5%", "Chance for a Magic Bolt to turn into a random projectile +5%", "Critical Strike Rate +3% (permanent)"] },
-  Mage: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Blizzard Lv +1", "Cooldown -20%", "Number +35%", "Damage +20% (permanent)"] },
-  Battlemage: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Flash Shock Lv +1", "Cooldown -20%", "Size +25%", "Damage +20% (permanent)"] },
-  Warlord: { note: "Every 5 levels, Damage 3% is added", bonuses: ["Incineration Lv +1", "Cooldown -20%", "Size +25%", "Damage +20% (permanent)"] },
-  // Same stray-bullet issue as Arcanist/Archaeologist: dropped a leading "Magic Bolt Lv +1"
-  // that doesn't match Black Mage's own granted ability (Arcane Effuse).
-  "Black Mage": { note: "Enemy Explosion chance when killed +10% (Explosion Damage is 75% of the enemy's Max HP)", bonuses: ["Arcane Effuse Lv +1", "Enemy Explosion chance when killed +5%", "Enemy Explosion chance when killed +5%", "All Magic Size +3% (permanent)"] },
+  Wizard: { tooltip: "〔Magic Bolt Lv +1〕 @ Every time the character gains [5] levels, Magic Bolt Damage 〈3%〉 is 『added』", levels: ["Magic Bolt Lv +1", "Decrease Magic Bolt Cooldown by 20%", "Increase the number of Magic Bolts by 1", "Increase Magic Bolt Damage by 20% (All Classes)"] },
+  Astronomer: { tooltip: "〔Satellite Lv +1〕 @ Every time the character gains [5] levels, Satellite Damage 〈3%〉 is 『added』", levels: ["Satellite Lv +1", "Increase Satellite Rotation Speed by 50%", "Increase the number of Satellites by 35%", "Increase Satellite Damage by 20% (All Classes)"] },
+  Cryomancer: { tooltip: "〔Frost Nova Lv +1〕 @ Every time the character gains [5] levels, Frost Nova Damage 〈3%〉 is 『added』", levels: ["Frost Nova Lv +1", "Decrease Frost Nova Cooldown by 20%", "Increase Frost Nova Size by 25%", "Increase Frost Nova Damage by 20% (All Classes)"] },
+  Shaman: { tooltip: "〔Thunderstorm Lv +1〕 @ Every time the character gains [5] levels, Thunderstorm Damage 〈3%〉 is 『added』", levels: ["Thunderstorm Lv +1", "Decrease Thunderstorm Cooldown by 20%", "Increase the number of Thunderstorms by 35%", "Increase Thunderstorm Damage by 20% (All Classes)"] },
+  Warlock: { tooltip: "〔Meteor Lv +1〕 @ Every time the character gains [5] levels, Meteor Damage 〈3%〉 is 『added』", levels: ["Meteor Lv +1", "Decrease Meteor Cooldown by 20%", "Increase the number of Meteors by 1", "Increase Meteor Damage by 20% (All Classes)"] },
+  Arcanist: { tooltip: "〔Magic Bolt Lv +1〕 @ Every time the character gains [1] levels, All Magic Damage 〈1%〉 is {added} @ Reduce Magic Choices by 【1】 and disable [Mana Recovery]", levels: ["Intelligence Lv +1", "Increase Mana Acquisition by 10%", "Amplify ATK by 10%", "Increase ATK by 5% (All Classes)"] },
+  Summoner: { tooltip: "〔Spirit Lv +1〕 @ Every time the character gains [5] levels, Spirit Damage 〈3%〉 is 『added』", levels: ["Spirit Lv +1", "Decrease Spirit Cooldown by 20%", "Increase the number of Spirits by 35%", "Increase Spirit Damage by 20% (All Classes)"] },
+  Bishop: { tooltip: "〔Magic Bolt [&] Shield Lv +1〕 @ For each active Shield, ATK is {Amplified} by 〈10%〉 @ 『Shield remains active even when used in Combination Magic.』", levels: ["Guardian Angel Lv +1", "Decrease Shield Cooldown by 20%", "Increase the maximum number of Shields by 1", "Decrease Damage Taken by 5% (All Classes)"] },
+  Occultist: { tooltip: "〔Arcane Ray Lv +1〕 @ Every time the character gains [5] levels, Arcane Ray Damage 〈3%〉 is 『added』", levels: ["Arcane Ray Lv +1", "Decrease Arcane Ray Cooldown by 20%", "Increase the number of Arcane Rays by 35%", "Increase Arcane Ray Damage by 20% (All Classes)"] },
+  Druid: { tooltip: "〔Cyclone Lv +1〕 @ Every time the character gains [5] levels, Cyclone Damage 〈3%〉 is 『added』", levels: ["Cyclone Lv +1", "Decrease Cyclone Cooldown by 20%", "Increase the number of Cyclones by 1", "Increase Cyclone Damage by 20% (All Classes)"] },
+  Pyromancer: { tooltip: "〔Fireball Lv +1〕 @ Every time the character gains [5] levels, Fireball Damage 〈3%〉 is 『added』", levels: ["Fireball Lv +1", "Decrease Fireball Cooldown by 20%", "Increase the number of Fireballs by 1", "Increase Fireball Damage by 20% (All Classes)"] },
+  Sorcerer: { tooltip: "〔Electric Shock Lv +1〕 @ Every time the character gains [5] levels, Electric Shock Damage 〈3%〉 is 『added』", levels: ["Electric Shock Lv +1", "Decrease Electric Shock Cooldown by 20%", "Increase the number of Electric Shocks by 35%", "Increase Electric Shock Damage by 20% (All Classes)"] },
+  Alchemist: { tooltip: "〔Energy Bolt Lv +1〕 @ Every time the character gains [5] levels, Energy Bolt Damage 〈3%〉 is 『added』", levels: ["Energy Bolt Lv +1", "Decrease Energy Bolt Cooldown by 20%", "Increase the number of Energy Bolts by 35%", "Increase Energy Bolt Damage by 20% (All Classes)"] },
+  Scholar: { tooltip: "〔Start Level +3〕 @ Every time the character gains [1] level, All Magic Damage increases by 〈1%〉", levels: ["Doctor Lv +1", "Retrieve 〈30%〉 more Mana when retrieving Mana.", "〈50%〉 increased chance to have [4] Magic choices.", "Increase Mana Acquisition by 5% (All Classes)"] },
+  Witch: { tooltip: "〔Lava Zone Lv +1〕 @ Every time the character gains [5] levels, Lava Zone Damage 〈3%〉 is 『added』", levels: ["Lava Zone Lv +1", "Decrease Lava Zone Cooldown by 20%", "Increase the number of Lava Zones by 1", "Increase Lava Zone Damage by 20% (All Classes)"] },
+  Electromancer: { tooltip: "〔Electric Zone Lv +1〕 @ Every time the character gains [5] levels, Electric Zone Damage 〈3%〉 is 『added』", levels: ["Electric Zone Lv +1", "Decrease Electric Zone Damage Interval by 20%", "Increase Electric Zone Size by 25%", "Increase Electric Zone Damage by 20% (All Classes)"] },
+  Arbiter: { tooltip: "〔Tsunami Lv +1〕 @ Every time the character gains [5] levels, Tsunami Damage 〈3%〉 is 『added』", levels: ["Tsunami Lv +1", "Decrease Tsunami Cooldown by 20%", "Increase the number of Tsunamis by 35%", "Increase Tsunami Damage by 20% (All Classes)"] },
+  Archmage: { tooltip: "〔Start Level +3〕 @ [Combination Magic] Damage increases by 〈50%〉", levels: ["Magic Circle Lv +1", "Silent Casting Lv +1", "Increase [Combination Magic] Damage by 〈50%〉.", "Decrease All Magic Cooldown by 3% (All Classes)"] },
+  Archaeologist: { tooltip: "〔Magic Bolt Lv +1〕 @ A [Treasure Chest] is created for every [20] Character levels.", levels: ["Explorer Lv +1", "Increase Mana Acquisition by 10%", "[Treasure Chests] are created 〈10%〉 more frequently.", "Increase Item Pickup Range by 20% (All Classes)"] },
+  Magician: { tooltip: "〔Magic Bolt Lv +1〕 @ 〈20%〉 increased chance for a Magic Bolt to turn into a [random projectile].", levels: ["Magic Bolt Lv +1", "〈5%〉 increased chance for a Magic Bolt to be transformed into a [random projectile].", "〈5%〉 increased chance for a Magic Bolt to be transformed into a [random projectile].", "Increase Critical Strike Rate by 3% (All Classes)"] },
+  Mage: { tooltip: "〔Blizzard Lv +1〕 @ Every time the character gains [5] levels, Blizzard Damage 〈3%〉 is 『added』", levels: ["Blizzard Lv +1", "Decrease Blizzard Cooldown by 20%", "Increase the number of Blizzards by 35%", "Increase Blizzard Damage by 20% (All Classes)"] },
+  Battlemage: { tooltip: "〔Flash Shock Lv +1〕 @ Every time the character gains [5] levels, Flash Shock Damage 〈3%〉 is 『added』", levels: ["Flash Shock Lv +1", "Decrease Flash Shock Cooldown by 20%", "Increase Flash Shock Size by 25%", "Increase Flash Shock Damage by 20% (All Classes)"] },
+  Warlord: { tooltip: "〔Incineration Lv +1〕 @ Every time the character gains [5] levels, Incineration Damage 〈3%〉 is 『added』", levels: ["Incineration Lv +1", "Decrease Incineration Cooldown by 20%", "Increase Incineration Size by 25%", "Increase Incineration Damage by 20% (All Classes)"] },
+  "Black Mage": { tooltip: "〔Magic Bolt Lv +1〕 @ 〈10%〉 chance to cause an [Explosion] when killing an enemy. @ 『(Explosion Damage is 75% of the enemy's Max HP)』", levels: ["Arcane Effuse Lv +1", "〈5%〉 increased chance for enemies to [explode] when killed", "〈5%〉 increased chance for enemies to [explode] when killed", "Increase All Magic Size by 3% (All Classes)"] },
 };

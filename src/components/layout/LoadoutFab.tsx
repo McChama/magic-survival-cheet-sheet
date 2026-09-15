@@ -5,7 +5,7 @@ import { LoadoutSheet } from "../shared/LoadoutSheet";
 import type { QuickAddKind } from "../../data/quickAddOptions";
 
 export function LoadoutFab() {
-  const { t } = useTranslation();
+  const { t } = useTranslation("translation");
   const [fabOpen, setFabOpen] = useState(false);
   const [activeKind, setActiveKind] = useState<QuickAddKind | null>(null);
 

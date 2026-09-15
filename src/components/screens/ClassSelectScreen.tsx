@@ -12,7 +12,7 @@ interface ClassSelectScreenProps {
 }
 
 export function ClassSelectScreen({ onClose, onContinue }: ClassSelectScreenProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation("translation");
   const gt = useGameDataText();
   const characterClass = useRunStore((s) => s.run.meta.characterClass);
   const setCharacterClass = useRunStore((s) => s.setCharacterClass);

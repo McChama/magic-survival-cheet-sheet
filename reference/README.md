@@ -15,11 +15,18 @@ made once.
   the Loadout "Add" flow's category taxonomy, and known functional gaps
   that are deferred (not forgotten, don't unprompted-build or delete their
   supporting code).
-- **`Magic Survival Information Spreadsheet [0.935] - Classes.csv`** — the
-  "Classes" tab of a community spreadsheet the user provided directly.
-  Covers character classes/subjects only, not artifact/magic/fusion names.
-  If more tabs (Artifacts, Magic, Passives, Fusions, Research) get
-  exported, add them here following the same naming pattern.
+
+The community spreadsheet that used to live here (`Magic Survival
+Information Spreadsheet [0.935] - Classes.csv`) was removed 2026-09-14 — the
+user's call, now that direct game extraction (the raw dictionary/asset dump
+under `raw-assets/` and `Desktop/RE_Tools/` on this machine, see
+`game-data-sources.md`) covers the same ground more accurately. **Prefer
+direct extraction from the game's own files over the wiki or any other
+external/community source whenever it's available** — the wiki is a
+fallback for what hasn't been extracted yet, not a first choice; see
+`game-data-sources.md`'s source-priority list and its "Class bonuses +
+Subject details" section for a concrete example of the wiki being wrong in
+ways direct extraction caught.
 
 For anything not covered by a file here, the fallback source of truth is
 the official wiki: https://magic-survival-rpg.fandom.com — see

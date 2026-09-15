@@ -16,7 +16,8 @@
     "choosePlaceholder": "Choose a Subject",
     "noDetail": "—",
     "applying": "Applying",
-    "select": "Select"
+    "select": "Select",
+    "startingArtifactCount": "+{{count}}"
   },
   "dashboard": {
     "changeClassAria": "Change class",
@@ -57,7 +58,7 @@
   },
   "research": {
     "closeAria": "Close",
-    "heading": "Resasdasearch",
+    "heading": "Research",
     "selectResearch": "Select Research",
     "purchasePoints": "Purchase Research Points",
     "researchBtn": "Research",

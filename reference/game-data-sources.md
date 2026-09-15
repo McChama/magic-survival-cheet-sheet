@@ -6,24 +6,55 @@ whether it's a known, deliberate discrepancy first.
 
 ## Source priority
 
-1. **Direct game extraction** — the game's own localization files
-   (`spa_Dictionary_Class.txt`, `spa_Dictionary_Ability.txt`,
-   `spa_Dictionary_MagicCom.txt`, all inside `data.unity3d`), pulled via
-   reverse engineering of the IL2CPP binary and asset bundle. This is Spanish
-   — every string sourced this way was translated to English before landing
-   in `src/data/` (see CLAUDE.md's language rule). Files sourced this way:
-   `classes.ts`, `artifacts.ts`, `passives.ts`, `fusions.ts`, `research.ts`.
-   No raw dictionary/`data.unity3d` files are checked into this repo or
-   present on this machine — if you need to re-extract or verify against
-   them, ask the user where that dump lives.
+**Rule of thumb, reaffirmed 2026-09-14**: always prefer extracting directly
+from the game's own files over the wiki or any third-party/community
+resource (spreadsheet, builder site, etc.) when a direct-extraction path
+exists. The wiki is a fallback for translation and for whatever hasn't been
+extracted yet — not a first choice. This project used to keep a community
+CSV spreadsheet (`Magic Survival Information Spreadsheet [0.935] -
+Classes.csv`) as a fallback source for Class/Subject data; the user deleted
+it once direct extraction covered the same ground more accurately (see
+"Class bonuses + Subject details" below for a concrete case where the wiki
+was flat-out wrong and the real game dictionary caught it).
+
+1. **Direct game extraction** — the game's own localization files, all
+   inside `data.unity3d` (the APK's Unity asset bundle). Two generations of
+   this exist:
+   - Spanish-language dictionaries (`spa_Dictionary_Class.txt`,
+     `spa_Dictionary_Ability.txt`, `spa_Dictionary_MagicCom.txt`), pulled via
+     reverse engineering of the IL2CPP binary and asset bundle — every string
+     sourced this way was translated to English before landing in
+     `src/data/` (see CLAUDE.md's language rule). Used for the original
+     `classes.ts`, `artifacts.ts`, `passives.ts`, `fusions.ts`,
+     `research.ts` rewrite.
+   - **English-language dictionaries** (`eng_Dictionary_*.txt` — `Class`,
+     `Ability`, `Name`, `Explain`, `Synergy`, `MagicCom`, plus
+     `Dictionary_AllStat.txt`/`Dictionary_UnitStat.txt` for numeric
+     level/enemy-stat tables), found already extracted on this machine at
+     `Desktop/RE_Tools/text_assets/` — these need no translation at all and
+     are the single best source when they cover what you need (see "Class
+     bonuses + Subject details" below for how this looks in practice: it's
+     one CSV-ish table per axis, with a real parser needed since fields
+     contain commas inside quotes).
+   - No raw dictionary/`data.unity3d` files are checked into **this repo** —
+     they live on the user's machine under `Desktop/RE_Tools/` (parsed
+     dictionaries) and `Desktop/magic survival/…/data.unity3d` (the raw
+     asset bundle, also what `raw-assets/Sprites/` and
+     `raw-assets/Audio/` were extracted from via AssetStudioModCLI — see
+     below). If a fresh session doesn't have these paths in context, ask the
+     user rather than assuming nothing is available and falling back to the
+     wiki.
 2. **The wiki** — https://magic-survival-rpg.fandom.com — English,
-   community-documented, used to (a) translate names/effects extracted in
-   Spanish, and (b) cross-check names/recipes that came from an older,
-   third-party-sourced dataset (`TomkoSK/magic-survival-builder`) before the
-   direct-extraction data replaced most of it.
-3. **`reference/*.csv`** — spreadsheet exports the user has provided
-   directly. Currently just the "Classes" tab (see `README.md`).
-4. Direct translation from Spanish with no external source, only when 1-3
+   community-documented. Useful for (a) translating names/effects extracted
+   in Spanish when no `eng_Dictionary_*` equivalent exists, (b) cross-checking
+   names/recipes that came from an older, third-party-sourced dataset
+   (`TomkoSK/magic-survival-builder`) before direct-extraction data replaced
+   most of it, and (c) anything not covered by an extracted dictionary at
+   all (e.g. `/wiki/Magic_Combination`'s fusion talent names, until/unless a
+   `Dictionary_Synergy`-equivalent for those gets parsed). **Known to
+   sometimes just be wrong** — don't treat it as authoritative when a direct
+   extraction disagrees with it.
+3. Direct translation from Spanish with no external source, only when 1-2
    don't cover an entry — flagged per-item in code comments where this
    happened (e.g. artifacts/passives the wiki doesn't list).
 
@@ -215,43 +246,82 @@ worth trying if more mismatches turn up).
 ## Class bonuses + Subject details (extracted 2026-09-14, not wired into any screen)
 
 `classes.ts` now exports two things beyond the plain `CLASSES`/`SUBJECTS` name
-lists, both sourced from the wiki via the Browser tool (`navigate` +
-`get_page_text` — `WebFetch`/`curl` are blocked on this wiki's article pages,
-see above) on 2026-09-14. Neither is rendered anywhere yet — this was a
-"locate and store the data" task, not a UI task:
+lists: `SUBJECT_DETAILS` and `CLASS_BONUSES`. Neither is rendered by
+`ClassSelectScreen.tsx` yet; `SUBJECT_DETAILS` *is* already rendered by
+`SubjectSelectScreen.tsx` (that UI slot existed empty before this data
+landed — see below).
 
-- **`SUBJECT_DETAILS`** — filled in for all 25 Subjects, sourced from
-  `/wiki/Subject`. `description` is "Starts with {Artifact}: {artifact's own
-  effect text}"; `trait` is the permanent stat bonus granted just from buying
-  the Subject (independent of whether it's the one selected for a run). This
-  slots directly into `SubjectSelectScreen.tsx`'s existing
-  `detail?.description` / `detail?.trait` rendering (that UI already existed,
-  reading from what was an empty `SUBJECT_DETAILS` — it will start showing
-  real text automatically now that the data exists, no component change
-  needed).
-- **`CLASS_BONUSES`** — filled in for all 24 Classes, sourced from
-  `/wiki/Classes`. No component reads this yet (`ClassSelectScreen.tsx` has
-  no equivalent detail panel today) — wiring it up is a separate follow-up.
-  Each entry is `{ note, bonuses }`: `note` is the Lv1 tooltip text (usually
-  "every N levels, damage +X%"), `bonuses` is the ordered bullet list from
-  Lv1(or 2) through the permanent max-level bonus. Cross-referenced against
-  the older `reference/Magic Survival Information Spreadsheet [0.935] -
-  Classes.csv`, which covers the same 24 classes but uses different names for
-  some of them (spreadsheet → current name): "Arcane Scholar" → Arcanist,
-  "Mystic" → Occultist, "Moderator" → Arbiter, "Arc Mage" → Archmage,
-  "Archeologist" (typo) → Archaeologist, "Dark Wizard" → Black Mage, "Battle
-  Mage" → Battlemage. The wiki page already uses this project's exact
-  `CLASSES` spelling, which is why it was used as the primary source instead
-  of the CSV.
-  - **Wiki transcription artifact, 3 classes**: Arcanist, Archaeologist, and
-    Black Mage's wiki entries each open with a stray "Magic Bolt Lv +1"
-    bullet that doesn't match that class's own granted ability (Intelligence,
-    Explorer, and Arcane Effuse respectively) or the CSV's version of the
-    same class — almost certainly copy-pasted from the Wizard row and never
-    corrected on the wiki. Dropped from `CLASS_BONUSES` for these 3 entries
-    rather than shipped verbatim; flagged inline in `classes.ts` too. If a
-    future re-check of the wiki fixes this, remove the code comments and
-    nothing else needs to change.
+**First pass (superseded same day)** used the wiki
+(`/wiki/Classes`, `/wiki/Subject`, fetched via the Browser tool since
+`WebFetch`/`curl` are blocked on this wiki's article pages) and produced
+full-sentence descriptions. The user pointed out the real in-game text is
+much shorter (e.g. just an artifact name, not a paraphrased sentence) — that
+sent this back to the actual game data instead of the wiki.
+
+**Current source**: `eng_Dictionary_Class.txt` inside `data.unity3d`,
+extracted at `Desktop/RE_Tools/text_assets/eng_Dictionary_Class.txt` (not
+checked into this repo, same machine-local raw dump referenced elsewhere in
+this file). One CSV-ish table holds **both** axes: ids 1-24 are Classes
+(학파/"school"), ids 41-65 are Subjects (실험체/"Experimental Subject") — same
+file, same column layout, matching this project's existing "Class and
+Subject share one source dictionary" note at the top of `classes.ts`. Parsed
+with a proper CSV parser (a one-off scratch script, not checked in — the
+Korean header row's commas-inside-quotes broke a naive `split(",")`), since
+hand-transcribing 24+25 rows off raw terminal output risks the exact kind of
+paraphrasing error this replaced.
+
+- **`SUBJECT_DETAILS`** — `description` is column L1 for every Subject except
+  Wizard (bare Artifact name, e.g. "Core Energy", "Moon Crystal" — matches
+  `artifacts.ts` name exactly, cross-checked via each row's numeric
+  "특수값01"/special-value-01 field against that file's `// source id N`
+  comments, 24/24 exact matches); `trait` is column L2, the game's own
+  one-line permanent bonus text verbatim (e.g. "Increase Satellite Damage by
+  5% (All Classes)"), not a shortened paraphrase. This **corrected two wrong
+  artifact names** the wiki's Subject page had: Scholar actually grants
+  **Starlight** (source id 221), not "Philosopher's Stone"; Archaeologist
+  actually grants **Pyramid** (source id 167), not "Mimic" — both
+  "Philosopher's Stone" and "Mimic" are real, different artifacts already in
+  `artifacts.ts`, just not the ones these two Subjects give. Also fixed:
+  "Otherworldly Tentacles" (plural, matches `artifacts.ts`) vs. the
+  dictionary's singular typo; curly vs. straight apostrophes normalized to
+  match `artifacts.ts`'s existing spelling for the same artifacts.
+  - **Wizard is the one unconfirmed entry**: its dictionary row has only 1
+    description line (the trait bonus) and a special-value-01 of `0` — no
+    numeric artifact reference at all, unlike all 24 other Subject rows.
+    `description: "Freeshooter"` is kept on the strength of the wiki + the
+    real "Freeshooter" artifact existing in `artifacts.ts` (source id 209,
+    thematically consistent with Wizard's Magic Bolt theme), but it's the one
+    name in this table not confirmed by the row's own data the way the other
+    24 were.
+  - This slots directly into `SubjectSelectScreen.tsx`'s pre-existing
+    `detail?.description` / `detail?.trait` rendering — no component change
+    needed, it just started showing real (and now shorter, in-game-accurate)
+    text.
+- **`CLASS_BONUSES`** — `tooltip` is column L1 (the Lv1 flavor/scaling line,
+  keeping the game's own 〔〕〈〉『』{}[]【】@ marker formatting verbatim, same
+  convention `artifacts.ts`/`passives.ts` already use per CLAUDE.md's
+  language rule — `@` marks an in-game line break within one field);
+  `levels` is columns L2-L5, the actual Lv1-Lv4 bonuses, L4 always ending in
+  "(All Classes)". This replaced the wiki-sourced first pass with the same
+  actual dictionary text, and disproved something the first pass had flagged
+  as a likely wiki error: Arcanist, Archaeologist, and Black Mage's `tooltip`
+  really does say "Magic Bolt Lv +1" in the dictionary even though their own
+  `levels[0]` grants something else (Intelligence/Explorer/Arcane Effuse
+  respectively) — it's real in-game text, not a wiki transcription artifact,
+  most likely unedited leftover design-doc flavor text. Lesson for future
+  sessions: when the wiki and the real extracted dictionary would ever
+  disagree, prefer the dictionary — it's already source-priority #1 above,
+  but this was a case of not going back to check it before assuming the wiki
+  was simply wrong.
+  - Also cross-referenced, before it was removed from the repo, against the
+    community spreadsheet that used to live at `reference/Magic Survival
+    Information Spreadsheet [0.935] - Classes.csv` (deleted 2026-09-14 — see
+    `README.md`), which covered the same 24 classes but used different names
+    for some of them (spreadsheet → current name, kept here in case a name
+    mismatch like this ever needs explaining again): "Arcane Scholar" →
+    Arcanist, "Mystic" → Occultist, "Moderator" → Arbiter, "Arc Mage" →
+    Archmage, "Archeologist" (typo) → Archaeologist, "Dark Wizard" → Black
+    Mage, "Battle Mage" → Battlemage.
 
 ## Button-click sound effect (extracted 2026-09-14, not wired into any button)
 

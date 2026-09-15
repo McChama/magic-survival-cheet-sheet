@@ -37,7 +37,7 @@ function TitleBackdrop() {
 }
 
 export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch }: HomeScreenProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation("translation");
   return (
     <div style={{ position: "absolute", inset: 0, background: "#000", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <TitleBackdrop />
