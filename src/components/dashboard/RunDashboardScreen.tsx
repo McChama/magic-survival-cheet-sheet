@@ -18,7 +18,7 @@ interface RunDashboardScreenProps {
 function MagicIcon({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) return <span className="text-[#e8e8e2]/40 text-[1rem]">?</span>;
-  return <img src={src} alt={alt} className="w-full h-full object-cover" onError={() => setFailed(true)} />;
+  return <img src={src} alt={alt} loading="lazy" className="w-full h-full object-cover" onError={() => setFailed(true)} />;
 }
 
 export function RunDashboardScreen({ onChangeClass }: RunDashboardScreenProps) {
@@ -80,7 +80,7 @@ export function RunDashboardScreen({ onChangeClass }: RunDashboardScreenProps) {
                   title={label}
                 >
                   {item.image ? (
-                    <img src={item.image} alt={label} className="w-full h-full object-cover" />
+                    <img src={item.image} alt={label} loading="lazy" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-[#e8e8e2]/40 text-[1rem]">?</span>
                   )}

@@ -55,6 +55,7 @@ export function ClassSelectScreen({ onClose, onContinue }: ClassSelectScreenProp
                   <img
                     src={classImage(`${classSlug(name)}.png`)}
                     alt={label}
+                    loading="lazy"
                     className="w-full h-full object-contain"
                     style={{ opacity: isSelected ? 1 : 0.75 }}
                   />
