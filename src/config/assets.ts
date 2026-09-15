@@ -9,8 +9,13 @@
  * instead of being hotlinked, so the app works offline and doesn't depend on a
  * third-party repo staying up. `VITE_ASSET_BASE_URL` is still overridable if you
  * ever want to point at a CDN instead.
+ *
+ * Falls back to `import.meta.env.BASE_URL` (Vite's own `base` config value, e.g.
+ * "/magic-survival-cheet-sheet/" on GitHub Pages, "/" in dev) rather than a hardcoded
+ * "/assets/" — a root-absolute path breaks the moment the app is served from a
+ * sub-path, which is exactly how GitHub Pages project sites work.
  */
-export const IMAGE_BASE_URL = import.meta.env.VITE_ASSET_BASE_URL ?? "/assets/";
+export const IMAGE_BASE_URL = import.meta.env.VITE_ASSET_BASE_URL ?? `${import.meta.env.BASE_URL}assets/`;
 
 export const FONT_URL = `${IMAGE_BASE_URL}magicSurvival.ttf`;
 
