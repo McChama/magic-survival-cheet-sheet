@@ -42,14 +42,14 @@ Then open the URL Vite prints (defaults to `http://localhost:5173`).
   chrome, `gameData.json` for game data)
 - `src/store/` — Zustand store for run state
 - `public/assets/` — game sprites/images used by the UI
-- `reference/` — source spreadsheets/wiki notes used to build `src/data/`
+- `reference/` — community-sourced notes referenced while building `src/data/`
   (see `reference/README.md`)
 
 ## Contributing data
 
-When adding or regenerating game data, follow the sourcing and translation
-rules in [CLAUDE.md](CLAUDE.md) — non-English source text must be translated
-to English before it lands in `src/data/`.
+When adding or updating game data, follow the language rule in
+[CLAUDE.md](CLAUDE.md) — everything that lands in `src/data/` must be in
+English.
 
 ## Disclaimer
 
