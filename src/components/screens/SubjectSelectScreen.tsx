@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { subjectAnimFrame, subjectImage, uiImage } from "../../config/assets";
-import { rem } from "../../config/rem";
 import { SUBJECTS } from "../../data/classes";
 import { useRunStore } from "../../store/useRunStore";
 import { slug as subjectSlug } from "../../i18n/gameData";
@@ -58,11 +57,11 @@ function SubjectSilhouette({ name, label, selected, applied }: { name: string; l
   }, [slug]);
 
   return (
-    <div style={{ position: "relative", height: "100%", aspectRatio: "46 / 76", maxWidth: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+    <div className="relative h-full aspect-[46/76] max-w-full flex items-end justify-center">
       <img
         src={subjectAnimFrame(slug, IDLE_FRAMES[frameIndex])}
         alt={label}
-        style={{ maxWidth: "100%", maxHeight: "68%", objectFit: "contain", position: "relative", zIndex: 1, opacity: selected ? 1 : 0.85 }}
+        className={`max-w-full max-h-[68%] object-contain relative z-10 ${selected ? "opacity-100" : "opacity-[.85]"}`}
         onError={(e) => {
           // Fall back to the static portrait if this subject's animation set is somehow incomplete.
           e.currentTarget.onerror = null;
@@ -70,11 +69,11 @@ function SubjectSilhouette({ name, label, selected, applied }: { name: string; l
         }}
       />
       {selected ? (
-        <img src={uiImage("unit/UnitAllyShadow01.png")} alt="" style={{ position: "absolute", bottom: "2%", width: "82%", objectFit: "contain" }} />
+        <img src={uiImage("unit/UnitAllyShadow01.png")} alt="" className="absolute bottom-[2%] w-[82%] object-contain" />
       ) : applied ? (
-        <img src={uiImage("unit/UnitEnemyShadow01.png")} alt="" style={{ position: "absolute", bottom: "2%", width: "82%", objectFit: "contain" }} />
+        <img src={uiImage("unit/UnitEnemyShadow01.png")} alt="" className="absolute bottom-[2%] w-[82%] object-contain" />
       ) : (
-        <div style={{ position: "absolute", bottom: "2%", width: "65%", height: "13%", borderRadius: "50%", background: "rgba(40,46,52,.32)" }} />
+        <div className="absolute bottom-[2%] w-[65%] h-[13%] rounded-full bg-[#282e34]/[32%]" />
       )}
     </div>
   );
@@ -89,14 +88,14 @@ function SubjectDetailDivider() {
   const [broken, setBroken] = useState(false);
 
   if (broken) {
-    return <div style={{ width: "70%", maxWidth: 220, height: 1, background: "rgba(255,255,255,.16)", margin: "2px 0 4px" }} />;
+    return <div className="w-[70%] max-w-[220px] h-px bg-white/[.16] mt-0.5 mb-1" />;
   }
 
   return (
     <img
       src={uiImage("subject-detail-divider.png")}
       alt=""
-      style={{ width: "70%", maxWidth: 220, height: "auto", margin: "2px 0 4px" }}
+      className="w-[70%] max-w-[220px] h-auto mt-0.5 mb-1"
       onError={() => setBroken(true)}
     />
   );
@@ -133,32 +132,24 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
         backgroundPosition: "center",
       }}
     >
-      <div style={{ position: "relative", padding: "14px 14px 6px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flex: "none" }}>
-        <div style={{ width: 46 }} />
-        <div
-          style={{
-            fontSize: rem(34),
-            color: "#16333a",
-            letterSpacing: 1,
-            textShadow: "0 1px 0 rgba(255,255,255,.25)",
-            marginTop: 4,
-          }}
-        >
+      <div className="relative pt-3.5 px-3.5 pb-1.5 flex items-start justify-between gap-2.5 flex-none">
+        <div className="w-[46px]" />
+        <div className="text-[1.7rem] text-[#16333a] tracking-wide [text-shadow:0_1px_0_rgba(255,255,255,.25)] mt-1">
           {t("subject.title")}
         </div>
         <button
           type="button"
           onClick={handleClose}
           aria-label={t("subject.closeAria")}
-          style={{ flex: "none", width: rem(23), height: rem(23), background: "none", border: "none", padding: 0, cursor: "pointer" }}
+          className="flex-none w-[1.15rem] h-[1.15rem] bg-transparent border-none p-0 cursor-pointer"
         >
-          <img src={uiImage("icons/UI_Exit_Black.png")} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          <img src={uiImage("icons/UI_Exit_Black.png")} alt="" className="w-full h-full object-contain" />
         </button>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "space-evenly", padding: "10px 10px 6px", gap: 10 }}>
+      <div className="flex-1 min-h-0 flex flex-col justify-evenly py-2.5 px-2.5 pb-1.5 gap-2.5">
         {SUBJECT_ROWS.map((row, rowIndex) => (
-          <div key={rowIndex} style={{ flex: "1 1 0", minHeight: 0, display: "flex", justifyContent: "center", alignItems: "center", gap: 14 }}>
+          <div key={rowIndex} className="flex-1 min-h-0 flex justify-center items-center gap-3.5">
             {row.map((name) => {
               const isSelected = previewName === name;
               const isAppliedSubject = name === appliedSubject;
@@ -168,21 +159,7 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
                   key={name}
                   type="button"
                   onClick={() => setPreviewName(name)}
-                  style={{
-                    position: "relative",
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    cursor: "pointer",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    height: "100%",
-                    flex: "0 1 auto",
-                    minWidth: 0,
-                    fontFamily: "inherit",
-                  }}
+                  className="relative bg-transparent border-none p-0 cursor-pointer flex flex-col items-center justify-end h-full flex-initial min-w-0 font-[inherit]"
                 >
                   <SubjectSilhouette name={name} label={label} selected={isSelected} applied={isAppliedSubject} />
                 </button>
@@ -192,28 +169,17 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
         ))}
       </div>
 
-      <div
-        style={{
-          flex: "none",
-          background: "#08080a",
-          borderTop: "1px solid rgba(255,255,255,.14)",
-          padding: "0rem 1rem 0.5rem 1rem",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 3,
-        }}
-      >
-        <div style={{ fontSize: rem(24), letterSpacing: 0.5, color: "#e8e8e2" }}>
+      <div className="flex-none bg-[#08080a] border-t border-white/[.14] pt-0 px-4 pb-2 flex flex-col items-center gap-[3px]">
+        <div className="text-[1.2rem] tracking-wide text-[#e8e8e2]">
           {previewLabel ?? t("subject.choosePlaceholder")}
         </div>
 
         <SubjectDetailDivider />
 
-        <div style={{ fontSize: rem(16), color: "#efc84f", textAlign: "center" }}>
+        <div className="text-[0.8rem] text-[#efc84f] text-center">
           {description ? `${description} ${t("subject.startingArtifactCount", { count: 1 })}` : t("subject.noDetail")}
         </div>
-        <div style={{ fontSize: rem(16), color: "#e88fc0", textAlign: "center" }}>
+        <div className="text-[0.8rem] text-[#e88fc0] text-center">
           {trait || t("subject.noDetail")}
         </div>
 
@@ -221,22 +187,7 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
           type="button"
           disabled={!previewName}
           onClick={() => previewName && setSubject(previewName)}
-          style={{
-            width: "70%",
-            maxWidth: 220,
-            height: rem(24),
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: isApplied ? "#3a2420" : "#2d2d31",
-            border: "none",
-            borderRadius: 4,
-            color: isApplied ? "#f0603c" : "#fff",
-            fontSize: rem(18),
-            lineHeight: 1,
-            cursor: "pointer",
-            opacity: previewName ? 1 : 0.4,
-          }}
+          className={`w-[70%] max-w-[220px] h-[1.2rem] flex items-center justify-center border-none rounded leading-none cursor-pointer text-[0.9rem] ${isApplied ? "bg-[#3a2420] text-[#f0603c]" : "bg-[#2d2d31] text-white"} ${previewName ? "opacity-100" : "opacity-40"}`}
         >
           {isApplied ? t("subject.applying") : t("subject.select")}
         </button>

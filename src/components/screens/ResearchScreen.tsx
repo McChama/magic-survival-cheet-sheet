@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { rem } from "../../config/rem";
 import { RESEARCH, RESEARCH_BY_ID } from "../../data/research";
 import { STAT_DEFINITIONS } from "../../data/statDefinitions";
 import { useRunStore } from "../../store/useRunStore";
@@ -23,12 +22,12 @@ function describeNode(id: string, t: TFunction, gt: (key: string, fallback: stri
 /** `image` is always a truthy URL (never optional), so a missing sprite 404s instead of failing a truthiness check — fall back to "?" on load error. */
 function NodeIcon({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
-  if (failed) return <span style={{ color: "rgba(232,232,226,.3)", fontSize: rem(14) }}>?</span>;
+  if (failed) return <span className="text-[#e8e8e2]/30 text-[0.7rem]">?</span>;
   return (
     <img
       src={src}
       alt={alt}
-      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      className="w-full h-full object-cover"
       onError={() => setFailed(true)}
     />
   );
@@ -37,13 +36,8 @@ function NodeIcon({ src, alt }: { src: string; alt: string }) {
 function Pip({ filled, size, tone }: { filled: boolean; size: number; tone: string }) {
   return (
     <span
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        border: "1px solid rgba(232,232,226,.45)",
-        background: filled ? tone : "transparent",
-      }}
+      className="rounded-full border border-[#e8e8e2]/45"
+      style={{ width: size, height: size, background: filled ? tone : "transparent" }}
     />
   );
 }
@@ -64,35 +58,35 @@ export function ResearchScreen({ onClose }: ResearchScreenProps) {
   const canRevert = selectedLevel > 0;
 
   return (
-    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", background: "#050506" }}>
-      <div style={{ padding: "16px 18px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between", flex: "none" }}>
-        <div style={{ fontFamily: "MagicSurvival,ui-sans-serif,system-ui,sans-serif", fontSize: rem(34), color: "#fff", lineHeight: 1 }}>{run.meta.researchPoints}</div>
-        <button type="button" onClick={onClose} aria-label={t("research.closeAria")} style={{ width: 44, height: 44, background: "none", border: "none", color: "#fff", fontSize: rem(30), cursor: "pointer", fontFamily: "MagicSurvival,ui-sans-serif,system-ui,sans-serif" }}>
+    <div className="absolute inset-0 flex flex-col bg-[#050506]">
+      <div className="pt-4 px-[18px] flex items-start justify-between flex-none">
+        <div className="font-magic text-[1.7rem] text-white leading-none">{run.meta.researchPoints}</div>
+        <button type="button" onClick={onClose} aria-label={t("research.closeAria")} className="w-11 h-11 bg-transparent border-none text-white text-[1.5rem] cursor-pointer font-magic">
           ✕
         </button>
       </div>
 
       {!selected ? (
-        <div style={{ flex: "none" }}>
-          <div style={{ textAlign: "center", fontFamily: "MagicSurvival,ui-sans-serif,system-ui,sans-serif", fontSize: rem(40), marginTop: -6, color: "#e8e8e2" }}>{t("research.heading")}</div>
-          <div style={{ textAlign: "center", fontSize: rem(19), color: "rgba(232,232,226,.85)", marginTop: 14 }}>{t("research.selectResearch")}</div>
+        <div className="flex-none">
+          <div className="text-center font-magic text-[2rem] -mt-1.5 text-[#e8e8e2]">{t("research.heading")}</div>
+          <div className="text-center text-[0.95rem] text-[#e8e8e2]/85 mt-3.5">{t("research.selectResearch")}</div>
         </div>
       ) : (
-        <div style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-          <div style={{ fontFamily: "MagicSurvival,ui-sans-serif,system-ui,sans-serif", fontSize: rem(40), marginTop: -6, color: "#e8e8e2" }}>{gt(`research.${selected.id}.name`, selected.name)}</div>
-          <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+        <div className="flex-none flex flex-col items-center gap-2.5">
+          <div className="font-magic text-[2rem] -mt-1.5 text-[#e8e8e2]">{gt(`research.${selected.id}.name`, selected.name)}</div>
+          <div className="flex gap-[5px] items-center">
             {Array.from({ length: selected.maxLevel }, (_, i) => (
               <Pip key={i} filled={i < selectedLevel} size={7} tone="#efe18a" />
             ))}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", padding: "4px 20px 0" }}>
-            <div style={{ fontSize: rem(18), color: "#9be08a", textAlign: "center" }}>{describeNode(selected.id, t, gt)}</div>
+          <div className="flex flex-col gap-1.5 items-center pt-1 px-5">
+            <div className="text-[0.9rem] text-[#9be08a] text-center">{describeNode(selected.id, t, gt)}</div>
           </div>
         </div>
       )}
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "24px 14px 26px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "26px 6px" }}>
+      <div className="flex-1 overflow-y-auto py-6 px-3.5 pb-[26px]">
+        <div className="grid grid-cols-5 gap-x-1.5 gap-y-[26px]">
           {RESEARCH.map((node) => {
             const level = run.researchLevels[node.id] ?? 0;
             const isSelected = selectedId === node.id;
@@ -104,24 +98,15 @@ export function ResearchScreen({ onClose }: ResearchScreenProps) {
                 type="button"
                 onClick={() => setSelectedId(node.id)}
                 title={nodeLabel}
-                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontFamily: "inherit" }}
+                className="bg-transparent border-none p-0 cursor-pointer flex flex-col items-center gap-2 font-[inherit]"
               >
                 <span
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: "50%",
-                    border: `1px solid ${ring}`,
-                    overflow: "hidden",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "#0d0d10",
-                  }}
+                  className="w-[34px] h-[34px] rounded-full overflow-hidden flex items-center justify-center bg-[#0d0d10]"
+                  style={{ border: `1px solid ${ring}` }}
                 >
                   <NodeIcon src={node.image} alt={nodeLabel} />
                 </span>
-                <span style={{ display: "flex", gap: 3, alignItems: "center" }}>
+                <span className="flex gap-[3px] items-center">
                   {Array.from({ length: node.maxLevel }, (_, i) => (
                     <Pip key={i} filled={i < level} size={6} tone={isSelected ? "#fff" : "#efe18a"} />
                   ))}
@@ -132,22 +117,22 @@ export function ResearchScreen({ onClose }: ResearchScreenProps) {
         </div>
       </div>
 
-      <div style={{ flex: "none", padding: "6px 18px 26px", textAlign: "center" }}>
+      <div className="flex-none py-1.5 px-[18px] pb-[26px] text-center">
         {!selected ? (
           <button
             type="button"
             onClick={() => addResearchPoints(5)}
-            style={{ background: "none", border: "none", color: "#4ee06a", fontFamily: "MagicSurvival,ui-sans-serif,system-ui,sans-serif", fontSize: rem(32), cursor: "pointer" }}
+            className="bg-transparent border-none text-[#4ee06a] font-magic text-[1.6rem] cursor-pointer"
           >
             {t("research.purchasePoints")}
           </button>
         ) : (
-          <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center" }}>
+          <div className="flex justify-around items-center">
             <button
               type="button"
               disabled={!canResearch}
               onClick={() => researchUp(selected.id)}
-              style={{ background: "none", border: "none", fontFamily: "MagicSurvival,ui-sans-serif,system-ui,sans-serif", fontSize: rem(34), cursor: "pointer", color: canResearch ? "#e8e8e2" : "rgba(232,232,226,.3)" }}
+              className={`bg-transparent border-none font-magic text-[1.7rem] cursor-pointer ${canResearch ? "text-[#e8e8e2]" : "text-[#e8e8e2]/30"}`}
             >
               {t("research.researchBtn")}
             </button>
@@ -155,7 +140,7 @@ export function ResearchScreen({ onClose }: ResearchScreenProps) {
               type="button"
               disabled={!canRevert}
               onClick={() => researchDown(selected.id)}
-              style={{ background: "none", border: "none", fontFamily: "MagicSurvival,ui-sans-serif,system-ui,sans-serif", fontSize: rem(34), cursor: "pointer", color: canRevert ? "#e8e8e2" : "rgba(232,232,226,.3)" }}
+              className={`bg-transparent border-none font-magic text-[1.7rem] cursor-pointer ${canRevert ? "text-[#e8e8e2]" : "text-[#e8e8e2]/30"}`}
             >
               {t("research.revertBtn")}
             </button>

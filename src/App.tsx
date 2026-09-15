@@ -11,21 +11,7 @@ function App() {
   const [screen, setScreen] = useState<Screen>("home");
 
   return (
-    <div
-      style={{
-        width: "100%",
-        maxWidth: 430,
-        height: "100dvh",
-        minHeight: 640,
-        margin: "0 auto",
-        position: "relative",
-        overflow: "hidden",
-        background: "#08080a",
-        fontFamily: "MagicSurvival,ui-sans-serif,system-ui,sans-serif",
-        color: "#e8e8e2",
-        boxShadow: "0 0 0 1px rgba(255,255,255,.08)",
-      }}
-    >
+    <div className="w-full max-w-[430px] h-[100dvh] min-h-[640px] mx-auto relative overflow-hidden bg-[#08080a] font-magic text-[#e8e8e2] shadow-[0_0_0_1px_rgba(255,255,255,.08)]">
       {screen === "home" && (
         <HomeScreen
           onStartGame={() => setScreen("class")}

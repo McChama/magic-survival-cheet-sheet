@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { uiImage } from "../../config/assets";
-import { rem } from "../../config/rem";
 
 interface HomeScreenProps {
   onStartGame: () => void;
@@ -31,7 +30,7 @@ function TitleBackdrop() {
     <img
       src={TITLE_FRAMES[frameIndex]}
       alt=""
-      style={{ position: "absolute", top: 0, left: 0, right: 0, width: "100%", height: "78%", objectFit: "cover", objectPosition: "top" }}
+      className="absolute top-0 left-0 right-0 w-full h-[78%] object-cover object-top"
     />
   );
 }
@@ -39,31 +38,31 @@ function TitleBackdrop() {
 export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch }: HomeScreenProps) {
   const { t } = useTranslation("translation");
   return (
-    <div style={{ position: "absolute", inset: 0, background: "#000", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div className="absolute inset-0 bg-black overflow-hidden flex flex-col">
       <TitleBackdrop />
 
-      <div style={{ position: "relative", padding: "14px 14px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }} />
+      <div className="relative pt-3.5 px-3.5 flex items-start justify-between" />
 
-      <div style={{ position: "relative", display: "flex", justifyContent: "flex-end", padding: "6px 8px 0" }}>
-        <img src={uiImage("title/TitleText.png")} alt={t("home.titleAlt")} style={{ maxWidth: 110, height: "auto" }} />
+      <div className="relative flex justify-end pt-1.5 px-2">
+        <img src={uiImage("title/TitleText.png")} alt={t("home.titleAlt")} className="max-w-[110px] h-auto" />
       </div>
 
-      <div style={{ position: "relative", marginTop: "auto", padding: "0 24px 26px 40px" }}>
+      <div className="relative mt-auto pt-0 pr-6 pb-[26px] pl-10">
         <button
           type="button"
           onClick={onStartGame}
-          style={{ background: "none", border: "none", padding: 0, color: "#fff", fontFamily: "MagicSurvival,ui-sans-serif,system-ui,sans-serif", fontSize: rem(64), fontWeight: 400, cursor: "pointer", letterSpacing: 0.5 }}
+          className="bg-transparent border-none p-0 text-white font-magic text-[3.2rem] font-normal cursor-pointer tracking-wide"
         >
           {t("home.startGame")}
         </button>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", alignItems: "center", justifyItems: "center", marginTop: 28, padding: "0 4px" }}>
+        <div className="grid grid-cols-5 items-center justify-items-center mt-7 px-1">
           <div />
-          <button type="button" onClick={onOpenResearch} aria-label={t("home.researchAria")} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-            <img src={uiImage("icons/UI_Icon002.png")} alt="" style={{ width: 50, height: 50, objectFit: "contain" }} />
+          <button type="button" onClick={onOpenResearch} aria-label={t("home.researchAria")} className="bg-transparent border-none p-0 cursor-pointer">
+            <img src={uiImage("icons/UI_Icon002.png")} alt="" className="w-[50px] h-[50px] object-contain" />
           </button>
           <div />
-          <button type="button" onClick={onOpenCharacter} aria-label={t("home.subjectAria")} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-            <img src={uiImage("icons/UI_Icon003.png")} alt="" style={{ width: 50, height: 50, objectFit: "contain" }} />
+          <button type="button" onClick={onOpenCharacter} aria-label={t("home.subjectAria")} className="bg-transparent border-none p-0 cursor-pointer">
+            <img src={uiImage("icons/UI_Icon003.png")} alt="" className="w-[50px] h-[50px] object-contain" />
           </button>
           <div />
         </div>

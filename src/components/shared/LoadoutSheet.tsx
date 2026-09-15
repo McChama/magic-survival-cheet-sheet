@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { rem } from "../../config/rem";
 import { MAGIC_CATEGORY } from "../../data/magicCategories";
 import { optionsByKind, type QuickAddKind } from "../../data/quickAddOptions";
 import { STAT_DEFINITIONS } from "../../data/statDefinitions";
@@ -86,12 +85,12 @@ const MAGIC_CATEGORIES: CategoryChip[] = [
  */
 function OptionIcon({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
-  if (failed) return <span style={{ color: "rgba(232,232,226,.3)", fontSize: 24 }}>?</span>;
+  if (failed) return <span className="text-[#e8e8e2]/30 text-2xl">?</span>;
   return (
     <img
       src={src}
       alt={alt}
-      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      className="w-full h-full object-cover"
       onError={() => setFailed(true)}
     />
   );
@@ -156,35 +155,20 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
   }
 
   return (
-    <div
-      className="animate-ms-slide-up"
-      style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: "74%",
-        background: "#111115",
-        borderTop: "1px solid rgba(255,255,255,.12)",
-        borderRadius: "14px 14px 0 0",
-        display: "flex",
-        flexDirection: "column",
-        boxShadow: "0 -12px 40px rgba(0,0,0,.6)",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 8px", flex: "none" }}>
-        <div style={{ fontSize: rem(17), fontWeight: 700, letterSpacing: 0.5, color: "#e8e8e2" }}>{t(TITLE_KEY_BY_KIND[kind])}</div>
+    <div className="animate-ms-slide-up absolute left-0 right-0 bottom-0 h-[74%] bg-[#111115] border-t border-white/10 rounded-t-[14px] flex flex-col shadow-[0_-12px_40px_rgba(0,0,0,.6)]">
+      <div className="flex items-center justify-between py-3.5 px-4 pb-2 flex-none">
+        <div className="text-[0.85rem] font-bold tracking-wide text-[#e8e8e2]">{t(TITLE_KEY_BY_KIND[kind])}</div>
         <button
           type="button"
           onClick={onClose}
           aria-label={t("loadoutSheet.closeAria")}
-          style={{ background: "none", border: "none", color: "rgba(232,232,226,.6)", fontSize: rem(22), cursor: "pointer", fontFamily: "MagicSurvival,ui-sans-serif,system-ui,sans-serif" }}
+          className="bg-transparent border-none text-[#e8e8e2]/60 text-[1.1rem] cursor-pointer font-magic"
         >
           ✕
         </button>
       </div>
 
-      <div style={{ padding: "0 16px 10px", flex: "none", display: "flex", gap: 8, overflowX: "auto" }}>
+      <div className="px-4 pb-2.5 flex-none flex gap-2 overflow-x-auto">
         {categories.map((c) => {
           const active = c.key === activeKey;
           return (
@@ -192,14 +176,8 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
               key={c.key}
               type="button"
               onClick={() => setActiveKey(c.key)}
+              className="flex-none py-[7px] px-3.5 rounded-full font-[inherit] text-[0.8rem] font-bold cursor-pointer"
               style={{
-                flex: "none",
-                padding: "7px 14px",
-                borderRadius: 999,
-                fontFamily: "inherit",
-                fontSize: rem(16),
-                fontWeight: 700,
-                cursor: "pointer",
                 background: active ? c.color : "transparent",
                 color: active ? "#fff" : "rgba(232,232,226,.6)",
                 border: `1px solid ${active ? c.color : "rgba(255,255,255,.14)"}`,
@@ -211,8 +189,8 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
         })}
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "6px 16px 26px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
+      <div className="flex-1 overflow-y-auto py-1.5 px-4 pb-[26px]">
+        <div className="grid grid-cols-5 gap-2.5">
           {filtered.map((option) => {
             const owned = isOwned(option);
             const ring = owned ? (option.item ? RARITY_RING[option.item.rarity] : RING_BY_KIND[kind]) : "rgba(255,255,255,.10)";
@@ -223,36 +201,25 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
                 type="button"
                 title={label}
                 onClick={() => toggle(option)}
-                style={{
-                  position: "relative",
-                  aspectRatio: "1",
-                  borderRadius: 7,
-                  background: "#0d0d10",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 0,
-                  border: `1px solid ${ring}`,
-                  overflow: "hidden",
-                }}
+                className="relative aspect-square rounded-[7px] bg-[#0d0d10] cursor-pointer flex items-center justify-center p-0 overflow-hidden"
+                style={{ border: `1px solid ${ring}` }}
               >
-                {option.image ? <OptionIcon src={option.image} alt={label} /> : <span style={{ color: "rgba(232,232,226,.3)", fontSize: 24 }}>?</span>}
+                {option.image ? <OptionIcon src={option.image} alt={label} /> : <span className="text-[#e8e8e2]/30 text-2xl">?</span>}
                 {owned && (
-                  <span style={{ position: "absolute", top: 3, right: 4, width: 7, height: 7, borderRadius: "50%", background: "#63d16b" }} />
+                  <span className="absolute top-[3px] right-1 w-[7px] h-[7px] rounded-full bg-[#63d16b]" />
                 )}
               </button>
             );
           })}
         </div>
         {filtered.length === 0 && (
-          <div style={{ padding: "30px 0", textAlign: "center", fontSize: rem(16), color: "rgba(232,232,226,.35)" }}>{t("loadoutSheet.noResults")}</div>
+          <div className="py-[30px] text-center text-[0.8rem] text-[#e8e8e2]/35">{t("loadoutSheet.noResults")}</div>
         )}
       </div>
 
-      <div style={{ flex: "none", padding: "10px 16px 18px", borderTop: "1px solid rgba(255,255,255,.07)", background: "#0d0d10" }}>
-        <div style={{ fontSize: rem(17), fontWeight: 700, color: "#efc84f" }}>{lastPicked ? gt(optionNameKey(lastPicked), lastPicked.label) : t("loadoutSheet.selectItemPlaceholder")}</div>
-        <div style={{ fontSize: rem(15), color: "rgba(232,232,226,.55)" }}>
+      <div className="flex-none py-2.5 px-4 pb-[18px] border-t border-white/[.07] bg-[#0d0d10]">
+        <div className="text-[0.85rem] font-bold text-[#efc84f]">{lastPicked ? gt(optionNameKey(lastPicked), lastPicked.label) : t("loadoutSheet.selectItemPlaceholder")}</div>
+        <div className="text-[0.75rem] text-[#e8e8e2]/55">
           {lastPicked ? describeOption(lastPicked, t, gt) : t("loadoutSheet.tapHint")}
         </div>
       </div>

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { rem } from "../../config/rem";
 import { LoadoutSheet } from "../shared/LoadoutSheet";
 import type { QuickAddKind } from "../../data/quickAddOptions";
 
@@ -17,55 +16,29 @@ export function LoadoutFab() {
   return (
     <>
       {fabOpen && (
-        <div style={{ position: "absolute", inset: 0, background: "rgba(4,4,5,.68)" }} onClick={() => setFabOpen(false)} />
+        <div className="absolute inset-0 bg-[#040405]/[.68]" onClick={() => setFabOpen(false)} />
       )}
 
-      <div style={{ position: "absolute", right: 20, bottom: 26, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
+      <div className="absolute right-5 bottom-[26px] flex flex-col items-end gap-3">
         {fabOpen && (
-          <div className="animate-ms-pop" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
+          <div className="animate-ms-pop flex flex-col items-end gap-3">
             <button
               type="button"
               onClick={() => openSheet("artifact")}
-              style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0 }}
+              className="flex items-center gap-3 bg-transparent border-none cursor-pointer font-[inherit] p-0"
             >
-              <span style={{ fontSize: rem(22), color: "#e8e8e2", fontWeight: 700, textShadow: "0 1px 4px #000" }}>{t("loadoutFab.artifact")}</span>
-              <span
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: "50%",
-                  background: "#1b1b1f",
-                  border: "1px solid rgba(239,200,79,.5)",
-                  color: "#efc84f",
-                  fontSize: 24,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              <span className="text-[1.1rem] text-[#e8e8e2] font-bold [text-shadow:0_1px_4px_#000]">{t("loadoutFab.artifact")}</span>
+              <span className="w-[46px] h-[46px] rounded-full bg-[#1b1b1f] border border-[#efc84f]/50 text-[#efc84f] text-2xl flex items-center justify-center">
                 ✦
               </span>
             </button>
             <button
               type="button"
               onClick={() => openSheet("magic")}
-              style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0 }}
+              className="flex items-center gap-3 bg-transparent border-none cursor-pointer font-[inherit] p-0"
             >
-              <span style={{ fontSize: rem(22), color: "#e8e8e2", fontWeight: 700, textShadow: "0 1px 4px #000" }}>{t("loadoutFab.magic")}</span>
-              <span
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: "50%",
-                  background: "#1b1b1f",
-                  border: "1px solid rgba(95,227,196,.5)",
-                  color: "#5fe3c4",
-                  fontSize: 24,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              <span className="text-[1.1rem] text-[#e8e8e2] font-bold [text-shadow:0_1px_4px_#000]">{t("loadoutFab.magic")}</span>
+              <span className="w-[46px] h-[46px] rounded-full bg-[#1b1b1f] border border-[#5fe3c4]/50 text-[#5fe3c4] text-2xl flex items-center justify-center">
                 ✧
               </span>
             </button>
@@ -75,23 +48,7 @@ export function LoadoutFab() {
           type="button"
           aria-label={fabOpen ? t("loadoutFab.closeAria") : t("loadoutFab.openAria")}
           onClick={() => setFabOpen((v) => !v)}
-          style={{
-            width: 60,
-            height: 60,
-            borderRadius: "50%",
-            border: "none",
-            background: "#f07f2a",
-            color: "#fff",
-            fontSize: 32,
-            lineHeight: 1,
-            cursor: "pointer",
-            boxShadow: "0 6px 18px rgba(0,0,0,.55)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "transform .18s ease",
-            transform: fabOpen ? "rotate(45deg)" : "none",
-          }}
+          className={`w-[60px] h-[60px] rounded-full border-none bg-[#f07f2a] text-white text-[32px] leading-none cursor-pointer shadow-[0_6px_18px_rgba(0,0,0,.55)] flex items-center justify-center transition-transform duration-[180ms] ease-in-out ${fabOpen ? "rotate-45" : "rotate-0"}`}
         >
           +
         </button>

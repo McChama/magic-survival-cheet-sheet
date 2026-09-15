@@ -37,20 +37,20 @@ export function StatGridRow({ statKey, run }: StatGridRowProps) {
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0.5px 0" }}>
+    <div className="flex items-center gap-2 py-[0.5px]">
       {iconFailed ? (
-        <span style={{ color, fontSize: 11, width: 11, textAlign: "center", display: "block" }}>{glyph}</span>
+        <span className="w-[11px] text-center block text-[11px]" style={{ color }}>{glyph}</span>
       ) : (
         <img
           src={icon}
           alt=""
           width={11}
           height={11}
-          style={{ objectFit: "contain", flexShrink: 0, display: "block" }}
+          className="object-contain shrink-0 block"
           onError={() => setIconFailed(true)}
         />
       )}
-      <span style={{ flex: 1, color: "#e8e8e2" }}>{label}</span>
+      <span className="flex-1 text-[#e8e8e2]">{label}</span>
       {editing ? (
         <input
           autoFocus
@@ -63,20 +63,13 @@ export function StatGridRow({ statKey, run }: StatGridRowProps) {
             if (e.key === "Enter") commitDraft();
             if (e.key === "Escape") setEditing(false);
           }}
-          style={{ width: 56, textAlign: "right", background: "#1a1a1f", border: "1px solid #efc84f", borderRadius: 4, color: "#efc84f", outline: "none" }}
+          className="w-14 text-right bg-[#1a1a1f] border border-[#efc84f] rounded text-[#efc84f] outline-none"
         />
       ) : (
         <button
           type="button"
           onClick={startEditing}
-          style={{
-            background: "none",
-            border: "none",
-            padding: 0,
-            cursor: "pointer",
-            fontWeight: isBuffed ? 700 : 400,
-            color: isBuffed ? "#63d16b" : "rgba(232,232,226,.45)",
-          }}
+          className={`bg-transparent border-none p-0 cursor-pointer ${isBuffed ? "font-bold text-[#63d16b]" : "font-normal text-[#e8e8e2]/45"}`}
         >
           {value}
           {def.unit === "%" ? "%" : ""}
