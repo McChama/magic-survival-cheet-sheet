@@ -1,6 +1,13 @@
 /**
  * Asset resolution for sprites and the game font.
  *
+ * Every helper below resolves into `public/assets/...` — the organized, renamed,
+ * size-optimized set that actually ships. Never reference `raw-assets/` (the gitignored,
+ * unorganized ~300MB APK sprite dump — source material for `scripts/organize-assets.mjs`,
+ * not something the app itself ever loads) from component code. If the asset you need isn't
+ * under `public/assets/` yet, it needs organizing first — see
+ * reference/game-data-sources.md's "Sprites: real APK extraction" section.
+ *
  * These sprites and the MagicSurvival.ttf font are extracted game assets originally
  * sourced from the public repo TomkoSK/magic-survival-builder, not original artwork
  * from this project — the underlying art belongs to the Magic Survival developers.

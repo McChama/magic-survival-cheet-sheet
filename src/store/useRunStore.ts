@@ -2,8 +2,12 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { emptyStatBlock } from "../data/statDefinitions";
 import { FUSION_BY_ID, MAX_FUSION_TARGETS, fusionRefId } from "../data/fusions";
-import { RESEARCH_BY_ID } from "../data/research";
+import { RESEARCH_BY_ID, TOTAL_RESEARCH_POINTS } from "../data/research";
+import { SUBJECTS } from "../data/classes";
 import type { CurrentRunState, StatKey } from "../types/game";
+
+/** Default Test Subject for a fresh run — always the first entry ("Wizard"), never unset. */
+const DEFAULT_SUBJECT = SUBJECTS[0];
 
 /** Fusions-of-fusions like Deus Ex Machina must be dropped if their prerequisite fusion is deselected. */
 function dropOrphanedDependents(fusionTargets: string[]): string[] {
@@ -15,7 +19,7 @@ function dropOrphanedDependents(fusionTargets: string[]): string[] {
 
 function freshRun(): CurrentRunState {
   return {
-    meta: { characterClass: null, subject: null, researchPoints: 0, startedAt: null },
+    meta: { characterClass: null, classLevels: {}, subject: DEFAULT_SUBJECT, researchPoints: TOTAL_RESEARCH_POINTS, startedAt: null },
     fusionTargets: [],
     stats: emptyStatBlock(),
     equipped: [],
@@ -30,7 +34,9 @@ function freshRun(): CurrentRunState {
 interface RunStore {
   run: CurrentRunState;
   setCharacterClass: (value: string | null) => void;
-  setSubject: (value: string | null) => void;
+  /** Sets `className`'s own level (1-5), independent of every other class's level. */
+  setClassLevel: (className: string, level: number) => void;
+  setSubject: (value: string) => void;
   setResearchPoints: (value: number) => void;
   toggleFusionTarget: (fusionId: string) => void;
   setStat: (key: StatKey, value: number) => void;
@@ -42,7 +48,6 @@ interface RunStore {
   unequipItem: (itemId: string) => void;
   toggleAcquiredMagic: (magicId: string) => void;
   clearLoadout: () => void;
-  addResearchPoints: (amount: number) => void;
   researchUp: (id: string) => void;
   researchDown: (id: string) => void;
   startNewRun: () => void;
@@ -55,6 +60,17 @@ export const useRunStore = create<RunStore>()(
 
       setCharacterClass: (value) =>
         set((state) => ({ run: { ...state.run, meta: { ...state.run.meta, characterClass: value } } })),
+
+      setClassLevel: (className, level) =>
+        set((state) => ({
+          run: {
+            ...state.run,
+            meta: {
+              ...state.run.meta,
+              classLevels: { ...state.run.meta.classLevels, [className]: Math.min(5, Math.max(1, Math.round(level))) },
+            },
+          },
+        })),
 
       setSubject: (value) =>
         set((state) => ({ run: { ...state.run, meta: { ...state.run.meta, subject: value } } })),
@@ -123,11 +139,6 @@ export const useRunStore = create<RunStore>()(
 
       clearLoadout: () => set((state) => ({ run: { ...state.run, equipped: [], acquiredMagicIds: [] } })),
 
-      addResearchPoints: (amount) =>
-        set((state) => ({
-          run: { ...state.run, meta: { ...state.run.meta, researchPoints: Math.max(0, state.run.meta.researchPoints + amount) } },
-        })),
-
       researchUp: (id) =>
         set((state) => {
           const def = RESEARCH_BY_ID[id];
@@ -164,14 +175,30 @@ export const useRunStore = create<RunStore>()(
       // missing e.g. researchLevels and crash screens that read it.
       merge: (persisted, current) => {
         const persistedRun = (persisted as Partial<RunStore> | undefined)?.run;
+        const researchLevels = { ...current.run.researchLevels, ...persistedRun?.researchLevels };
         return {
           ...current,
           run: {
             ...current.run,
             ...persistedRun,
-            meta: { ...current.run.meta, ...persistedRun?.meta },
+            // `|| DEFAULT_SUBJECT` (not `??`) also backfills a run persisted before subject
+            // became non-nullable, whose stored value is `null` rather than merely absent.
+            meta: {
+              ...current.run.meta,
+              ...persistedRun?.meta,
+              subject: persistedRun?.meta?.subject || DEFAULT_SUBJECT,
+              // Backfills both a run persisted before per-class levels existed (no `classLevels`
+              // key at all) and one persisted with the older single `characterClassLevel` number
+              // (harmless leftover key, just no longer read anywhere).
+              classLevels: { ...current.run.meta.classLevels, ...persistedRun?.meta?.classLevels },
+              // Always re-derived from the tree total minus points already spent, rather than
+              // trusted from the save file — points are no longer earned via a purchase button
+              // (see ResearchScreen), so a save from before that removal could otherwise be
+              // stuck at whatever low balance it last had.
+              researchPoints: TOTAL_RESEARCH_POINTS - Object.values(researchLevels).reduce((sum, l) => sum + l, 0),
+            },
             stats: { ...current.run.stats, ...persistedRun?.stats },
-            researchLevels: { ...current.run.researchLevels, ...persistedRun?.researchLevels },
+            researchLevels,
           },
         };
       },

@@ -5,6 +5,9 @@ import { SUBJECTS } from "../../data/classes";
 import { useRunStore } from "../../store/useRunStore";
 import { slug as subjectSlug } from "../../i18n/gameData";
 import { useGameDataText } from "../../i18n/useGameDataText";
+import { ScreenHeader } from "../shared/ScreenHeader";
+import { ScreenTitle } from "../shared/ScreenTitle";
+import { ScreenFooter } from "../shared/ScreenFooter";
 
 interface SubjectSelectScreenProps {
   onClose: () => void;
@@ -108,12 +111,14 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
   const setSubject = useRunStore((s) => s.setSubject);
   const clearLoadout = useRunStore((s) => s.clearLoadout);
 
-  const [previewName, setPreviewName] = useState<string | null>(appliedSubject);
-  const isApplied = previewName !== null && previewName === appliedSubject;
-  const previewId = previewName ? subjectSlug(previewName) : null;
-  const previewLabel = previewName && previewId ? gt(`subject.${previewId}.name`, previewName) : null;
-  const description = previewId ? gt(`subject.${previewId}.description`, "") : "";
-  const trait = previewId ? gt(`subject.${previewId}.trait`, "") : "";
+  // A subject is always selected (defaults to SUBJECTS[0] "Wizard" in the store), so the
+  // preview always has something to show — no "nothing chosen yet" state to handle here.
+  const [previewName, setPreviewName] = useState<string>(appliedSubject);
+  const isApplied = previewName === appliedSubject;
+  const previewId = subjectSlug(previewName);
+  const previewLabel = gt(`subject.${previewId}.name`, previewName);
+  const description = gt(`subject.${previewId}.description`, "");
+  const trait = gt(`subject.${previewId}.trait`, "");
 
   function handleClose() {
     clearLoadout();
@@ -132,20 +137,14 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
         backgroundPosition: "center",
       }}
     >
-      <div className="relative pt-3.5 px-3.5 pb-1.5 flex items-start justify-between gap-2.5 flex-none">
-        <div className="w-[46px]" />
-        <div className="text-[1.7rem] text-[#16333a] tracking-wide [text-shadow:0_1px_0_rgba(255,255,255,.25)] mt-1">
-          {t("subject.title")}
-        </div>
-        <button
-          type="button"
-          onClick={handleClose}
-          aria-label={t("subject.closeAria")}
-          className="flex-none w-[1.15rem] h-[1.15rem] bg-transparent border-none p-0 cursor-pointer"
-        >
-          <img src={uiImage("icons/UI_Exit_Black.png")} alt="" className="w-full h-full object-contain" />
-        </button>
-      </div>
+      <ScreenHeader
+        onAction={handleClose}
+        actionAria={t("subject.closeAria")}
+        actionIcon={<img src={uiImage("icons/UI_Exit_Black.png")} alt="" className="w-[18px] h-[18px] object-contain" />}
+      />
+      <ScreenTitle style={{ color: "#16333a", textShadow: "0 1px 0 rgba(255,255,255,.25)" }}>
+        {t("subject.title")}
+      </ScreenTitle>
 
       <div className="flex-1 min-h-0 flex flex-col justify-evenly py-2.5 px-2.5 pb-1.5 gap-2.5">
         {SUBJECT_ROWS.map((row, rowIndex) => (
@@ -159,7 +158,7 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
                   key={name}
                   type="button"
                   onClick={() => setPreviewName(name)}
-                  className="relative bg-transparent border-none p-0 cursor-pointer flex flex-col items-center justify-end h-full flex-initial min-w-0 font-[inherit]"
+                  className={`relative bg-transparent border-none p-0 cursor-pointer flex flex-col items-center justify-end h-full flex-initial min-w-0 font-[inherit] origin-bottom transition-transform duration-150 ${isSelected ? "scale-110" : "scale-100"}`}
                 >
                   <SubjectSilhouette name={name} label={label} selected={isSelected} applied={isAppliedSubject} />
                 </button>
@@ -169,10 +168,8 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
         ))}
       </div>
 
-      <div className="flex-none bg-[#08080a] border-t border-white/[.14] pt-0 px-4 pb-2 flex flex-col items-center gap-[3px]">
-        <div className="text-[1.2rem] tracking-wide text-[#e8e8e2]">
-          {previewLabel ?? t("subject.choosePlaceholder")}
-        </div>
+      <ScreenFooter className="bg-[#08080a] border-t border-white/[.14] gap-[3px]">
+        <div className="text-[1.2rem] tracking-wide text-[#e8e8e2]">{previewLabel}</div>
 
         <SubjectDetailDivider />
 
@@ -185,13 +182,12 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
 
         <button
           type="button"
-          disabled={!previewName}
-          onClick={() => previewName && setSubject(previewName)}
-          className={`w-[70%] max-w-[220px] h-[1.2rem] flex items-center justify-center border-none rounded leading-none cursor-pointer text-[0.9rem] ${isApplied ? "bg-[#3a2420] text-[#f0603c]" : "bg-[#2d2d31] text-white"} ${previewName ? "opacity-100" : "opacity-40"}`}
+          onClick={() => setSubject(previewName)}
+          className={`w-[70%] max-w-[220px] h-[1.2rem] flex items-center justify-center border-none rounded leading-none cursor-pointer text-[0.9rem] ${isApplied ? "bg-[#3a2420] text-[#f0603c]" : "bg-[#2d2d31] text-white"}`}
         >
           {isApplied ? t("subject.applying") : t("subject.select")}
         </button>
-      </div>
+      </ScreenFooter>
     </div>
   );
 }

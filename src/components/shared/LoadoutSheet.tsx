@@ -6,6 +6,7 @@ import { optionsByKind, type QuickAddKind } from "../../data/quickAddOptions";
 import { STAT_DEFINITIONS } from "../../data/statDefinitions";
 import { useRunStore } from "../../store/useRunStore";
 import { useGameDataText } from "../../i18n/useGameDataText";
+import { ScreenHeader } from "./ScreenHeader";
 import type { RecommenderOption } from "../../engine/scoring";
 import type { Rarity, StatKey } from "../../types/game";
 
@@ -157,17 +158,11 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
 
   return (
     <div className="animate-ms-slide-up absolute left-0 right-0 bottom-0 h-[74%] bg-[#111115] border-t border-white/10 rounded-t-[14px] flex flex-col shadow-[0_-12px_40px_rgba(0,0,0,.6)]">
-      <div className="flex items-center justify-between py-3.5 px-4 pb-2 flex-none">
-        <div className="text-[0.85rem] font-bold tracking-wide text-[#e8e8e2]">{t(TITLE_KEY_BY_KIND[kind])}</div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t("loadoutSheet.closeAria")}
-          className="bg-transparent border-none text-[#e8e8e2]/60 text-[1.1rem] cursor-pointer font-magic"
-        >
-          ✕
-        </button>
-      </div>
+      <ScreenHeader
+        leftSlot={<div className="text-[0.85rem] tracking-wide text-[#e8e8e2] pl-2">{t(TITLE_KEY_BY_KIND[kind])}</div>}
+        onAction={onClose}
+        actionAria={t("loadoutSheet.closeAria")}
+      />
 
       <div className="px-4 pb-2.5 flex-none flex gap-2 overflow-x-auto">
         {categories.map((c) => {
@@ -177,7 +172,7 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
               key={c.key}
               type="button"
               onClick={() => setActiveKey(c.key)}
-              className="flex-none py-[7px] px-3.5 rounded-full font-[inherit] text-[0.8rem] font-bold cursor-pointer"
+              className="flex-none py-[7px] px-3.5 rounded-full font-[inherit] text-[0.8rem] cursor-pointer"
               style={{
                 background: active ? c.color : "transparent",
                 color: active ? "#fff" : "rgba(232,232,226,.6)",
@@ -194,6 +189,7 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
         <div className="grid grid-cols-5 gap-2.5">
           {filtered.map((option) => {
             const owned = isOwned(option);
+            const isSelected = lastPicked?.id === option.id;
             const ring = owned ? (option.item ? RARITY_RING[option.item.rarity] : RING_BY_KIND[kind]) : "rgba(255,255,255,.10)";
             const label = gt(optionNameKey(option), option.label);
             return (
@@ -202,8 +198,8 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
                 type="button"
                 title={label}
                 onClick={() => toggle(option)}
-                className="relative aspect-square rounded-[7px] bg-[#0d0d10] cursor-pointer flex items-center justify-center p-0 overflow-hidden"
-                style={{ border: `1px solid ${ring}` }}
+                className={`relative aspect-square rounded-[7px] bg-[#0d0d10] cursor-pointer flex items-center justify-center p-0 overflow-hidden transition-transform duration-150 ${isSelected ? "scale-110" : "scale-100"}`}
+                style={{ border: isSelected ? "2px solid #fff" : `1px solid ${ring}` }}
               >
                 {option.image ? <OptionIcon src={option.image} alt={label} /> : <span className="text-[#e8e8e2]/30 text-2xl">?</span>}
                 {owned && (
@@ -219,7 +215,7 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
       </div>
 
       <div className="flex-none py-2.5 px-4 pb-[18px] border-t border-white/[.07] bg-[#0d0d10]">
-        <div className="text-[0.85rem] font-bold text-[#efc84f]">{lastPicked ? gt(optionNameKey(lastPicked), lastPicked.label) : t("loadoutSheet.selectItemPlaceholder")}</div>
+        <div className="text-[0.85rem] text-[#efc84f]">{lastPicked ? gt(optionNameKey(lastPicked), lastPicked.label) : t("loadoutSheet.selectItemPlaceholder")}</div>
         <div className="text-[0.75rem] text-[#e8e8e2]/55">
           {lastPicked ? describeOption(lastPicked, t, gt) : t("loadoutSheet.tapHint")}
         </div>

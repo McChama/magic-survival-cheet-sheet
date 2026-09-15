@@ -37,16 +37,21 @@ function extractIdSourcePairs(fileText) {
 
 const artifactsText = readFile("src/data/artifacts.ts");
 const passivesText = readFile("src/data/passives.ts");
+const researchText = readFile("src/data/research.ts");
 const artifactPairs = extractIdSourcePairs(artifactsText);
 const passivePairs = extractIdSourcePairs(passivesText);
+const researchPairs = extractIdSourcePairs(researchText);
 
 console.log(`Artifacts: ${artifactPairs.length} entries with a source id comment`);
 console.log(`Passives: ${passivePairs.length} entries with a source id comment`);
+console.log(`Research: ${researchPairs.length} entries with a source id comment`);
 
 const artifactDir = path.join(ROOT, "public/assets/artifactImages");
 const passiveDir = path.join(ROOT, "public/assets/passiveImages");
+const researchDir = path.join(ROOT, "public/assets/researchImages");
 fs.rmSync(artifactDir, { recursive: true, force: true });
 fs.rmSync(passiveDir, { recursive: true, force: true });
+fs.rmSync(researchDir, { recursive: true, force: true });
 
 const missingArtifacts = [];
 for (const { id, sourceId } of artifactPairs) {
@@ -60,10 +65,22 @@ for (const { id, sourceId } of passivePairs) {
   if (!ok) missingPassives.push({ id, sourceId });
 }
 
+// Research nodes: same Ability{sourceId}Portrait.png convention as artifacts/passives,
+// just in their own id range (261-282, matching eng_Dictionary_Ability.txt's "연구" rows —
+// see reference/game-data-sources.md and the header comment in research.ts). Confirmed by
+// eye, not just by file existing, before this section was added.
+const missingResearch = [];
+for (const { id, sourceId } of researchPairs) {
+  const ok = copyIfExists(`Ability${sourceId}Portrait.png`, researchDir, `${id}.png`);
+  if (!ok) missingResearch.push({ id, sourceId });
+}
+
 console.log(`Artifacts copied: ${artifactPairs.length - missingArtifacts.length}/${artifactPairs.length}`);
 console.log(`Passives copied: ${passivePairs.length - missingPassives.length}/${passivePairs.length}`);
+console.log(`Research copied: ${researchPairs.length - missingResearch.length}/${researchPairs.length}`);
 if (missingArtifacts.length) console.log("Missing artifact sprites:", missingArtifacts);
 if (missingPassives.length) console.log("Missing passive sprites:", missingPassives);
+if (missingResearch.length) console.log("Missing research sprites:", missingResearch);
 
 // ---- Fusions: appId -> RAW array position (1-indexed) ----
 const fusionsText = readFile("src/data/fusions.ts");
@@ -170,6 +187,7 @@ const UI_ICONS = [
   "UI_Icon010", "UI_Icon010_Gold",
   "UI_Icon011", "UI_Icon011_Gold",
   "UI_Exit", "UI_Exit_Black",
+  "UI_AreaMove_L", "UI_AreaMove_R",
 ];
 for (const name of UI_ICONS) copyIfExists(`${name}.png`, path.join(uiDir, "icons"), `${name}.png`);
 
