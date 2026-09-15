@@ -69,7 +69,7 @@ export function StatGridRow({ statKey, run }: StatGridRowProps) {
         <button
           type="button"
           onClick={startEditing}
-          className={`bg-transparent border-none p-0 cursor-pointer ${isBuffed ? "font-bold text-[#63d16b]" : "font-normal text-[#e8e8e2]/45"}`}
+          className={`bg-transparent border-none p-0 cursor-pointer font-normal ${isBuffed ? "text-[#63d16b]" : "text-[#e8e8e2]/45"}`}
         >
           {value}
           {def.unit === "%" ? "%" : ""}

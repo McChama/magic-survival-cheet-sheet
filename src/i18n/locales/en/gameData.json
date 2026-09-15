@@ -1,76 +1,196 @@
 {
   "class": {
     "wizard": {
-      "name": "Wizard"
+      "name": "Wizard",
+      "tooltip": "〔Magic Bolt Lv +1〕 @ Every time the character gains [5] levels, Magic Bolt Damage 〈3%〉 is 『added』",
+      "level1": "Magic Bolt Lv +1",
+      "level2": "Decrease Magic Bolt Cooldown by 20%",
+      "level3": "Increase the number of Magic Bolts by 1",
+      "level4": "Increase Magic Bolt Damage by 20% (All Classes)"
     },
     "astronomer": {
-      "name": "Astronomer"
+      "name": "Astronomer",
+      "tooltip": "〔Satellite Lv +1〕 @ Every time the character gains [5] levels, Satellite Damage 〈3%〉 is 『added』",
+      "level1": "Satellite Lv +1",
+      "level2": "Increase Satellite Rotation Speed by 50%",
+      "level3": "Increase the number of Satellites by 35%",
+      "level4": "Increase Satellite Damage by 20% (All Classes)"
     },
     "cryomancer": {
-      "name": "Cryomancer"
+      "name": "Cryomancer",
+      "tooltip": "〔Frost Nova Lv +1〕 @ Every time the character gains [5] levels, Frost Nova Damage 〈3%〉 is 『added』",
+      "level1": "Frost Nova Lv +1",
+      "level2": "Decrease Frost Nova Cooldown by 20%",
+      "level3": "Increase Frost Nova Size by 25%",
+      "level4": "Increase Frost Nova Damage by 20% (All Classes)"
     },
     "shaman": {
-      "name": "Shaman"
+      "name": "Shaman",
+      "tooltip": "〔Thunderstorm Lv +1〕 @ Every time the character gains [5] levels, Thunderstorm Damage 〈3%〉 is 『added』",
+      "level1": "Thunderstorm Lv +1",
+      "level2": "Decrease Thunderstorm Cooldown by 20%",
+      "level3": "Increase the number of Thunderstorms by 35%",
+      "level4": "Increase Thunderstorm Damage by 20% (All Classes)"
     },
     "warlock": {
-      "name": "Warlock"
+      "name": "Warlock",
+      "tooltip": "〔Meteor Lv +1〕 @ Every time the character gains [5] levels, Meteor Damage 〈3%〉 is 『added』",
+      "level1": "Meteor Lv +1",
+      "level2": "Decrease Meteor Cooldown by 20%",
+      "level3": "Increase the number of Meteors by 1",
+      "level4": "Increase Meteor Damage by 20% (All Classes)"
     },
     "arcanist": {
-      "name": "Arcanist"
+      "name": "Arcanist",
+      "tooltip": "〔Magic Bolt Lv +1〕 @ Every time the character gains [1] levels, All Magic Damage 〈1%〉 is {added} @ Reduce Magic Choices by 【1】 and disable [Mana Recovery]",
+      "level1": "Intelligence Lv +1",
+      "level2": "Increase Mana Acquisition by 10%",
+      "level3": "Amplify ATK by 10%",
+      "level4": "Increase ATK by 5% (All Classes)"
     },
     "summoner": {
-      "name": "Summoner"
+      "name": "Summoner",
+      "tooltip": "〔Spirit Lv +1〕 @ Every time the character gains [5] levels, Spirit Damage 〈3%〉 is 『added』",
+      "level1": "Spirit Lv +1",
+      "level2": "Decrease Spirit Cooldown by 20%",
+      "level3": "Increase the number of Spirits by 35%",
+      "level4": "Increase Spirit Damage by 20% (All Classes)"
     },
     "bishop": {
-      "name": "Bishop"
+      "name": "Bishop",
+      "tooltip": "〔Magic Bolt [&] Shield Lv +1〕 @ For each active Shield, ATK is {Amplified} by 〈10%〉 @ 『Shield remains active even when used in Combination Magic.』",
+      "level1": "Guardian Angel Lv +1",
+      "level2": "Decrease Shield Cooldown by 20%",
+      "level3": "Increase the maximum number of Shields by 1",
+      "level4": "Decrease Damage Taken by 5% (All Classes)"
     },
     "occultist": {
-      "name": "Occultist"
+      "name": "Occultist",
+      "tooltip": "〔Arcane Ray Lv +1〕 @ Every time the character gains [5] levels, Arcane Ray Damage 〈3%〉 is 『added』",
+      "level1": "Arcane Ray Lv +1",
+      "level2": "Decrease Arcane Ray Cooldown by 20%",
+      "level3": "Increase the number of Arcane Rays by 35%",
+      "level4": "Increase Arcane Ray Damage by 20% (All Classes)"
     },
     "druid": {
-      "name": "Druid"
+      "name": "Druid",
+      "tooltip": "〔Cyclone Lv +1〕 @ Every time the character gains [5] levels, Cyclone Damage 〈3%〉 is 『added』",
+      "level1": "Cyclone Lv +1",
+      "level2": "Decrease Cyclone Cooldown by 20%",
+      "level3": "Increase the number of Cyclones by 1",
+      "level4": "Increase Cyclone Damage by 20% (All Classes)"
     },
     "pyromancer": {
-      "name": "Pyromancer"
+      "name": "Pyromancer",
+      "tooltip": "〔Fireball Lv +1〕 @ Every time the character gains [5] levels, Fireball Damage 〈3%〉 is 『added』",
+      "level1": "Fireball Lv +1",
+      "level2": "Decrease Fireball Cooldown by 20%",
+      "level3": "Increase the number of Fireballs by 1",
+      "level4": "Increase Fireball Damage by 20% (All Classes)"
     },
     "sorcerer": {
-      "name": "Sorcerer"
+      "name": "Sorcerer",
+      "tooltip": "〔Electric Shock Lv +1〕 @ Every time the character gains [5] levels, Electric Shock Damage 〈3%〉 is 『added』",
+      "level1": "Electric Shock Lv +1",
+      "level2": "Decrease Electric Shock Cooldown by 20%",
+      "level3": "Increase the number of Electric Shocks by 35%",
+      "level4": "Increase Electric Shock Damage by 20% (All Classes)"
     },
     "alchemist": {
-      "name": "Alchemist"
+      "name": "Alchemist",
+      "tooltip": "〔Energy Bolt Lv +1〕 @ Every time the character gains [5] levels, Energy Bolt Damage 〈3%〉 is 『added』",
+      "level1": "Energy Bolt Lv +1",
+      "level2": "Decrease Energy Bolt Cooldown by 20%",
+      "level3": "Increase the number of Energy Bolts by 35%",
+      "level4": "Increase Energy Bolt Damage by 20% (All Classes)"
     },
     "scholar": {
-      "name": "Scholar"
+      "name": "Scholar",
+      "tooltip": "〔Start Level +3〕 @ Every time the character gains [1] level, All Magic Damage increases by 〈1%〉",
+      "level1": "Doctor Lv +1",
+      "level2": "Retrieve 〈30%〉 more Mana when retrieving Mana.",
+      "level3": "〈50%〉 increased chance to have [4] Magic choices.",
+      "level4": "Increase Mana Acquisition by 5% (All Classes)"
     },
     "witch": {
-      "name": "Witch"
+      "name": "Witch",
+      "tooltip": "〔Lava Zone Lv +1〕 @ Every time the character gains [5] levels, Lava Zone Damage 〈3%〉 is 『added』",
+      "level1": "Lava Zone Lv +1",
+      "level2": "Decrease Lava Zone Cooldown by 20%",
+      "level3": "Increase the number of Lava Zones by 1",
+      "level4": "Increase Lava Zone Damage by 20% (All Classes)"
     },
     "electromancer": {
-      "name": "Electromancer"
+      "name": "Electromancer",
+      "tooltip": "〔Electric Zone Lv +1〕 @ Every time the character gains [5] levels, Electric Zone Damage 〈3%〉 is 『added』",
+      "level1": "Electric Zone Lv +1",
+      "level2": "Decrease Electric Zone Damage Interval by 20%",
+      "level3": "Increase Electric Zone Size by 25%",
+      "level4": "Increase Electric Zone Damage by 20% (All Classes)"
     },
     "arbiter": {
-      "name": "Arbiter"
+      "name": "Arbiter",
+      "tooltip": "〔Tsunami Lv +1〕 @ Every time the character gains [5] levels, Tsunami Damage 〈3%〉 is 『added』",
+      "level1": "Tsunami Lv +1",
+      "level2": "Decrease Tsunami Cooldown by 20%",
+      "level3": "Increase the number of Tsunamis by 35%",
+      "level4": "Increase Tsunami Damage by 20% (All Classes)"
     },
     "archmage": {
-      "name": "Archmage"
+      "name": "Archmage",
+      "tooltip": "〔Start Level +3〕 @ [Combination Magic] Damage increases by 〈50%〉",
+      "level1": "Magic Circle Lv +1",
+      "level2": "Silent Casting Lv +1",
+      "level3": "Increase [Combination Magic] Damage by 〈50%〉.",
+      "level4": "Decrease All Magic Cooldown by 3% (All Classes)"
     },
     "archaeologist": {
-      "name": "Archaeologist"
+      "name": "Archaeologist",
+      "tooltip": "〔Magic Bolt Lv +1〕 @ A [Treasure Chest] is created for every [20] Character levels.",
+      "level1": "Explorer Lv +1",
+      "level2": "Increase Mana Acquisition by 10%",
+      "level3": "[Treasure Chests] are created 〈10%〉 more frequently.",
+      "level4": "Increase Item Pickup Range by 20% (All Classes)"
     },
     "magician": {
-      "name": "Magician"
+      "name": "Magician",
+      "tooltip": "〔Magic Bolt Lv +1〕 @ 〈20%〉 increased chance for a Magic Bolt to turn into a [random projectile].",
+      "level1": "Magic Bolt Lv +1",
+      "level2": "〈5%〉 increased chance for a Magic Bolt to be transformed into a [random projectile].",
+      "level3": "〈5%〉 increased chance for a Magic Bolt to be transformed into a [random projectile].",
+      "level4": "Increase Critical Strike Rate by 3% (All Classes)"
     },
     "mage": {
-      "name": "Mage"
+      "name": "Mage",
+      "tooltip": "〔Blizzard Lv +1〕 @ Every time the character gains [5] levels, Blizzard Damage 〈3%〉 is 『added』",
+      "level1": "Blizzard Lv +1",
+      "level2": "Decrease Blizzard Cooldown by 20%",
+      "level3": "Increase the number of Blizzards by 35%",
+      "level4": "Increase Blizzard Damage by 20% (All Classes)"
     },
     "battlemage": {
-      "name": "Battlemage"
+      "name": "Battlemage",
+      "tooltip": "〔Flash Shock Lv +1〕 @ Every time the character gains [5] levels, Flash Shock Damage 〈3%〉 is 『added』",
+      "level1": "Flash Shock Lv +1",
+      "level2": "Decrease Flash Shock Cooldown by 20%",
+      "level3": "Increase Flash Shock Size by 25%",
+      "level4": "Increase Flash Shock Damage by 20% (All Classes)"
     },
     "warlord": {
-      "name": "Warlord"
+      "name": "Warlord",
+      "tooltip": "〔Incineration Lv +1〕 @ Every time the character gains [5] levels, Incineration Damage 〈3%〉 is 『added』",
+      "level1": "Incineration Lv +1",
+      "level2": "Decrease Incineration Cooldown by 20%",
+      "level3": "Increase Incineration Size by 25%",
+      "level4": "Increase Incineration Damage by 20% (All Classes)"
     },
     "blackmage": {
-      "name": "Black Mage"
+      "name": "Black Mage",
+      "tooltip": "〔Magic Bolt Lv +1〕 @ 〈10%〉 chance to cause an [Explosion] when killing an enemy. @ 『(Explosion Damage is 75% of the enemy's Max HP)』",
+      "level1": "Arcane Effuse Lv +1",
+      "level2": "〈5%〉 increased chance for enemies to [explode] when killed",
+      "level3": "〈5%〉 increased chance for enemies to [explode] when killed",
+      "level4": "Increase All Magic Size by 3% (All Classes)"
     }
   },
   "subject": {
@@ -1084,70 +1204,92 @@
   },
   "research": {
     "intelligence": {
-      "name": "Intelligence"
+      "name": "Intelligence",
+      "description": "Increase ATK by □%"
     },
     "vitality": {
-      "name": "Vitality"
+      "name": "Vitality",
+      "description": "Increase Max HP by □% @ Increase Life Orb HP Recovery by □%"
     },
     "manarefining": {
-      "name": "Mana Refining"
+      "name": "Mana Refining",
+      "description": "Increase Mana Acquisition by □%"
     },
     "fastcasting": {
-      "name": "Fast Casting"
+      "name": "Fast Casting",
+      "description": "Decrease All Magic Cooldown by □%"
     },
     "snipe": {
-      "name": "Snipe"
+      "name": "Snipe",
+      "description": "Increase Critical Strike Rate by □%"
     },
     "resistance": {
-      "name": "Resistance"
+      "name": "Resistance",
+      "description": "Decrease Damage Taken by □%"
     },
     "agility": {
-      "name": "Agility"
+      "name": "Agility",
+      "description": "Increase Evasion by □%"
     },
     "haste": {
-      "name": "Haste"
+      "name": "Haste",
+      "description": "Increase Movement Speed by □%"
     },
     "regeneration": {
-      "name": "Regeneration"
+      "name": "Regeneration",
+      "description": "Increase HP Regen per sec. by □%"
     },
     "explorer": {
-      "name": "Explorer"
+      "name": "Explorer",
+      "description": "Increase Item Pickup Range by □%"
     },
     "arcaneeffuse": {
-      "name": "Arcane Effuse"
+      "name": "Arcane Effuse",
+      "description": "Increase All Magic Size by □%"
     },
     "concentration": {
-      "name": "Concentration"
+      "name": "Concentration",
+      "description": "Increase All Magic Duration by □%"
     },
     "recycle": {
-      "name": "Recycle"
+      "name": "Recycle",
+      "description": "Retrieve 〈□%〉 more Mana when retrieving Mana."
     },
     "analysis": {
-      "name": "Analysis"
+      "name": "Analysis",
+      "description": "〈□%〉 increased chance to have [4] Magic choices."
     },
     "blessing": {
-      "name": "Blessing"
+      "name": "Blessing",
+      "description": "Increase the duration of [Rune] effects by 〈□%〉."
     },
     "awakening": {
-      "name": "Awakening"
+      "name": "Awakening",
+      "description": "[Leveling up] causes an [Explosion] around the character and restores 〈□%〉 [HP]."
     },
     "growth": {
-      "name": "Growth"
+      "name": "Growth",
+      "description": "Every [20] levels increase [ATK] and [Max HP] by 〈□%〉."
     },
     "support": {
-      "name": "Support"
+      "name": "Support",
+      "description": "Increase the amount of [Mana Orbs] created around the character when the game starts by 〈□%〉."
     },
     "luck": {
-      "name": "Luck"
+      "name": "Luck",
+      "description": "Field items are created 〈□%〉 more often."
     },
     "loot": {
-      "name": "Loot"
+      "name": "Loot",
+      "description": "[Treasure Chests] are created 〈□%〉 more frequently."
     },
     "haggle": {
-      "name": "Haggle"
+      "name": "Bargain",
+      "description": "All products sold by [Merchants] are 〈□%〉 {Discounted}"
     },
     "startingFunds": {
-      "name": "Starting Funds"
+      "name": "Starting Funds",
+      "description": "Gain 〈□〉 《Mana Orb Currency》 at the start of the game."
     }
   },
   "stat": {

@@ -4,8 +4,8 @@
  * displayed at (see src/components for the on-screen sizes — everything here maxes out
  * around 90px on screen, sometimes smaller), instead of shipping them at their original
  * extraction resolution (some are 500px+). Cuts public/assets/{magicImages,artifactImages,
- * passiveImages,classImages,baseMagicImages} from ~31MB to a few MB without a visible
- * quality loss at the sizes they're actually rendered.
+ * passiveImages,classImages,baseMagicImages,researchImages} from ~31MB to a few MB without
+ * a visible quality loss at the sizes they're actually rendered.
  *
  * Does NOT touch subjectAnim/ or subjectImages/ (already small, and subjectAnim/archaeologist
  * has a manually-replaced frame — never regenerate that directory) or uiImages/ (full-bleed
@@ -28,6 +28,7 @@ const TARGETS = [
   { dir: "passiveImages", maxSize: 160 },
   { dir: "classImages", maxSize: 100 },
   { dir: "baseMagicImages", maxSize: 120 },
+  { dir: "researchImages", maxSize: 160 },
 ];
 
 async function optimizeDir(dir, maxSize) {

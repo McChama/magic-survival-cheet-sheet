@@ -1,5 +1,5 @@
 import { ARTIFACTS } from "../data/artifacts";
-import { CLASSES, SUBJECTS, SUBJECT_DETAILS } from "../data/classes";
+import { CLASSES, CLASS_BONUSES, SUBJECTS, SUBJECT_DETAILS } from "../data/classes";
 import { BASE_MAGICS } from "../data/magics";
 import { PASSIVES } from "../data/passives";
 import { RESEARCH } from "../data/research";
@@ -31,7 +31,15 @@ function set(resource: GameDataResource, section: string, id: string, field: str
 export function buildEnglishGameDataResource(): GameDataResource {
   const resource: GameDataResource = {};
 
-  for (const name of CLASSES) set(resource, "class", slug(name), "name", name);
+  for (const name of CLASSES) {
+    const id = slug(name);
+    set(resource, "class", id, "name", name);
+    const bonus = CLASS_BONUSES[name];
+    if (bonus) {
+      set(resource, "class", id, "tooltip", bonus.tooltip.text);
+      bonus.levels.forEach((line, i) => set(resource, "class", id, `level${i + 1}`, line.text));
+    }
+  }
 
   for (const name of SUBJECTS) {
     const id = slug(name);
@@ -48,7 +56,10 @@ export function buildEnglishGameDataResource(): GameDataResource {
 
   for (const magic of BASE_MAGICS) set(resource, "magic", magic.id, "name", magic.name);
 
-  for (const node of RESEARCH) set(resource, "research", node.id, "name", node.name);
+  for (const node of RESEARCH) {
+    set(resource, "research", node.id, "name", node.name);
+    set(resource, "research", node.id, "description", node.descriptionTemplate);
+  }
 
   for (const key of Object.keys(STAT_DEFINITIONS) as StatKey[]) {
     set(resource, "stat", key, "label", STAT_DEFINITIONS[key].label);

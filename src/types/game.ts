@@ -108,6 +108,23 @@ export interface ResearchDefinition {
   /** Stat value at each level, index 0 = level 0 (unresearched). */
   valuesByLevel: number[];
   statKey: StatKey | null;
+  /**
+   * The node's real in-game description, verbatim from the dictionary (keeps 〔〕〈〉《》[]{}『』
+   * marker formatting — render through `<GameText>`). A run of one or more `□` characters
+   * marks where the current level's numeric value is substituted in (see `describeResearchNode`
+   * in `data/research.ts`) — e.g. "Increase ATK by □%" at level 3 (value 15) becomes
+   * "Increase ATK by 15%". Regeneration's `□□□` is a 3-digit slot for its decimal values
+   * (0.05/0.1/0.15/0.2) — kept as one placeholder run, not three independent digits.
+   */
+  descriptionTemplate: string;
+  /** Hex color straight from the dictionary's `<color=#RRGGBB>` tag for this line. */
+  descriptionColor: string;
+  /**
+   * A second per-level value series, for the one node (Vitality) whose real description
+   * has two `□` placeholders for two independently-scaling effects. Index-aligned with
+   * `valuesByLevel`. Absent for every other node (single `□` run, or none).
+   */
+  secondaryValuesByLevel?: number[];
 }
 
 export interface EquippedStack {
@@ -117,7 +134,43 @@ export interface EquippedStack {
 
 export interface RunMeta {
   characterClass: string | null;
-  subject: string | null;
+  /**
+   * Per-class progression level, **1-5** each (source:
+   * https://magic-survival-rpg.fandom.com/wiki/Classes, confirmed 2026-09-15 — "Each class
+   * requires 45 Research Material to unlock (3 for Lv2, 6 for Lv3, 12 for Lv4, 24 for
+   * Lv5)... Once acquired, the Lv5 bonus is permanent"). Keyed by class name (see `CLASSES`
+   * in `src/data/classes.ts`), same shape as `researchLevels` below — missing entry means
+   * Level 1, the free baseline every class starts at (just "selected", zero of its 4 bonuses
+   * active yet; `CLASS_BONUSES` only has 4 entries, its Lv2-Lv5 bonuses, precisely because
+   * Lv1 grants nothing on its own). Use `getClassLevel(classLevels, className)` rather than
+   * indexing this directly, so the Level-1 default is applied consistently.
+   *
+   * **Why per-class, not a single number**: this is meta-progression like `researchLevels`,
+   * not per-run state — every class you've ever leveled keeps its level independently of
+   * which `characterClass` is currently equipped for a run (`ClassSelectScreen.tsx` lets you
+   * page through any class and adjust its own level without touching the others').
+   *
+   * **The stats-engine hook point this exists for**: a class's Lv2-Lv4 bonuses only apply
+   * while that class is the equipped `characterClass` for the run, but its `levels[3]`
+   * (Lv5) bonus is explicitly tagged "(All Classes)" in the game's own text — i.e. it's a
+   * *permanent global* bonus that stacks in from every class you've leveled to 5, not just
+   * the one you're currently playing. A future stats aggregator therefore needs two passes,
+   * not one: (a) `CLASS_BONUSES[characterClass].levels[0 .. getClassLevel(classLevels,
+   * characterClass) - 2]` for the equipped class's active-this-run bonuses, and (b)
+   * `CLASS_BONUSES[c].levels[3]` for every class `c` in `CLASSES` where
+   * `getClassLevel(classLevels, c) >= 5`, regardless of `characterClass`. No such aggregator
+   * exists yet (stats are still manually mirrored from the player's own screen), but this
+   * distinction is why `classLevels` must stay a per-class record and not collapse back to a
+   * single number.
+   */
+  classLevels: Record<string, number>;
+  /**
+   * The selected Test Subject's name (see `SUBJECTS` in `src/data/classes.ts`). Always set —
+   * never null — defaulting to `SUBJECTS[0]` ("Wizard") so a subject (and its `SubjectDetail`
+   * trait/starting-artifact bonus, via `getSubjectDetail`) is always available for the stats
+   * engine to fold in, without every consumer having to null-check it first.
+   */
+  subject: string;
   researchPoints: number;
   startedAt: number | null;
 }
