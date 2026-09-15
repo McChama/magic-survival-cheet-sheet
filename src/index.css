@@ -2,13 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Official Magic Survival font, extracted from TomkoSK/magic-survival-builder, served
-   locally from public/assets/ — see src/config/assets.ts for provenance/licensing notes. */
-@font-face {
-  font-family: "MagicSurvival";
-  src: url("/assets/magicSurvival.ttf") format("truetype");
-  font-display: swap;
-}
+/* The @font-face for "MagicSurvival" is registered at runtime in src/main.tsx instead of
+   here as a static url(): a plain CSS url("/assets/...") is root-absolute and breaks once
+   the app is served from a sub-path (GitHub Pages project sites) — see src/config/assets.ts
+   for why IMAGE_BASE_URL/FONT_URL resolve against Vite's `base` instead of a hardcoded root. */
 
 :root {
   color-scheme: dark;
