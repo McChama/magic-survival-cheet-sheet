@@ -116,6 +116,28 @@ fusionAppIds.forEach((appId, index) => {
 });
 console.log(`Ultimate sprites copied: ${ultimateCount}`);
 
+// ---- Synergies: id -> Synergy{id}Portrait.png (the dictionary's own numeric id IS the
+// position — ids are 1-46 and 70-86, an intentional content gap, not renumbered) ----
+const synergiesText = readFile("src/data/synergies.ts");
+const synergyRawMatch = synergiesText.match(/const RAW: [^=]+=\s*\[([\s\S]*?)\n\];/);
+const synergyIdRe = /"id":(\d+)/g;
+const synergyIds = [];
+let sm;
+while ((sm = synergyIdRe.exec(synergyRawMatch[1]))) synergyIds.push(Number(sm[1]));
+
+console.log(`Synergies: ${synergyIds.length} entries found in RAW array`);
+
+const synergyDir = path.join(ROOT, "public/assets/synergyImages");
+fs.rmSync(synergyDir, { recursive: true, force: true });
+
+const missingSynergies = [];
+for (const id of synergyIds) {
+  const ok = copyIfExists(`Synergy${id}Portrait.png`, synergyDir, `${id}.png`);
+  if (!ok) missingSynergies.push(id);
+}
+console.log(`Synergy sprites copied: ${synergyIds.length - missingSynergies.length}/${synergyIds.length}`);
+if (missingSynergies.length) console.log("Missing synergy sprites:", missingSynergies);
+
 // ---- Bonus: Class portraits, 1:1 by array position ----
 const classesText = readFile("src/data/classes.ts");
 const classesMatch = classesText.match(/export const CLASSES: string\[\] = \[([\s\S]*?)\];/);
@@ -227,10 +249,32 @@ for (const [src, statKey] of Object.entries(STATUS_ICON_TO_STAT_KEY)) {
 }
 console.log(`UI chrome assets copied: ${UI_ICONS.length} icons, 1 divider, ${UI_TITLE.length} title images, ${UI_UNIT.length} unit sprites, ${statusIconCount}/${Object.keys(STATUS_ICON_TO_STAT_KEY).length} status icons`);
 
+// Card border strips for Owned Magic/Artifact tiles (user-identified, 2026-09-20): A = top
+// and bottom edges, B = left and right edges (rotated 90deg in CSS). White-on-transparent masks.
+for (const name of ["AreaProgressBarA", "AreaProgressBarB", "ArtifactBackGroundA"]) {
+  copyIfExists(`${name}.png`, path.join(uiDir, "frames"), `${name}.png`);
+}
+
+// Synergy completion-ring frames — curated list (no id convention, same pattern as UI_ICONS
+// above). `SynergyNum{n}` = a segmented ring with exactly n gaps (n = how many items that
+// Synergy requires, matching the dictionary's own "count" column — NOT how many the player
+// currently owns); `SynergyNumS{n}` is a thinner-stroke variant of the same shape, used for
+// the completed state. Both are pure white-on-transparent masks (tinted at runtime via the
+// same mask-image technique as MaskedMagicIcon), confirmed via pixel analysis this session.
+const SYNERGY_RINGS = [
+  "SynergyNum1", "SynergyNum2", "SynergyNum3", "SynergyNum4", "SynergyNum5",
+  "SynergyNumS1", "SynergyNumS2", "SynergyNumS3", "SynergyNumS4", "SynergyNumS5",
+];
+let synergyRingCount = 0;
+for (const name of SYNERGY_RINGS) {
+  if (copyIfExists(`${name}.png`, path.join(uiDir, "synergyRings"), `${name}.png`)) synergyRingCount++;
+}
+console.log(`Synergy ring frames copied: ${synergyRingCount}/${SYNERGY_RINGS.length}`);
+
 // ---- Button click sound effects. The game plays one of 7 UI sound variants at random on
-// button press (see reference/game-data-sources.md — IL2Cpp string literals show a shared
-// "SoundData/Sound_UI" + index resource path next to the generic ButtonClickEffect() method
-// used across every screen; not implemented/wired to any button yet, just extracted). ----
+// button press (shared
+// per-button click sound, one of 7 variants,
+// used across every screen). ----
 const AUDIO_SRC_DIR = path.join(ROOT, "raw-assets/Audio");
 const uiAudioDir = path.join(ROOT, "public/assets/audio/ui");
 fs.rmSync(uiAudioDir, { recursive: true, force: true });
