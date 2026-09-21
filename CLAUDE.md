@@ -58,16 +58,182 @@ looks, write it as a `className` ternary (`className={isApplied ? "bg-
 ## Screen layout structure
 
 Every non-Home screen (`SubjectSelectScreen`, `ClassSelectScreen`,
-`ResearchScreen`, `RunDashboardScreen`, and any new full-screen view) is built
-from the same four stacked zones, using the shared components in
+`ResearchScreen`, `RunDashboardScreen`, `OwnedMagicScreen`/`OwnedArtifactScreen`
+(both in `OwnedGridScreen.tsx`), `SynergyScreen`, and any new full-screen view)
+is built from the same four stacked zones, using the shared components in
 `src/components/shared/`:
 
 | Zone | Component | Fixed size | Rule |
 |---|---|---|---|
 | Header | `ScreenHeader` | 36px (`h-9`) — exactly the action button's own height, no padding around it | Optional `leftSlot` (e.g. a point counter) + exactly one top-right action button, a fixed 36×36 icon button (`ScreenHeader` enforces this) regardless of what glyph/icon it shows — a deliberate choice to keep the header compact over a larger (WCAG-minimum) tap target. |
-| Title | `ScreenTitle` | 48px (`h-12`) | One line, `1.75rem`, **regular weight — never bold**, centered. This is the screen's name; per-screen color/text-shadow overrides go through the `style` prop (see Subject Select's dark-on-light title), never a different font size or weight. |
-| Content | plain `flex-1` | fills whatever's left | **No scroll except `RunDashboardScreen`** — every picker screen (Subject Select, Class Select, Research) is sized to always fit without scrolling: chunk the item list into rows, give the row container `flex-1 min-h-0 flex flex-col justify-evenly`, make each row `flex-1 min-h-0 flex justify-center items-center`, and size each item off its row's height (`h-full`/`h-[70%]` + `aspect-*` + `max-w-full`), not a fixed px size — see `SubjectSelectScreen`'s `SUBJECT_ROWS`/`SubjectSilhouette` or `ResearchScreen`'s `RESEARCH_ROWS` for the pattern. This means items shrink on short viewports instead of scrolling; that's the accepted tradeoff. Screen-specific sub-blocks (Research's pips/description, Class Select's level stepper) live here, between the standardized Title and the item grid. |
+| Title | `ScreenTitle` | 48px (`h-12`) | One line, `1.75rem`, **regular weight — never bold**, centered. This is the screen's name; its color is a named `tone` (`default`, `gold`, or `dark` — Subject Select's dark-on-light title with its soft shadow), never a per-screen `style`, font size or weight. |
+| Content | plain `flex-1` | fills whatever's left | **No scroll except the three grid-of-owned-stuff screens** (`OwnedMagicScreen`, `OwnedArtifactScreen`, `SynergyScreen` — all 3 use plain `overflow-y-auto`, since their item counts are genuinely unbounded/large: all 63 fusions, or however many magics/artifacts a long run has picked up). Every *picker* screen (Subject Select, Class Select, Research, and `RunDashboardScreen` itself since its Loadout section was replaced by nav buttons — see below) is sized to always fit without scrolling instead: chunk the item list into rows, give the row container `flex-1 min-h-0 flex flex-col justify-evenly`, make each row `flex-1 min-h-0 flex justify-center items-center`, and size each item off its row's height (`h-full`/`h-[70%]` + `aspect-*` + `max-w-full`), not a fixed px size — see `SubjectSelectScreen`'s `SUBJECT_ROWS`/`SubjectSilhouette` or `ResearchScreen`'s `RESEARCH_ROWS` for the pattern. This means items shrink on short viewports instead of scrolling; that's the accepted tradeoff. Screen-specific sub-blocks (Research's pips/description, Class Select's level stepper) live here, between the standardized Title and the item grid. |
 | Footer | `ScreenFooter` | 96px floor, grows with content | Always a normal flex sibling — **never `position: absolute`**. An absolutely-positioned footer overlaying scrollable content is exactly what caused a real scroll-clipping bug (Subject Select) and is still fine to *look* fine while quietly being one content-length change away from breaking again (this was still true of Class Select's gradient-overlay footer). |
+
+`RunDashboardScreen` no longer has its own "Loadout" section — instead a row
+of 4 nav icons at the bottom (`Owned Magic`/`Owned Artifact`/`Synergy`/`Add`,
+matching the real game's pause-screen icon row, via the shared `NavIconButton`
+— see below) links out to the 3 scrollable screens above plus the existing
+`LoadoutFab` add-flow (now an inline button in that row instead of a floating
+corner FAB — its popup opens *upward* via `bottom-full`, and its dismiss
+backdrop is `fixed inset-0`, not `absolute`, precisely because it's no longer
+sitting in its own full-screen wrapper).
+
+**`OwnedMagicScreen` lists everything the run has** (`engine/ownedMagics.ts`, `getOwnedMagics`): the class icon,
+then one tile per base magic — first the ones the **Class** grants (at their class-derived level), then the ones
+added with the "+" button (`run.acquiredMagicIds`), at the level the player recorded in that sheet
+(`run.magicLevels`; a magic that is both takes the recorded level, since the game's own level already includes the
+class's +1) — then one tile per named special ability (Guardian Angel, Doctor, ...) the class unlocks. A magic's
+modal lights the talent the player recorded (`run.magicTalents`: full opacity in its category color; the others
+stay at 25%). See `getClassMagicProgression` in `data/classes.ts`
+for the derivation (real `CLASS_BONUSES` text only, no invented per-magic max
+level). The class tile opens `ClassBonusDetail` (shared with
+`ClassSelectScreen`'s inline block); a magic tile opens its *own* real detail
+instead, laid out like the game's: the unframed white icon, name, level pips,
+its real one-line description (`MAGIC_DESCRIPTION`, from
+`eng_Dictionary_Ability.txt`), a two-column stat/value table (values in gold),
+and, pinned to the bottom, one row of small talent icons (all talent levels
+together, a wider gap between levels; no text). Each icon is tinted by its
+talent's category color (`TALENT_TYPE_COLOR`, the 9 colors read out of the
+in-game talent-type colors) at the game's 25% opacity; tapping one turns
+it plain white and opens a description panel over the modal with the talent's
+name, "Attribute Unlock Level", and its real colored description lines
+(`data/magicTalents.ts` — e.g. Magic Bolt: Magic Arrow/Fireworks/Fission at
+level 4, Chain Casting/Fire at Will/Doppelganger at level 7). The panel has no
+close button: a tap anywhere outside it closes only the panel (`DetailModal`'s
+`onBackdropClick`; the open talent's state lives in `OwnedMagicScreen`). No
+uppercase section labels anywhere in the modal. **The table's rows are the
+magic's real stat list** (`data/magicStats.ts`, from the game's
+ability detail panel: Magic Bolt shows Damage/Explosion Range/Number/
+Cooldown; others show 1-6 of those plus Size, Duration, Damage Interval,
+Rotation Speed, Amplification Effect; Damage and Number are whole numbers,
+never percentages). **Values are the game's level-1 constants** (`MAGIC_BASE_STATS`, decoded from
+the starting values; Lava Zone's Damage Interval and Energy Bolt's Duration
+couldn't be decoded, so they read "—"). **Damage** = constant x ATK x (1 + Amplify
+ATK%) x (100 + All Magic Damage% + the magic's permanent bonuses) / 100
+(`engine/magicDamage.ts`), verified against a real screenshot (Magic Bolt 630 =
+5 x 100 x 1.2 x 1.05). Permanent bonuses are the traits of unlocked Subjects
+(`run.meta.unlockedSubjects`, toggled by the Unlocked/Locked button in Subject
+Select's footer — every Subject starts **locked except Wizard, which is always
+unlocked and can't be locked**; a locked Subject's description/trait render gray,
+an unlocked one in color; see `isSubjectUnlocked`) and the class's Lv5 bonus. It reads
+"—" until an ATK is entered. **Level-ups, class and artifacts also count**
+(`engine/magicEffects.ts`): the magic's own level-up lines (`data/magicLevelUps.ts`, from
+the game dictionary — entry i is level i+2; Magic Bolt Lv2 = +1 Number), the equipped
+class's gated lines up to its level, and the effect text of equipped artifacts plus
+the Subject in use's starting artifact (the game equips it at start). Damage adds all "+N%" together; Number adds. **The dashboard's global stats feed each magic's rows too**
+(`applyMagicEffects`, formulas read from the game's starting values): Size and Explosion Range =
+base x (100 + All Magic Size + the magic's own Size bonus)/100; Duration likewise with All Magic Duration;
+Cooldown = base x (1 - All Magic Cooldown) x the magic's own reductions — **cooldown reductions multiply, they
+don't add** (the dashboard's All Magic Cooldown is itself `100 - product x 100`, see `computeStartingStats`).
+Checked against real screens: Magic Bolt (Damage, Number, Cooldown, Size with Research Size/Duration/Cooldown) and
+Cyclone (Druid Lv3: Damage 500, Interval 0.3 s, Size x1.1, Duration 2.4 s, Number 2, Cooldown 2.5 s — all match).
+Satellite (Lv1/Lv2/Lv3 = 540/630/720; Astronomer Lv3 = Satellite Lv2: Damage 630, Rotation x1.5, Size x1.1, Number 2; and Lv1 in a Wizard run: 540, x1, x1.1, 1).
+Magic Circle Lv1 (Amplification 25%, Duration 6 s = 5 x 1.2, Cooldown 18 s = 20 x 0.88) and Lv2 (30%, 7 s, 18 s) and Lv3 (35%, 8 s, 18 s) — level-ups start at Lv2 there; Effect adds points, Duration adds to the global %; the 5-level magics repeat their last list entry (Lv5 = 45%, 10 s, predicted). The **Magic Circle toggle** (`run.magicCircleActive`) is a floating bubble (`components/layout/MagicCircleBubble.tsx`, rendered by `App` over the run screens only when the run has the magic — from the class or added with its level): its own icon, white when OFF and yellow with its Amplify ATK % when ON. Tap to switch (the icon pops and a ring spreads out and fades — `bubble-pop`/`bubble-ripple` in `index.css`, skipped for reduced motion); drag it anywhere and it snaps to the nearest **left or right** edge of the app frame on release (keeping the height it was dropped at) (resting place kept in localStorage). While ON its Effect is added to Amplify ATK (`engine/magicCircle.ts`), so every magic's Damage shows the buffed value. While active its Effect acts as a temporary Amplify ATK (Spirit Lv4: 1,170 -> 1,521 at 30%, 1,580 at 35%).
+Spirit Lv1-Lv4 (Damage 780/910/1040/1170, Number 1-4; its Cooldown 0.66/0.67/0.67/0.68 s follows `spiritBaseCooldown`, fitted to the first three and confirmed by the fourth). One screen showed Spirit Lv4 at 1,521 (= 1,170 x 1.3) and the next one 1,170 again: a temporary buff, not modelled.
+The class tooltip that grows with the character level (Wizard: Magic Bolt Damage +3% per 5 levels; Scholar/Arcanist: All Magic Damage +1% per level) **multiplies** the Damage
+(`characterLevelDamageMultiplier`, from the dashboard's Current level): Wizard at level 5 = 1,025 x 1.03 = 1,056. The factor is built in 32-bit floats like the game's (Wizard at level 10: 1,086, not 1,087).
+Summon-type magics (Spirit, Satellite) apply their repeated level-up effect from level 1 (`LEVEL_EFFECTS_FROM_LEVEL_ONE`); the rest start at level 2.
+Still unchecked: two global cooldown sources at once (multiply vs add), Spirit at Lv5+, and the other 17 magics. Verified: Wizard/Wizard Lv3, ATK 100, Amplify 0 -> Magic Bolt Lv2
+Damage 1025 = 5 x 100 x (100+5+100 The Freeshooter)%, Number 2, Cooldown 0.6 s. Still
+not modelled: chosen talents, completed Mastery Synergies, the Research "Growth" bonus (every 20 levels).
+A class special-ability
+tile (Guardian Angel, Doctor, ...) opens the same layout (`DetailHero`): the
+unframed white icon, name, a **star where a magic shows its level pips**, then
+**every effect line the game shows for it in its real color**
+(`PASSIVE_EFFECT_LINES` in `data/passiveEffects.ts`, all 34 passives from
+`eng_Dictionary_Ability.txt` — Guardian Angel has two: the revive line and a
+green "Increase Max HP by 30%"; `passives.ts` alone only keeps one string).
+Every modal is the shared `DetailModal`: square corners, the same rough
+`StripFrame` border as the cards drawn in the modal's own background color.
+The magic-style modals (magic, special) lay themselves out from the top
+(`align="top"`); the short self-contained ones (class, artifact, synergy) stay
+vertically centered in the card (`align="center"`, the default).
+
+Every card in this view is measured off a real in-game screenshot, not this
+project's generic square `GridTile` look: 108x205px portrait cards
+(`aspect-[108/205]`), 6 per row, on a rough-edged dark-gray panel
+(`ArtifactBackGroundA.png`, 10% side margins), all sharing one black
+background — **only the border color varies** (white for the class, blue for
+active magics, red for specials). Borders are the real `AreaProgressBarA`
+(top/bottom) and `AreaProgressBarB` (left/right, rotated) strip sprites, tinted
+via mask-image. Inner offsets (icon, pips) are percentages of the card via
+container-query units (`cqw`/`cqh`). Icons are **masked to flat white**
+(same technique as "Icon tinting" below); the class icon is always plain white
+here regardless of class level, and vertically centered since it has no level
+row. Level shows as one pip per level the magic *really* has
+(`getMagicMaxLevel`: 7 for most, 5 for Shield/Cloaking/Armageddon/Magic
+Circle/Intelligence — the game's own max-level column, not a guess): yellow
+dots (filled = reached, hollow = not), all turning green at max level. A
+special ability shows a star the same size as one pip in that row. Passives
+(green pips per the game) don't join this grid yet.
+
+`OwnedArtifactScreen` follows the same visual rules as Owned Magic: 108x205 portrait cards, 6 per row, the
+artifact's full image centered inside (`object-contain`, never cropped by the frame), one black background with only
+the rough `StripFrame` border varying (by rarity), and a modal with an **unframed** image, no uppercase labels and
+the same text sizes as a magic's modal. 
+`OwnedArtifactScreen`'s detail modal shows an artifact's image, its rarity
+(colored by `RARITY_RING`), its real description (`describeItem`), and its
+real synergy signals (`engine/synergy.ts`'s `detectSynergies` against the
+current run — the same signal source `SynergyScreen` uses), plus prev/next
+arrows to page through every other equipped artifact without closing the
+modal — reuse this shape (image + rarity + description + real synergies) for
+any future single-item detail view rather than inventing a new layout.
+
+**`SynergyScreen` renders the real, extracted in-game "Synergy" mechanic**
+(`data/synergies.ts`, from `eng_Dictionary_Synergy.txt`): 63 named combos, each
+requiring 3-5 specific artifacts/passives equipped **at once** to count as
+complete, with real effect text. This is a genuinely different mechanic from
+**both** of the other two "synergy-shaped" things in this app — don't conflate
+them:
+- `data/fusions.ts` — base-magic + base-magic Fusion recipes, tracked via
+  `run.fusionTargets`. Unrelated axis (magics, not artifacts).
+- `engine/synergy.ts`'s `detectSynergies` — the tiered "boost signal" heuristic
+  (fusion-ingredient relevance, class/subject signature magic match, shared-
+  with-another-equipped-item, already-acquired magic) used by
+  `RecommenderScreen` to rank offers and by `OwnedArtifactScreen`'s detail
+  modal. This one used to render on `SynergyScreen` too, before the real
+  in-game Synergy data was found — it's still real and still useful, just
+  renamed in every user-facing string to "boost signal" (`translation.json`'s
+  `boostSignal.*` keys, `config/tierColors.ts`'s `BOOST_SIGNAL_TIER_COLOR`) so
+  it stops colliding in terminology with the actual Synergy screen.
+
+`SynergyScreen`'s completion ring is `uiImages/synergyRings/SynergyNum{n}.png`
+/`SynergyNumS{n}.png` (n = 3, 4, or 5) — pixel analysis confirmed
+`SynergyNum{n}` is a segmented ring with exactly **n gaps**, i.e. the ring
+shape is **how many items this Synergy requires**, not a per-owned-item
+progress indicator. Both variants are white-on-transparent masks (tinted via
+the same mask-image technique as `MaskedMagicIcon`), `NumS` being a thinner-
+stroke "complete" variant — this app shows **progress on the ring itself**: while incomplete, `Num{n}` has one segment per required item
+(the gaps sit at multiples of 360/n from the top, clockwise) and each segment is gold if that item is owned, dim if
+not — painted with a `conic-gradient` through `MaskedSprite`'s `fill` prop (`SynergyScreen`'s `segmentFill`); with
+nothing owned the whole ring is dim, and once every item is owned it switches to the thin `NumS{n}` in gold
+(`config/tierColors.ts`'s `SYNERGY_RING_DIM`/`SYNERGY_RING_COMPLETE`, a design decision since the raw assets carry
+no color themselves). Segment i is the Synergy's i-th required item (`getOwnedFlags`).
+
+`OwnedArtifactScreen` and `SynergyScreen` both use `DetailModal` (a centered
+card over a `fixed inset-0` backdrop) for their tap-to-inspect view, not
+`ScreenFooter` — a footer preview works when there's one screen-wide subject
+(Subject Select, Research), but a dense 5-column grid of many independently-
+describable items needs its own focused view per tap instead.
+
+### Other shared UI primitives (`src/components/shared/`)
+
+- **`FilterChip`** — the pill in every row of filters/tabs (rarity, drop context, Recommender mode, talent, category):
+  outlined and dim when inactive, filled with its `color` when active (that color is the one inline value).
+- **`PipDot`** — one level dot (Class Select's stepper, Class detail, Research nodes); size and fill are classes.
+
+- **`NavIconButton`** — the one size (50×50 footprint) for every bottom-row
+  icon button (Home's row, the Dashboard's nav row). An optional `background`
+  prop adds a colored circular chip (shrinking the icon inside it) for
+  contexts that want one; omit it for a bare icon-only button like Home's.
+  Reach for this instead of a new one-off `<button><img/></button>` — that's
+  exactly the per-screen sizing drift the rest of this section exists to stop.
+- **`DetailModal`** — the centered detail card described above.
+- **`ClassBonusDetail`** — a class's real tooltip + 4 gated bonus lines,
+  shared by `ClassSelectScreen` (`showHeader={false}`, next to its own
+  interactive level stepper) and `OwnedMagicScreen`'s modal (default
+  `showHeader`, the full self-contained icon+name+pips+bonuses card).
 
 This structure was reverse-engineered from an audit that found four screens
 that had each hand-rolled their own header/title/footer padding and quietly
@@ -79,6 +245,39 @@ keystrokes.
 
 `HomeScreen` is the deliberate exception — it's a splash/menu screen, not a
 picker, and keeps its own bespoke hero layout.
+
+## Dashboard stats are computed, then adjusted
+
+The dashboard no longer starts empty. `engine/runStats.ts` derives the run's starting stats
+(`computeStartingStats`) from the real sources: **Research** bought, the equipped **Class**'s
+Lv2-Lv4 lines up to its level, the stats of the special abilities it grants (Bishop's Guardian Angel = +30% Max HP)
+and Bishop's Amplify ATK (+10% per active Shield, 2 Shields at the start, +1 from its Lv4 line), the **All Classes** bonuses (the Lv5 line of every class at level
+5, and the trait of every unlocked Subject — Wizard always is), and the
+**owned artifacts/passives** (their curated `stats`: the Subject's starting artifact, which also counts as owned everywhere,
+`getEquippedItems`, and can't be removed). Stats start from the game's own pause-screen bases
+(`STAT_BASE`): ATK 100, HP 200, Critical Strike Rate 3%, Crit. Multiplier 200%, Movement Speed 100,
+Life Orb 30 = 15% of max HP; ATK/HP are *scaled* by "Increase X by N%"
+lines (100 x (1 + N%); HP confirmed in game — Vitality Lv6 = 340; ATK not yet), Life Orb = max HP x 0.15 x (1 + its bonus)
+(Vitality Lv6 -> 69, confirmed), the other based stats add points, and every unlisted stat is a
+bonus starting at 0. The dashboard row prints like the game (`STAT_DISPLAY`: "+N%" bonuses, "N%" rates,
+plain numbers, HP as "N/N") and colors it white at its non-zero base, green above it, gray at zero. What the player types on the dashboard is stored as
+`run.statAdjustments` (typed value minus computed value), and every reader takes
+`getRunStats(run)` = computed + adjustments — never read `statAdjustments` directly. Not
+modelled yet: item effects that aren't a plain stat number, and effects that scale with the run (Aegis's Amplify per
+Damage Taken, Pyramid's per Synergy, "per character level" lines). Verified against a real full-stat screenshot (Bishop Lv3, Wizard subject, Archaeologist unlocked, Vitality 3): all 17 stats match.
+
+Subject Select renders a locked Subject faded and gray (`grayscale opacity-40`) so locked and
+unlocked read apart at a glance; Class Select tints the *picked* class plain white and the
+others by their own level, in soft pastel tones — literal `bg-*` classes in
+`config/classLevelColors.ts` (level 3 = #C8E8FF and the picked class = #F0F0D8 were sampled from a real
+screenshot; levels 2/4/5 are derived pastels, still unmeasured), never the saturated bonus-text colors.
+
+## Formula regression check
+
+`npm run check:formulas` (`scripts/check-formulas.mjs`) replays every number a real game screen showed — the dashboard's
+starting stats, Vitality/Explorer/Mana Refining, Magic Bolt, Cyclone, Satellite, Spirit, Magic Circle and its buff. Run it
+after touching `src/engine/` or the stat/research data, and add a case whenever the player confirms a new value. It
+fails (exit 1) if the app stops matching the game.
 
 ## Icon tinting: mask, don't frame
 
@@ -95,6 +294,15 @@ rotate hack (imprecise, doesn't hit an exact hex). This is the `style` rule's
 tint **values** for a given state should still match the project's existing
 tokens (e.g. `#efe18a` for "has progress"/gold, reused verbatim from Research
 into Class Select) rather than each screen inventing its own.
+
+Don't hand-write that mask `style` object per screen: use the shared
+**`MaskedSprite`** (`components/shared/`) — the static mask properties live in
+the `.masked-sprite` / `.masked-sprite-stretch` classes (`index.css`), and only
+the sprite URL and tint (the genuinely dynamic values) go through the
+`--mask-src`/`--tint` custom properties. A *static* tint skips `tint` and takes
+a `bg-*` class instead. The rough card border (`StripFrame`) and the grid's
+gray panel (`GridPanel`) are shared components built on it too, and
+`ScreenTitle` takes a named `tone` ("gold") rather than a `style` color.
 
 Because `mask-image` never fires a load-error event the way `<img src>` does,
 pair it with a hidden probe `<img>` (`className="hidden"`) whose `onError`
