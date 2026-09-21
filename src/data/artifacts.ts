@@ -10,8 +10,20 @@ import type { EquippableItem } from "../types/game";
  * Rarity is the real in-game grade (1-5), mapped onto this app's existing 5-value
  * `Rarity` type in ordinal order (grade 1 -> common ... grade 5 -> special). This
  * ordinal mapping is inferred from the type's own declared order, not independently
- * confirmed against the game's internal grade lettering (C/B/A/P/S in
- * Z_Database.List_ArtifactPossibleGrade_*) — flag if you find it's off.
+ * confirmed against the game's internal grade lettering (letter grades:
+ * C/B/A/P/S) — flag if you find it's off.
+ *
+ * **3 corrected 2026-09-15**: `hydra` (102), `fairy` (179), `ocultismo`/Occult (216)
+ * were tagged `legendary`, disagreeing with real drop data — a community chart of
+ * 600 real relic-chest pulls (300 games) buckets all three under the game's own
+ * "special artifact" pool, and this project's own cross-check of a real playthrough's
+ * chest log (`run_for_discord.json`, see `reference/game-data-sources.md`) found zero
+ * appearances of any of the three across 53 real legendary-chest pulls, but several
+ * appearances in normal-chest/merchant pulls (which never draw from the legendary
+ * pool) — two independent sources agreeing the dictionary's extracted grade was wrong
+ * for just these 3. Re-check against the same evidence before trusting `legendary` vs
+ * `special` for any item this note doesn't cover; the ordinal mapping itself is still
+ * unconfirmed in general, per the paragraph above.
  *
  * `stats` were extracted by matching each artifact's real Spanish effect line
  * against the ~16 known stat-line phrasings (see gen_artifacts.mjs's PATTERNS if you
@@ -20,10 +32,10 @@ import type { EquippableItem } from "../types/game";
  * `specialEffect` instead of being fabricated into a stat number — many artifacts
  * legitimately have both a parsed stat AND a specialEffect line.
  *
- * `image` is only set where a real sprite filename was confirmed against
- * public/assets/artifactImages/ (153 of 182) — items without one have `image:
- * undefined` and will need a sprite sourced before they render (same situation as
- * the new fusions/research entries).
+ * `image` was originally only set where a real sprite filename was confirmed against
+ * public/assets/artifactImages/ (153 of 182 at the time) — since then all 182 have been
+ * confirmed real (checked again 2026-09-16, 0 missing), so every entry below has a
+ * working sprite. Passives are not as complete — see `passives.ts`.
  */
 export const ARTIFACTS: EquippableItem[] = [
   { id: "asi", name: "ASI", rarity: "special", kind: "artifact", image: artifactImage("asi.png"), stats: { atk: 30 } }, // source id 41
@@ -64,7 +76,7 @@ export const ARTIFACTS: EquippableItem[] = [
   { id: "amplifier", name: "Amplifier", rarity: "special", kind: "artifact", image: artifactImage("amplifier.png"), stats: {}, specialEffect: "All Magic Size increases x1.28" }, // source id 76
   { id: "aumento", name: "Rose", rarity: "rare", kind: "artifact", image: artifactImage("aumento.png"), stats: {}, specialEffect: "Deals 〈10%〉 [Additional Damage] to enemies whose [HP] is 〈75%〉 or higher." }, // source id 77
   { id: "accelerator", name: "Accelerator", rarity: "legendary", kind: "artifact", image: artifactImage("accelerator.png"), stats: {}, specialEffect: "Reduces [All Magic Cooldown] by 〈1%〉 for every 〈3%〉 increase in Movement Speed." }, // source id 78
-  { id: "supermente", name: "Overmind", rarity: "legendary", kind: "artifact", image: artifactImage("supermente.png"), stats: {}, specialEffect: "Increases 〔All Magic Damage〕 by 〈15%〉 for each [Active Magic] that has reached [Max Level]" }, // source id 79
+  { id: "supermente", name: "Transcendence", rarity: "legendary", kind: "artifact", image: artifactImage("supermente.png"), stats: {}, specialEffect: "Increases 〔All Magic Damage〕 by 〈15%〉 for each [Active Magic] that has reached [Max Level]" }, // source id 79
   { id: "mooncrystal", name: "Moon Crystal", rarity: "epic", kind: "artifact", image: artifactImage("mooncrystal.png"), stats: {}, specialEffect: "Permanently reduces the [Movement Speed] of an enemy that has been [frozen] by 〈10%〉. Increases Frost Nova Damage by 50%" }, // source id 80
   { id: "pocketwatch", name: "Pocket Watch", rarity: "epic", kind: "artifact", image: artifactImage("pocketwatch.png"), stats: { magicDuration: 24 } }, // source id 81
   { id: "mortarboard", name: "Mortarboard", rarity: "rare", kind: "artifact", image: artifactImage("mortarboard.png"), stats: {}, specialEffect: "〈33%〉 increased chance to have [4] Magic choices." }, // source id 82
@@ -87,7 +99,7 @@ export const ARTIFACTS: EquippableItem[] = [
   { id: "blackcat", name: "Black Cat", rarity: "epic", kind: "artifact", image: artifactImage("blackcat.png"), stats: { cooldown: 9 }, tags: ["cooldown"] }, // source id 99
   { id: "watchereye", name: "Watcher's Eye", rarity: "epic", kind: "artifact", image: artifactImage("watchereye.png"), stats: { critMultiplier: 50 }, specialEffect: "Causes a giant [Explosion] upon obtaining a [Life Orb]." }, // source id 100
   { id: "ironmaiden", name: "Iron Maiden", rarity: "legendary", kind: "artifact", image: artifactImage("ironmaiden.png"), stats: {}, specialEffect: "〈15%〉 chance to cause an [Explosion] when killing an enemy. (Explosion Damage is 75% of the enemy's Max HP)" }, // source id 101
-  { id: "hydra", name: "Hydra", rarity: "legendary", kind: "artifact", image: artifactImage("hydra.png"), stats: {}, specialEffect: "Each time damage is dealt to an enemy, its current HP is reduced by 〈1%〉. (Triggers up to 25 times per enemy)" }, // source id 102
+  { id: "hydra", name: "Hydra", rarity: "special", kind: "artifact", image: artifactImage("hydra.png"), stats: {}, specialEffect: "Each time damage is dealt to an enemy, its current HP is reduced by 〈1%〉. (Triggers up to 25 times per enemy)" }, // source id 102 — rarity corrected 2026-09-15, see top-of-file note
   { id: "dragonscale", name: "Dragonscale", rarity: "rare", kind: "artifact", image: artifactImage("dragonscale.png"), stats: { damageTaken: 30 } }, // source id 103
   { id: "manashield", name: "Mana Shield", rarity: "rare", kind: "artifact", image: artifactImage("manashield.png"), stats: {}, specialEffect: "Reduces [Damage Taken] by 〈50%〉 of the current mana percentage." }, // source id 104
   { id: "ballista", name: "Ballista", rarity: "legendary", kind: "artifact", image: artifactImage("ballista.png"), stats: { critMultiplier: 50 }, specialEffect: "Deals 〈50%〉 [Additional Damage] to enemies whose [HP] is 〈75%〉 or higher." }, // source id 105
@@ -102,9 +114,9 @@ export const ARTIFACTS: EquippableItem[] = [
   { id: "magicscroll", name: "Magic Scroll", rarity: "common", kind: "artifact", image: artifactImage("magicscroll.png"), stats: { atk: 10, cooldown: 3 }, tags: ["cooldown"] }, // source id 114
   { id: "necronomicon", name: "Necronomicon", rarity: "special", kind: "artifact", image: artifactImage("necronomicon.png"), stats: { amplifyAtk: 50 }, tags: ["amplify"], specialEffect: "The character's [Max HP] cannot be more than 【50%】 of [Max HP]." }, // source id 115
   { id: "singularity", name: "Singularity", rarity: "special", kind: "artifact", image: artifactImage("singularity.png"), stats: {}, specialEffect: "All [Mana Orbs (small)] are converted into [(medium)]." }, // source id 116
-  { id: "akashicrecord", name: "Akashic Records", rarity: "legendary", kind: "artifact", image: artifactImage("akashicrecord.png"), stats: {}, specialEffect: "Amplifies [ATK] by 〈1%〉 for every [2] current levels. Increases [Current Level] and [Max Level] by 〈5〉" }, // source id 117
+  { id: "akashicrecord", name: "Akashic Record", rarity: "legendary", kind: "artifact", image: artifactImage("akashicrecord.png"), stats: {}, specialEffect: "Amplifies [ATK] by 〈1%〉 for every [2] current levels. Increases [Current Level] and [Max Level] by 〈5〉" }, // source id 117
   { id: "dna", name: "DNA", rarity: "legendary", kind: "artifact", image: artifactImage("dna.png"), stats: {}, specialEffect: "For each [Obelisk] obtained: {Amplify} [ATK] by 〈8%〉, [Max HP] by an additional 〈8%〉 (Efficiency decreases by 15% per application)" }, // source id 118
-  { id: "otherworldlytentacle", name: "Otherworldly Tentacles", rarity: "epic", kind: "artifact", image: artifactImage("otherworldlytentacle.png"), stats: {}, specialEffect: "Increases [Damage] by 8% per 《Arcane Ray》 Reduces Arcane Ray Cooldown by 10%" }, // source id 119
+  { id: "otherworldlytentacle", name: "Otherworldly Tentacle", rarity: "epic", kind: "artifact", image: artifactImage("otherworldlytentacle.png"), stats: {}, specialEffect: "Increases [Damage] by 8% per 《Arcane Ray》 Reduces Arcane Ray Cooldown by 10%" }, // source id 119
   { id: "golemcore", name: "Golem Core", rarity: "rare", kind: "artifact", image: artifactImage("golemcore.png"), stats: { hp: 50 }, specialEffect: "The screen does not turn red even when the character is [near death]." }, // source id 120
   { id: "rainbow", name: "Rainbow", rarity: "common", kind: "artifact", image: artifactImage("rainbow.png"), stats: { critMultiplier: 30 } }, // source id 121
   { id: "cube", name: "Cube", rarity: "legendary", kind: "artifact", image: artifactImage("cube.png"), stats: { manaAcquisition: 25 }, specialEffect: "The [Level] and [Max Level] of all [Normal Passive Magic] increase by 〈1〉." }, // source id 122
@@ -164,7 +176,7 @@ export const ARTIFACTS: EquippableItem[] = [
   { id: "holychest", name: "Holy Chest", rarity: "legendary", kind: "artifact", image: artifactImage("holychest.png"), stats: {}, specialEffect: "Reduces the [Max HP] of all enemies by 〈10%〉. Activates a random [Rune] effect. (Cooldown: 45s)" }, // source id 176
   { id: "crown", name: "Crown", rarity: "legendary", kind: "artifact", image: artifactImage("crown.png"), stats: {}, specialEffect: "{Amplifies} [ATK] by 〈1%〉 for each [Epic] artifact you own. {Amplifies} [ATK] by 〈5%〉 for each [Special] artifact you own." }, // source id 177
   { id: "bomb", name: "Bomb", rarity: "rare", kind: "artifact", image: artifactImage("bomb.png"), stats: { atk: 8, magicSize: 8 } }, // source id 178
-  { id: "fairy", name: "Fairy", rarity: "legendary", kind: "artifact", image: artifactImage("fairy.png"), stats: {}, specialEffect: "The {Enchant} effect becomes 〈2X〉." }, // source id 179
+  { id: "fairy", name: "Fairy", rarity: "special", kind: "artifact", image: artifactImage("fairy.png"), stats: {}, specialEffect: "The {Enchant} effect becomes 〈2X〉." }, // source id 179 — rarity corrected 2026-09-15, see top-of-file note
   { id: "radar", name: "Radar", rarity: "rare", kind: "artifact", image: artifactImage("radar.png"), stats: { critRate: 9 } }, // source id 180
   { id: "holygrail", name: "Holy Grail", rarity: "rare", kind: "artifact", image: artifactImage("holygrail.png"), stats: { hpRegen: 0.5 } }, // source id 181
   { id: "aimagic", name: "AI Magic", rarity: "special", kind: "artifact", image: artifactImage("aimagic.png"), stats: { cooldown: 5 }, tags: ["cooldown"], specialEffect: "Learns 〈4〉 random [Magics]." }, // source id 182
@@ -194,14 +206,14 @@ export const ARTIFACTS: EquippableItem[] = [
   { id: "mercurio", name: "Mercury", rarity: "epic", kind: "artifact", image: artifactImage("mercurio.png"), stats: {}, specialEffect: "Increases [Mana Orb] Acquisition by 〈20%〉." }, // source id 206
   { id: "fuentemagica", name: "Magic Fountain", rarity: "epic", kind: "artifact", image: artifactImage("fuentemagica.png"), stats: {}, specialEffect: "Amplifies [ATK] by 〈1%〉 for every [200] [Mana Orbs] you hold (Max Stack: 20%)" }, // source id 207
   { id: "quimera", name: "Chimera", rarity: "epic", kind: "artifact", image: artifactImage("quimera.png"), stats: {}, specialEffect: "Reduces Flash Shock Cooldown by 15% Reduces Lava Zone Cooldown by 15% Reduces Tsunami Cooldown by 15%" }, // source id 208
-  { id: "elfrancotiradorlibre", name: "Freeshooter", rarity: "epic", kind: "artifact", image: artifactImage("elfrancotiradorlibre.png"), stats: {}, specialEffect: "Increases Magic Bolt Damage by 100%" }, // source id 209
+  { id: "elfrancotiradorlibre", name: "The Freeshooter", rarity: "epic", kind: "artifact", image: artifactImage("elfrancotiradorlibre.png"), stats: {}, specialEffect: "Increases Magic Bolt Damage by 100%" }, // source id 209
   { id: "shuriken", name: "Shuriken", rarity: "rare", kind: "artifact", image: artifactImage("shuriken.png"), stats: {}, specialEffect: "Increases Magic Bolt Critical Rate by 15% Increases Spirit Critical Rate by 15%" }, // source id 210
   { id: "condesa", name: "Countess", rarity: "legendary", kind: "artifact", image: artifactImage("condesa.png"), stats: { amplifyAtk: 30 }, tags: ["amplify"], specialEffect: "Triggers an [Explosion] upon defeating Elite Monsters (Explosion Damage is 30% of the enemy's Max HP)" }, // source id 211
   { id: "salamandra", name: "Salamander", rarity: "rare", kind: "artifact", image: artifactImage("salamandra.png"), stats: {}, specialEffect: "Increases Incineration Number by 5 Increases Lava Zone Number by 1" }, // source id 212
   { id: "creadoradeviudas", name: "Widowmaker", rarity: "legendary", kind: "artifact", image: artifactImage("creadoradeviudas.png"), stats: { critRate: 10 }, specialEffect: "Increases [Critical Multiplier] based on [Critical Rate]" }, // source id 213
   { id: "ramodeflores", name: "Bouquet", rarity: "special", kind: "artifact", image: artifactImage("ramodeflores.png"), stats: {}, specialEffect: "All products sold by the [Merchant] receive a 〈20%〉 {Discount}" }, // source id 214
   { id: "plasma", name: "Plasma", rarity: "special", kind: "artifact", image: artifactImage("plasma.png"), stats: { amplifyAtk: 40 }, tags: ["amplify"], specialEffect: "Reduces All Magic Size by 20%" }, // source id 215
-  { id: "ocultismo", name: "Occultism", rarity: "legendary", kind: "artifact", image: artifactImage("ocultismo.png"), stats: {}, specialEffect: "[Max HP] increases in proportion to the [Reduction of Enemies' Max HP]. Reduces the [Max HP] of all enemies by 〈5%〉." }, // source id 216
+  { id: "ocultismo", name: "Occult", rarity: "special", kind: "artifact", image: artifactImage("ocultismo.png"), stats: {}, specialEffect: "[Max HP] increases in proportion to the [Reduction of Enemies' Max HP]. Reduces the [Max HP] of all enemies by 〈5%〉." }, // source id 216 — rarity corrected 2026-09-15, see top-of-file note
   { id: "buho", name: "Owl", rarity: "rare", kind: "artifact", image: artifactImage("buho.png"), stats: { manaAcquisition: 10 }, specialEffect: "[Current Level] increases by 〈3〉" }, // source id 217
   { id: "moneda", name: "Coin", rarity: "epic", kind: "artifact", image: artifactImage("moneda.png"), stats: {}, specialEffect: "Obtain 〈□〉 《Mana Orb Resource》. Obtain 《Mana Orb Resource》" }, // source id 218
   { id: "unicornio", name: "Unicorn", rarity: "epic", kind: "artifact", image: artifactImage("unicornio.png"), stats: {}, specialEffect: "Offers a {Special Passive Option}" }, // source id 219

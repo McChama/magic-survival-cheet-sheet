@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { STAT_DEFINITIONS } from "../../data/statDefinitions";
+import { STAT_DEFINITIONS, STAT_DISPLAY } from "../../data/statDefinitions";
 import { STAT_GLYPH } from "../../data/statGlyphs";
+import { STAT_BASE, getRunStats } from "../../engine/runStats";
 import { useRunStore } from "../../store/useRunStore";
 import { useGameDataText } from "../../i18n/useGameDataText";
 import type { CurrentRunState, StatKey } from "../../types/game";
@@ -16,8 +17,13 @@ export function StatGridRow({ statKey, run }: StatGridRowProps) {
   const def = STAT_DEFINITIONS[statKey];
   const label = gt(`stat.${statKey}.label`, def.label);
   const { glyph, color, icon } = STAT_GLYPH[statKey];
-  const value = run.stats[statKey];
-  const isBuffed = value > 0;
+  const value = getRunStats(run)[statKey];
+  const base = STAT_BASE[statKey] ?? 0;
+  const { plus, percent, reduction } = STAT_DISPLAY[statKey];
+  // White = at its non-zero starting value, green = raised above the base, gray = still zero.
+  const tone = value > base ? "text-[#63d16b]" : base > 0 && value === base ? "text-[#e8e8e2]" : "text-[#e8e8e2]/45";
+  const sign = reduction && value > 0 ? "-" : plus ? "+" : "";
+  const shown = `${sign}${value}${percent ? "%" : ""}`;
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
@@ -69,10 +75,9 @@ export function StatGridRow({ statKey, run }: StatGridRowProps) {
         <button
           type="button"
           onClick={startEditing}
-          className={`bg-transparent border-none p-0 cursor-pointer font-normal ${isBuffed ? "text-[#63d16b]" : "text-[#e8e8e2]/45"}`}
+          className={`bg-transparent border-none p-0 cursor-pointer font-normal ${tone}`}
         >
-          {value}
-          {def.unit === "%" ? "%" : ""}
+          {statKey === "hp" ? `${value}/${value}` : shown}
         </button>
       )}
     </div>

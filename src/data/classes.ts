@@ -1,7 +1,9 @@
+import { BASE_MAGICS } from "./magics";
+
 /**
  * Real in-game data, originally extracted directly from the game's own Spanish
  * localization files (spa_Dictionary_Class.txt inside data.unity3d) and cross-checked
- * against decompiled game code — not from a third-party wiki/spreadsheet. Names below are
+ * against the game itself — not from a third-party wiki/spreadsheet. Names below are
  * translated to English per this project's language rule (see CLAUDE.md), sourced from
  * https://magic-survival-rpg.fandom.com/wiki/Classes and .../wiki/Subject, matched 1:1 to
  * the Spanish originals by the base magic/artifact each one grants (e.g. the Spanish
@@ -98,14 +100,22 @@ export const SUBJECTS: string[] = [
  * `artifacts.ts` — just not the ones these two Subjects actually give).
  *
  * Wizard is the one exception: its dictionary row has no artifact-name line at all (only
- * the trait line), even though the wiki and `artifacts.ts` (source id 209, "Freeshooter")
- * agree Wizard should grant one — left as `description: "Freeshooter"` on that outside
- * evidence, but flagged here since it's the one entry not confirmed by this row's own
- * numeric artifact reference the way all 24 others were.
+ * the trait line), even though the wiki and `artifacts.ts` (source id 209, "The
+ * Freeshooter") agree Wizard should grant one — left as `description: "The Freeshooter"`
+ * on that outside evidence, but flagged here since it's the one entry not confirmed by
+ * this row's own numeric artifact reference the way all 24 others were.
  */
 export interface SubjectDetail {
   description?: string;
   trait?: string;
+}
+
+/** The one Subject every player starts with: always unlocked, and it can't be locked. */
+export const ALWAYS_UNLOCKED_SUBJECT = SUBJECTS[0];
+
+/** Whether a Subject counts as unlocked given the player's saved list (Wizard always does). */
+export function isSubjectUnlocked(name: string, unlockedSubjects: readonly string[]): boolean {
+  return name === ALWAYS_UNLOCKED_SUBJECT || unlockedSubjects.includes(name);
 }
 
 /** Falls back to `SUBJECTS[0]` ("Wizard") for any unrecognized name, matching the store's own default. */
@@ -114,7 +124,7 @@ export function getSubjectDetail(name: string): SubjectDetail | null {
 }
 
 export const SUBJECT_DETAILS: Record<string, SubjectDetail> = {
-  Wizard: { description: "Freeshooter", trait: "Increase Magic Bolt Damage by 5% (All Classes)" },
+  Wizard: { description: "The Freeshooter", trait: "Increase Magic Bolt Damage by 5% (All Classes)" },
   Astronomer: { description: "Core Energy", trait: "Increase Satellite Damage by 5% (All Classes)" },
   Cryomancer: { description: "Moon Crystal", trait: "Increase Frost Nova Damage by 5% (All Classes)" },
   Shaman: { description: "Mjolnir", trait: "Increase Thunderstorm Damage by 5% (All Classes)" },
@@ -122,7 +132,7 @@ export const SUBJECT_DETAILS: Record<string, SubjectDetail> = {
   Arcanist: { description: "Mana Ore", trait: "Increase ATK by 2% (All Classes)" },
   Summoner: { description: "Magic Wand", trait: "Increase Spirit Damage by 5% (All Classes)" },
   Bishop: { description: "Aegis", trait: "Decrease Damage Taken by 2% (All Classes)" },
-  Occultist: { description: "Otherworldly Tentacles", trait: "Increase Arcane Ray Damage by 5% (All Classes)" },
+  Occultist: { description: "Otherworldly Tentacle", trait: "Increase Arcane Ray Damage by 5% (All Classes)" },
   Druid: { description: "Palm Leaf Fan", trait: "Increase Cyclone Damage by 5% (All Classes)" },
   Pyromancer: { description: "Phoenix's Bow", trait: "Increase Fireball Damage by 5% (All Classes)" },
   Sorcerer: { description: "Electric Cable", trait: "Increase Electric Shock Damage by 5% (All Classes)" },
@@ -268,4 +278,88 @@ export function getAllClassLevelBonuses(className: string): ClassBonusLine[] {
     if (bonus) result.push(bonus);
   }
   return result;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Every real BASE_MAGICS name found as a whole word in `text`, in reading order (first
+ *  occurrence), deduped — unlike `engine/synergy.ts`'s `namedMagicIdsInText` (sorted by
+ *  name length, for tier-detection where order doesn't matter), this one preserves order
+ *  because Bishop's tooltip genuinely names two magics in a specific sequence ("Magic Bolt
+ *  [&] Shield") that the Owned Magic screen must render in that same sequence. */
+function orderedMagicIdsInText(text: string): string[] {
+  const hits: { id: string; index: number }[] = [];
+  for (const magic of BASE_MAGICS) {
+    const match = new RegExp(`\\b${escapeRegExp(magic.name)}\\b`).exec(text);
+    if (match) hits.push({ id: magic.id, index: match.index });
+  }
+  return hits.sort((a, b) => a.index - b.index).map((h) => h.id);
+}
+
+export interface ClassMagicSlot {
+  magicId: string;
+  /** 1+ — a magic named in the class's own Lv1 tooltip is granted at a baseline of Lv1
+   *  even before any of the 4 gated bonuses unlock; see this function's header comment. */
+  level: number;
+}
+
+export interface ClassSpecialSlot {
+  /** The named ability text itself (e.g. "Guardian Angel"), not a `BASE_MAGICS` id — these
+   *  are real named class abilities the dictionary text doesn't tie to any base magic. */
+  name: string;
+  color: string;
+}
+
+/**
+ * Derives the "what does this class actually grant" slots shown in `OwnedMagicScreen`,
+ * from real `CLASS_BONUSES` text only — no invented per-magic max level exists anywhere in
+ * this app's data (unlike Fusions/Research, base magics were never datamined with a max
+ * level), so this returns a current *level number* to display as a badge, never a pip row.
+ *
+ * The rule, reverse-engineered from two worked examples (Wizard: tooltip names "Magic
+ * Bolt", and that same name reappears in `levels[0]` as "Magic Bolt Lv +1" — so its level
+ * grows with class level; Bishop: tooltip names both "Magic Bolt" and "Shield", but
+ * `levels[0]` is "Guardian Angel Lv +1" — an unrelated *named ability*, not a base magic,
+ * so Magic Bolt/Shield stay at a flat Lv1 baseline forever and Guardian Angel becomes its
+ * own special slot instead):
+ *
+ * 1. Every base magic named in the class's own `tooltip.text` becomes a slot, in the order
+ *    each name first appears, starting at Lv1 (the tooltip alone is what grants it).
+ * 2. Each of the class's 4 gated bonus lines, once unlocked at the current `classLevel`,
+ *    is checked against the exact pattern `"<Name> Lv +1"`:
+ *    - if `<Name>` matches a `BASE_MAGICS` name, that magic's level goes up by 1 (creating
+ *      a new slot at Lv1 if the tooltip didn't already name it — see Archmage's "Magic
+ *      Circle Lv +1", never named in its own tooltip).
+ *    - otherwise `<Name>` is a real named special ability (Guardian Angel, Doctor, Silent
+ *      Casting, Arcane Effuse, ...) and becomes its own `ClassSpecialSlot`.
+ *    Bonus lines that don't match `"<Name> Lv +1"` at all (cooldown/size/count/stat lines,
+ *    and the Lv5 "(All Classes)" line) grant no slot — they're real, but not a *named
+ *    ability or magic* the way this screen's tiles represent.
+ */
+export function getClassMagicProgression(className: string, classLevel: number): { magics: ClassMagicSlot[]; specials: ClassSpecialSlot[] } {
+  const bonus = CLASS_BONUSES[className];
+  if (!bonus) return { magics: [], specials: [] };
+
+  const magicLevels = new Map<string, number>();
+  for (const id of orderedMagicIdsInText(bonus.tooltip.text)) magicLevels.set(id, 1);
+
+  const specials: ClassSpecialSlot[] = [];
+  const unlockedTiers = classLevel - 1; // classLevel 1..5 -> 0..4 of the 4 gated bonuses unlocked
+  for (let tier = 1; tier <= 4 && tier <= unlockedTiers; tier++) {
+    const line = bonus.levels[tier - 1];
+    const match = /^(.+) Lv \+1$/.exec(line.text);
+    if (!match) continue;
+    const name = match[1];
+    const magic = BASE_MAGICS.find((m) => m.name === name);
+    if (magic) {
+      magicLevels.set(magic.id, (magicLevels.get(magic.id) ?? 0) + 1);
+    } else {
+      specials.push({ name, color: line.color });
+    }
+  }
+
+  const magics: ClassMagicSlot[] = Array.from(magicLevels, ([magicId, level]) => ({ magicId, level }));
+  return { magics, specials };
 }

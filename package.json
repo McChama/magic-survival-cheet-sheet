@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "i18n:dump": "vite-node scripts/dump-game-data-i18n.mjs",
     "i18n:check-sync": "vite-node scripts/check-i18n-sync.mjs",
-    "i18n:check-hardcoded-text": "node scripts/check-hardcoded-text.mjs"
+    "i18n:check-hardcoded-text": "node scripts/check-hardcoded-text.mjs",
+    "check:formulas": "vite-node scripts/check-formulas.mjs"
   },
   "dependencies": {
     "i18next": "^26.4.2",

@@ -48,6 +48,57 @@ export const BASE_MAGIC_BY_ID: Record<string, BaseMagic> = Object.fromEntries(
 );
 
 /**
+ * Real max level per base magic, from the "최대레벨" (max level) column of
+ * `eng_Dictionary_Ability.txt` (ids 1-21 for the active magics, id 31 for Intelligence, which
+ * the game files as a passive) — not invented, and not a flat cap: 5 for Shield, Cloaking,
+ * Armageddon, Magic Circle and Intelligence, 7 for every other base magic. Drives how many
+ * level pips a magic's card shows in Owned Magic.
+ */
+/**
+ * Each base magic's real one-line description — the first description line ("설명줄01") of its
+ * row in `eng_Dictionary_Ability.txt` (English, already extracted the same way as the max
+ * levels below; keeps the game's own `[]`/`{}`/`〈〉` markup for `GameText`). Intelligence's row
+ * is filed by the game as a passive, so its "description" is its stat line.
+ */
+export const MAGIC_DESCRIPTION: Record<string, string> = {
+  magicBolt: "Enhance the default projectile.",
+  fireball: "Launch an explosive projectile.",
+  spirit: "Summon a Spirit that augments attacks.",
+  satellite: "Create a Satellite that rotates around the character.",
+  frostNova: "[Freeze] nearby enemies for a moment.",
+  shield: "Create a Shield that blocks damage 〈once〉.",
+  thunderstorm: "A thunderstorm falls upon nearby enemies.",
+  electricZone: "Damage nearby enemies over a certain interval.",
+  tsunami: "Create a giant wave that crosses through the field.",
+  meteor: "A meteor falls on a random location.",
+  cloaking: "[Pass through] all objects for a moment, and increase [Movement Speed].",
+  cyclone: "Cause a gust of wind that grows in size and deals damage.",
+  electricShock: "Release electricity in a random direction.",
+  armageddon: "Remove all enemies.",
+  incineration: "Launch flames in front of the character.",
+  energyBolt: "Fire a penetrating projectile nearby.",
+  blizzard: "Raise a Blizzard that [freezes] enemies.",
+  arcaneRay: "Shoot a ray that penetrates all objects.",
+  magicCircle: "{Amplify} [ATK] for a certain duration.",
+  lavaZone: "Create a Lava Zone that continuously damages enemies for a certain duration.",
+  flashShock: "Create a flash that moves in the direction that the character is currently moving towards and damages enemies.",
+  intelligence: "Increase ATK by 10%",
+};
+
+const MAGIC_MAX_LEVEL_OVERRIDES: Record<string, number> = {
+  shield: 5,
+  cloaking: 5,
+  armageddon: 5,
+  magicCircle: 5,
+  intelligence: 5,
+};
+const DEFAULT_MAGIC_MAX_LEVEL = 7;
+
+export function getMagicMaxLevel(magicId: string): number {
+  return MAGIC_MAX_LEVEL_OVERRIDES[magicId] ?? DEFAULT_MAGIC_MAX_LEVEL;
+}
+
+/**
  * All 63 fusion sprites (including Exidium/Deus Ex Machina/Glacium/Soul Blade/Discharge,
  * which the original wiki-sourced dump was missing) now come from the real APK sprite
  * extraction — see scripts/organize-assets.mjs and reference/game-data-sources.md.

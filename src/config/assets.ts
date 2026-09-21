@@ -63,6 +63,10 @@ export function baseMagicImage(fileName: string): string {
   return assetUrl(`baseMagicImages/${fileName}`);
 }
 
+export function synergyImage(fileName: string): string {
+  return assetUrl(`synergyImages/${fileName}`);
+}
+
 /** Generic chrome/decoration assets not tied to a game entity (dividers, frames, icons). */
 export function uiImage(fileName: string): string {
   return assetUrl(`uiImages/${fileName}`);

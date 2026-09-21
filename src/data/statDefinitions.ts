@@ -143,3 +143,30 @@ export function emptyStatBlock(): Record<StatKey, number> {
   }
   return block;
 }
+
+/**
+ * How the dashboard prints each stat, matching the game's pause screen: bonus stats read "+N%"
+ * (Amplify ATK +20%), rates read "N%" (Critical Strike Rate 3%), and the plain-number stats
+ * (ATK, Movement Speed, Life Orb) carry no unit. HP is drawn "N/N" by the row itself. A stat where
+ * more is a reduction (`reduction`: All Magic Cooldown, Damage Taken) reads "-N%" once it is above 0
+ * (still "+0%" at zero), e.g. Cooldown -12%.
+ */
+export const STAT_DISPLAY: Record<StatKey, { plus?: boolean; percent?: boolean; reduction?: boolean }> = {
+  hp: {},
+  atk: {},
+  hpRegen: { percent: true },
+  amplifyAtk: { plus: true, percent: true },
+  lifeOrbRecovery: {},
+  magicDamage: { plus: true, percent: true },
+  damageTaken: { plus: true, percent: true, reduction: true },
+  magicSize: { plus: true, percent: true },
+  evasion: { percent: true },
+  magicDuration: { plus: true, percent: true },
+  moveSpeed: {},
+  cooldown: { plus: true, percent: true, reduction: true },
+  critRate: { percent: true },
+  critMultiplier: { percent: true },
+  manaAcquisition: { plus: true, percent: true },
+  itemPickupRange: { plus: true, percent: true },
+  enemyMaxHp: { plus: true, percent: true },
+};

@@ -3,8 +3,8 @@ import type { FusionDefinition, FusionIngredient, UltimateDefinition } from "../
 
 /**
  * Real fusion recipes, extracted directly from the game's own localization data
- * (spa_Dictionary_MagicCom.txt inside data.unity3d) via reverse engineering of the
- * IL2CPP binary and asset bundle — not from the wiki or TomkoSK/magic-survival-builder.
+ * (localization files)
+ * — not from the wiki or TomkoSK/magic-survival-builder.
  * This replaces the previous third-party-sourced list, which had real gaps this closes:
  *
  *  - 3 fusions the community source never had at all, under any name: Glacium (id 61,
@@ -110,3 +110,31 @@ export const FUSION_BY_ID: Record<string, FusionDefinition> = Object.fromEntries
 );
 
 export const MAX_FUSION_TARGETS = 3;
+
+/**
+ * Every real talent name FUSIONS records for a base magic id, deduped and sorted —
+ * built once from the same real extracted data above, not invented. **Not exhaustive**:
+ * FUSIONS only records the specific talent branch each of the 63 real fusion recipes
+ * needs, not necessarily all ~3 in-game options for every magic. A magic with an empty
+ * array (e.g. "intelligence", whose talentName is null in every fusion it appears in —
+ * Overmind, Perpetual Engine, Gate of Creation) means no real talent name has been
+ * extracted for it yet, not that it has none. Used by the magic level/talent tracker in
+ * LoadoutSheet.tsx and by the synergy engine's fusion-ingredient-talent-match tier.
+ */
+export const TALENT_OPTIONS_BY_MAGIC_ID: Record<string, string[]> = (() => {
+  const byMagic: Record<string, Set<string>> = {};
+  for (const f of FUSIONS) {
+    f.requiredTalents?.forEach((ing) => {
+      if (ing.parentMagicId && ing.talentName) {
+        (byMagic[ing.parentMagicId] ??= new Set()).add(ing.talentName);
+      }
+    });
+  }
+  return Object.fromEntries(Object.entries(byMagic).map(([id, set]) => [id, [...set].sort()]));
+})();
+
+/** Reads `magicId`'s level out of `magicLevels`, defaulting to 1 (the implicit level
+ *  granted on pickup) — same default-application convention as `getClassLevel`. */
+export function getMagicLevel(magicLevels: Record<string, number>, magicId: string): number {
+  return magicLevels[magicId] ?? 1;
+}

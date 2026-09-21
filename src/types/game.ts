@@ -61,6 +61,53 @@ export interface BaseMagic {
 }
 
 /**
+ * The 5 drop sources this app models — see `src/data/dropProbability.ts`'s top comment
+ * and `reference/game-data-sources.md`'s "Drop-probability investigation" section for
+ * the full sourcing/citations. `obelisk` is the real in-game mechanic (see DNA's own
+ * effect text, "For each [Obelisk] obtained...") offering 3 legendary items; once a
+ * player has enough legendary artifacts it stops offering legendaries and becomes a
+ * `brokenObelisk` instead, offering 4 non-legendary items (exact tier breakdown not
+ * researched yet — confirmed by the user, who plays the game, not yet independently
+ * verified another way). Real chests also come from kill chests, far chests, and
+ * elite-enemy drops — still not modeled here (no probability data extracted for those).
+ */
+export type DropContext = "normalChest" | "merchant" | "obelisk" | "brokenObelisk" | "relicChest";
+
+/** A rarity tier's flat odds within a context's weighted roll. Absent tier = impossible
+ *  in this context (e.g. `legendary` is never a key for `normalChest`/`merchant`). */
+export type TierOdds = Partial<Record<Rarity, number>>;
+
+/**
+ * A confirmed, named deviation from "every item starts with 5 copies in its rarity's
+ * pool" (the baseline confirmed in-game;
+ * see notes). Kept separate from `TierOdds` because it's a
+ * per-item adjustment layered on top of the uniform-within-tier assumption, not a
+ * replacement for it — see `src/engine/dropProbability.ts`'s `estimateItemOdds`.
+ */
+export interface DropException {
+  itemId: string;
+  /** Which context(s) this adjustment is confirmed for. */
+  contexts: DropContext[];
+  /** Overrides the default baseline of 5 copies, when known to differ. */
+  baselineCopies?: number;
+  /** Copies removed from baseline for the listed contexts. */
+  copiesRemoved?: number;
+  /** Fully excluded from this context's pool (equivalent to removing every copy). */
+  excluded?: boolean;
+  /** Short human-readable reason, shown in the drop-probability UI. */
+  note: string;
+}
+
+export interface DropContextDefinition {
+  id: DropContext;
+  /** Items offered per chest-open/merchant-visit/Obelisk. Null where this project
+   *  doesn't have a single confirmed number (relic chest is ~2-7 per the community,
+   *  not pinned down). */
+  slotsPerEvent: number | null;
+  tierOdds: TierOdds;
+}
+
+/**
  * One of the two ingredients a fusion requires. In the real game this is never just
  * "own this base magic" — it's a specific talent branch of that magic (one of the
  * ~3 the base magic's own level-up screen offers). `parentMagicId` is null only for
@@ -98,6 +145,43 @@ export interface FusionDefinition {
   effectDescription?: string;
   /** The fusion's further "Ultimate" evolution, when the source data has one (28 of 63 do). */
   ultimate?: UltimateDefinition;
+}
+
+/** One real, colored line of game text — same `{text, color}` shape as `ClassBonusLine`,
+ *  rendered via `GameText`. */
+export interface ColoredTextLine {
+  text: string;
+  color: string;
+}
+
+/** A synergy's effect line, from `eng_Dictionary_Synergy.txt`. */
+export type SynergyDescriptionLine = ColoredTextLine;
+
+/** One real talent a base magic offers at `level` (see `data/magicTalents.ts`). */
+export interface MagicTalentDefinition {
+  name: string;
+  /** The magic level this talent is picked at. */
+  level: number;
+  /** The talent's category (1-9), shared by every magic — see `TALENT_TYPE_COLOR`. */
+  type: number;
+  lines: ColoredTextLine[];
+}
+
+/**
+ * A real in-game "Synergy": own all of `requiredItemIds` (artifacts/passives) at once to
+ * unlock a named bonus. Distinct from `FusionDefinition` (base magic + base magic) — this
+ * is an artifact/passive-combo mechanic, extracted from `eng_Dictionary_Synergy.txt` (see
+ * `data/synergies.ts`'s header comment for the extraction methodology). `id` is the
+ * dictionary's own numeric id (also `Synergy{id}Portrait.png`'s number) — not contiguous,
+ * real ids are 1-46 and 70-86, a confirmed content gap in the source data, not a bug here.
+ */
+export interface SynergyDefinition {
+  id: number;
+  name: string;
+  image: string;
+  /** This app's internal artifact/passive ids, length 3-5 (matches the dictionary's own "count" column). */
+  requiredItemIds: string[];
+  descriptionLines: SynergyDescriptionLine[];
 }
 
 export interface ResearchDefinition {
@@ -171,6 +255,12 @@ export interface RunMeta {
    * engine to fold in, without every consumer having to null-check it first.
    */
   subject: string;
+  /**
+   * Subjects the player has unlocked (Wizard always is, listed or not). A Subject's trait
+   * ("Increase Magic Bolt Damage by 5% (All Classes)") applies to every run once it's unlocked, so it
+   * matters even while a different Subject is the one being played.
+   */
+  unlockedSubjects: string[];
   researchPoints: number;
   startedAt: number | null;
 }
@@ -182,15 +272,31 @@ export interface CurrentRunState {
   meta: RunMeta;
   /** Up to 3 fusion targets chosen at minute 0. */
   fusionTargets: string[];
-  /** Stats as manually mirrored/adjusted by the player from their screen. */
-  stats: StatBlock;
+  /** What the player added on top of the computed starting stats (see `engine/runStats.ts`):
+   *  the difference between what they typed on the dashboard and what the app derived. */
+  statAdjustments: StatBlock;
   /** Equipped artifacts and magics/passives, used by the tier-adaptive engine. */
   equipped: EquippedStack[];
   /** Base magics already picked up this run (for fusion dependency tracking). */
   acquiredMagicIds: string[];
+  /** Current level per acquired base magic id. Missing entry means level 1 (the implicit
+   *  level granted on pickup) — same sparse-record convention as `researchLevels`/
+   *  `classLevels`. Use `getMagicLevel` (src/data/fusions.ts) rather than indexing
+   *  directly. Per-run state (resets with a new run), unlike `classLevels` which is
+   *  cross-run meta-progression. No upper bound is enforced — the real in-game max
+   *  level isn't datamined anywhere in this repo. */
+  magicLevels: Record<string, number>;
+  /** Real talent branch name the player recorded for an acquired magic — see
+   *  `TALENT_OPTIONS_BY_MAGIC_ID` in `src/data/fusions.ts` for the real names known per
+   *  magic (derived from `FUSIONS`, not exhaustive for every magic). Missing entry means
+   *  "not recorded yet," not "no talent exists." */
+  magicTalents: Record<string, string>;
   elapsedMinutes: number;
   currentLevel: number;
   enemiesKilled: number;
+  /** Whether the Magic Circle's buff is on right now (it lasts a few seconds per cast): while on, its Amplification
+   *  Effect counts as Amplify ATK (`engine/magicCircle.ts`). Ignored when the run has no Magic Circle. */
+  magicCircleActive: boolean;
   /** Current level per research node id (see src/data/research.ts), 0 if not yet researched. */
   researchLevels: Record<string, number>;
 }
