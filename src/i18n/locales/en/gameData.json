@@ -196,7 +196,7 @@
   "subject": {
     "wizard": {
       "name": "Wizard",
-      "description": "Freeshooter",
+      "description": "The Freeshooter",
       "trait": "Increase Magic Bolt Damage by 5% (All Classes)"
     },
     "astronomer": {
@@ -236,7 +236,7 @@
     },
     "occultist": {
       "name": "Occultist",
-      "description": "Otherworldly Tentacles",
+      "description": "Otherworldly Tentacle",
       "trait": "Increase Arcane Ray Damage by 5% (All Classes)"
     },
     "druid": {
@@ -462,7 +462,7 @@
       "specialEffect": "Reduces [All Magic Cooldown] by 〈1%〉 for every 〈3%〉 increase in Movement Speed."
     },
     "supermente": {
-      "name": "Overmind",
+      "name": "Transcendence",
       "specialEffect": "Increases 〔All Magic Damage〕 by 〈15%〉 for each [Active Magic] that has reached [Max Level]"
     },
     "mooncrystal": {
@@ -607,7 +607,7 @@
       "specialEffect": "All [Mana Orbs (small)] are converted into [(medium)]."
     },
     "akashicrecord": {
-      "name": "Akashic Records",
+      "name": "Akashic Record",
       "specialEffect": "Amplifies [ATK] by 〈1%〉 for every [2] current levels. Increases [Current Level] and [Max Level] by 〈5〉"
     },
     "dna": {
@@ -615,7 +615,7 @@
       "specialEffect": "For each [Obelisk] obtained: {Amplify} [ATK] by 〈8%〉, [Max HP] by an additional 〈8%〉 (Efficiency decreases by 15% per application)"
     },
     "otherworldlytentacle": {
-      "name": "Otherworldly Tentacles",
+      "name": "Otherworldly Tentacle",
       "specialEffect": "Increases [Damage] by 8% per 《Arcane Ray》 Reduces Arcane Ray Cooldown by 10%"
     },
     "golemcore": {
@@ -959,7 +959,7 @@
       "specialEffect": "Reduces Flash Shock Cooldown by 15% Reduces Lava Zone Cooldown by 15% Reduces Tsunami Cooldown by 15%"
     },
     "elfrancotiradorlibre": {
-      "name": "Freeshooter",
+      "name": "The Freeshooter",
       "specialEffect": "Increases Magic Bolt Damage by 100%"
     },
     "shuriken": {
@@ -987,7 +987,7 @@
       "specialEffect": "Reduces All Magic Size by 20%"
     },
     "ocultismo": {
-      "name": "Occultism",
+      "name": "Occult",
       "specialEffect": "[Max HP] increases in proportion to the [Reduction of Enemies' Max HP]. Reduces the [Max HP] of all enemies by 〈5%〉."
     },
     "buho": {
@@ -1292,6 +1292,35 @@
       "description": "Gain 〈□〉 《Mana Orb Currency》 at the start of the game."
     }
   },
+  "magicStat": {
+    "damage": {
+      "label": "Damage"
+    },
+    "damageInterval": {
+      "label": "Damage Interval"
+    },
+    "explosionRange": {
+      "label": "Explosion Range"
+    },
+    "size": {
+      "label": "Size"
+    },
+    "duration": {
+      "label": "Duration"
+    },
+    "number": {
+      "label": "Number"
+    },
+    "cooldown": {
+      "label": "Cooldown"
+    },
+    "rotationSpeed": {
+      "label": "Rotation Speed"
+    },
+    "amplificationEffect": {
+      "label": "Amplification Effect"
+    }
+  },
   "stat": {
     "atk": {
       "label": "ATK"
@@ -1343,6 +1372,197 @@
     },
     "enemyMaxHp": {
       "label": "Enemy Max HP"
+    }
+  },
+  "synergy": {
+    "1": {
+      "name": "Ego Sword"
+    },
+    "2": {
+      "name": "Nightmare"
+    },
+    "3": {
+      "name": "Red Dragon"
+    },
+    "4": {
+      "name": "Venom"
+    },
+    "5": {
+      "name": "Avalon"
+    },
+    "6": {
+      "name": "Oracle"
+    },
+    "7": {
+      "name": "Archangel"
+    },
+    "8": {
+      "name": "The Fifth Element"
+    },
+    "9": {
+      "name": "Necromancer"
+    },
+    "10": {
+      "name": "Deadeye"
+    },
+    "11": {
+      "name": "Trickster"
+    },
+    "12": {
+      "name": "Sniper"
+    },
+    "13": {
+      "name": "Nuclear"
+    },
+    "14": {
+      "name": "Zero-to-Hundred"
+    },
+    "15": {
+      "name": "Arbiter"
+    },
+    "16": {
+      "name": "Chronos"
+    },
+    "17": {
+      "name": "Monarch"
+    },
+    "18": {
+      "name": "Architect"
+    },
+    "19": {
+      "name": "Magnum Opus"
+    },
+    "20": {
+      "name": "Godhand"
+    },
+    "21": {
+      "name": "Paladin"
+    },
+    "22": {
+      "name": "AGI"
+    },
+    "23": {
+      "name": "Treasure Hunter"
+    },
+    "24": {
+      "name": "Blood Moon"
+    },
+    "25": {
+      "name": "Heartbreaker"
+    },
+    "26": {
+      "name": "Wonderland"
+    },
+    "27": {
+      "name": "Cosmic Horror"
+    },
+    "28": {
+      "name": "Android"
+    },
+    "29": {
+      "name": "Gravity"
+    },
+    "30": {
+      "name": "Genius"
+    },
+    "31": {
+      "name": "Conflux"
+    },
+    "32": {
+      "name": "Butcher"
+    },
+    "33": {
+      "name": "Gilgamesh"
+    },
+    "34": {
+      "name": "Homunculus"
+    },
+    "35": {
+      "name": "Broker"
+    },
+    "36": {
+      "name": "Requiem"
+    },
+    "37": {
+      "name": "Fanatic"
+    },
+    "38": {
+      "name": "Medusa"
+    },
+    "39": {
+      "name": "Dominus"
+    },
+    "40": {
+      "name": "Elixir"
+    },
+    "41": {
+      "name": "Healing Factor"
+    },
+    "42": {
+      "name": "Steampunk"
+    },
+    "43": {
+      "name": "Nymph"
+    },
+    "44": {
+      "name": "Chaos"
+    },
+    "45": {
+      "name": "Genie"
+    },
+    "46": {
+      "name": "War Machine"
+    },
+    "70": {
+      "name": "Mastery : Magic Bolt"
+    },
+    "71": {
+      "name": "Mastery : Fireball"
+    },
+    "72": {
+      "name": "Mastery : Spirit"
+    },
+    "73": {
+      "name": "Mastery : Satellite"
+    },
+    "74": {
+      "name": "Mastery : Frost Nova"
+    },
+    "75": {
+      "name": "Mastery : Thunderstorm"
+    },
+    "76": {
+      "name": "Mastery : Electric Zone"
+    },
+    "77": {
+      "name": "Mastery : Tsunami"
+    },
+    "78": {
+      "name": "Mastery : Meteor"
+    },
+    "79": {
+      "name": "Mastery : Cyclone"
+    },
+    "80": {
+      "name": "Mastery : Electric Shock"
+    },
+    "81": {
+      "name": "Mastery : Incineration"
+    },
+    "82": {
+      "name": "Mastery : Energy Bolt"
+    },
+    "83": {
+      "name": "Mastery : Blizzard"
+    },
+    "84": {
+      "name": "Mastery : Arcane Ray"
+    },
+    "85": {
+      "name": "Mastery : Lava Zone"
+    },
+    "86": {
+      "name": "Mastery : Flash Shock"
     }
   }
 }

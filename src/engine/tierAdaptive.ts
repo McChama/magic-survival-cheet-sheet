@@ -1,16 +1,29 @@
 import { ARTIFACTS } from "../data/artifacts";
+import { SUBJECT_DETAILS } from "../data/classes";
 import { PASSIVES } from "../data/passives";
 import type { CurrentRunState, EquippableItem } from "../types/game";
+import { getRunStats } from "./runStats";
 
 export const ALL_ITEMS: EquippableItem[] = [...ARTIFACTS, ...PASSIVES];
 export const ITEM_BY_ID: Record<string, EquippableItem> = Object.fromEntries(
   ALL_ITEMS.map((item) => [item.id, item])
 );
 
+const ITEM_BY_NAME: Record<string, EquippableItem> = Object.fromEntries(ALL_ITEMS.map((item) => [item.name, item]));
+
+/** The artifact a Subject starts every run with (its `SubjectDetail.description`), or undefined. */
+export function getStartingArtifact(subject: string): EquippableItem | undefined {
+  const name = SUBJECT_DETAILS[subject]?.description;
+  return name ? ITEM_BY_NAME[name] : undefined;
+}
+
+/** Everything the run owns: the Subject's starting artifact (the game equips it at start) plus what was added. */
 export function getEquippedItems(run: CurrentRunState): EquippableItem[] {
-  return run.equipped
+  const items = run.equipped
     .map((stack) => ITEM_BY_ID[stack.itemId])
     .filter((item): item is EquippableItem => Boolean(item));
+  const starting = getStartingArtifact(run.meta.subject);
+  return starting && !items.includes(starting) ? [starting, ...items] : items;
 }
 
 export function hasTag(items: EquippableItem[], tag: string): boolean {
@@ -70,5 +83,6 @@ export function getTierMultiplier(adjustments: TierAdjustment[], tag: string): n
 
 /** ATK is "high" enough that raw damage is bottlenecked by 0% Amplify, per spec section 4.1. */
 export function isAmplifyStarved(run: CurrentRunState): boolean {
-  return run.stats.atk >= 120 && run.stats.amplifyAtk < 30;
+  const stats = getRunStats(run);
+  return stats.atk >= 120 && stats.amplifyAtk < 30;
 }

@@ -49,7 +49,41 @@ function playClickSound() {
   }
 }
 
+const MAGIC_CIRCLE_SOUND_SRC = `${import.meta.env.BASE_URL}assets/audio/ui/Sound_Etc28.ogg`
+const MAGIC_CIRCLE_SOUND_VOLUME = 0.5
+let magicCircleLoad: Promise<AudioBuffer | null> | null = null
+
+function loadMagicCircleBuffer(): Promise<AudioBuffer | null> {
+  if (!magicCircleLoad) {
+    magicCircleLoad = fetch(MAGIC_CIRCLE_SOUND_SRC)
+      .then((response) => response.arrayBuffer())
+      .then((arrayBuffer) => getAudioContext().decodeAudioData(arrayBuffer))
+      .then((buffer) => buffer)
+      .catch(() => null)
+  }
+  return magicCircleLoad
+}
+
+/** Plays the game's Magic Circle activation sound once. */
+export function playMagicCircleSound() {
+  const context = getAudioContext()
+  if (context.state === 'suspended') {
+    void context.resume()
+  }
+  void loadMagicCircleBuffer().then((buffer) => {
+    if (!buffer) return
+    const source = context.createBufferSource()
+    source.buffer = buffer
+    const gain = context.createGain()
+    gain.gain.value = MAGIC_CIRCLE_SOUND_VOLUME
+    source.connect(gain)
+    gain.connect(context.destination)
+    source.start(0)
+  })
+}
+
 export function initUiClickSound() {
+  void loadMagicCircleBuffer()
   void loadClickBuffer()
 
   document.addEventListener(

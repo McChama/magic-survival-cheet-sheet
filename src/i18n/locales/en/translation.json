@@ -4,7 +4,9 @@
     "cheatSheet": "Cheat Sheet",
     "startGame": "Start Game",
     "researchAria": "Research",
-    "subjectAria": "Subject"
+    "subjectAria": "Subject",
+    "dropProbabilityAria": "Drop Probability",
+    "recommenderAria": "Recommender"
   },
   "classSelect": {
     "closeAria": "Close",
@@ -21,20 +23,53 @@
     "noDetail": "—",
     "applying": "Applying",
     "select": "Select",
+    "unlocked": "Unlocked",
+    "locked": "Locked",
     "startingArtifactCount": "+{{count}}"
   },
   "dashboard": {
     "changeClassAria": "Change class",
     "currentLevel": "Current Level : {{level}}",
     "enemiesKilled": "Enemies killed {{count}}",
-    "loadout": "Loadout",
-    "emptyLoadout": "No artifacts or magics yet — use the + button to add some."
+    "magicCircleOn": "Magic Circle ON: +{{effect}}% Amplify ATK",
+    "magicCircleOff": "Magic Circle OFF",
+    "ownedMagicAria": "Owned Magic",
+    "ownedArtifactAria": "Owned Artifact",
+    "synergyAria": "Synergy",
+    "addAria": "Add to loadout"
   },
   "loadoutFab": {
     "artifact": "Artifact",
     "magic": "Magic",
+    "recommender": "Compare Offer",
     "openAria": "Add to loadout",
     "closeAria": "Close loadout menu"
+  },
+  "ownedMagic": {
+    "title": "Owned Magic",
+    "closeAria": "Close",
+    "empty": "Select a class first.",
+    "levelBadge": "Lv {{level}}",
+    "talentUnlockLevel": "Attribute Unlock Level : {{level}}",
+    "statUnknown": "—"
+  },
+  "ownedArtifact": {
+    "title": "Owned Artifact",
+    "closeAria": "Close",
+    "empty": "No artifacts equipped yet.",
+    "removeBtn": "Remove",
+    "rarityArtifact": "{{rarity}} Artifact",
+    "prevAria": "Previous artifact",
+    "nextAria": "Next artifact"
+  },
+  "synergy": {
+    "title": "Synergy",
+    "closeAria": "Close",
+    "ownedOf": "{{owned}}/{{required}} owned"
+  },
+  "boostSignal": {
+    "listLabel": "Boost signals",
+    "noSignal": "No confirmed boost yet."
   },
   "loadoutSheet": {
     "titleByKind": {
@@ -48,6 +83,9 @@
     "tapHint": "Tap an icon to add or remove it from your loadout.",
     "noAdditionalEffect": "No additional effect data.",
     "baseMagicPickup": "Base magic pickup — tracked for fusion dependencies.",
+    "magicLevelLabel": "Level",
+    "magicLevelDownAria": "Decrease magic level",
+    "magicLevelUpAria": "Increase magic level",
     "categories": {
       "all": "All",
       "normal": "Normal",
@@ -65,6 +103,45 @@
     "heading": "Research",
     "selectResearch": "Select Research",
     "researchBtn": "Research",
-    "revertBtn": "Revert"
+    "revertBtn": "Revert",
+    "resetBtn": "Reset all to 0"
+  },
+  "dropContext": {
+    "normalChest": "Normal Chest",
+    "merchant": "Merchant",
+    "obelisk": "Obelisk",
+    "brokenObelisk": "Broken Obelisk",
+    "relicChest": "Relic Chest"
+  },
+  "dropProbability": {
+    "closeAria": "Close",
+    "heading": "Drop Probability",
+    "exceptionsHeading": "Known exceptions",
+    "noExceptions": "No known per-item exceptions for this context.",
+    "noTierData": "Tier breakdown not researched yet for this context.",
+    "footerNote": "Estimates from a documented approximation, not the game's exact odds — see reference/game-data-sources.md.",
+    "slotsNote": {
+      "normalChest": "3 items per chest.",
+      "merchant": "8 items per merchant visit.",
+      "obelisk": "3 items — always legendary.",
+      "brokenObelisk": "4 items — non-legendary (exact tier breakdown not researched yet).",
+      "relicChest": "Roughly 2-7 items per relic chest — exactly 2 relic chests spawn per game."
+    }
+  },
+  "recommender": {
+    "closeAria": "Close",
+    "heading": "Recommender",
+    "modeArtifact": "Artifact Drop",
+    "modeMagic": "Magic Choice",
+    "offerPickerHint": "Pick {{min}}-{{max}} items the game just offered you.",
+    "offerPickerHintExact": "Pick all {{count}} items the game just offered you.",
+    "compareBtn": "Compare ({{count}})",
+    "changeOfferBtn": "Change Offer",
+    "recommendedBadge": "Recommended",
+    "noSynergyNote": "No confirmed real-data boost signal among these picks — ranked by estimated stat power instead.",
+    "noSynergySignal": "No confirmed boost signal",
+    "estimatedPowerLabel": "Est. power",
+    "dropOddsLabel": "≈{{percent}}% in this context",
+    "dropOddsUnavailable": "Odds not available for this context"
   }
 }

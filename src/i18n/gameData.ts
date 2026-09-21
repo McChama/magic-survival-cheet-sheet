@@ -1,9 +1,11 @@
 import { ARTIFACTS } from "../data/artifacts";
 import { CLASSES, CLASS_BONUSES, SUBJECTS, SUBJECT_DETAILS } from "../data/classes";
+import { MAGIC_STAT_LABEL } from "../data/magicStats";
 import { BASE_MAGICS } from "../data/magics";
 import { PASSIVES } from "../data/passives";
 import { RESEARCH } from "../data/research";
 import { STAT_DEFINITIONS } from "../data/statDefinitions";
+import { SYNERGIES } from "../data/synergies";
 import type { StatKey } from "../types/game";
 
 /** Matches the slugging scripts/organize-assets.mjs uses for class/subject sprite filenames. */
@@ -61,9 +63,17 @@ export function buildEnglishGameDataResource(): GameDataResource {
     set(resource, "research", node.id, "description", node.descriptionTemplate);
   }
 
+  for (const [kind, label] of Object.entries(MAGIC_STAT_LABEL)) set(resource, "magicStat", kind, "label", label);
+
   for (const key of Object.keys(STAT_DEFINITIONS) as StatKey[]) {
     set(resource, "stat", key, "label", STAT_DEFINITIONS[key].label);
   }
+
+  // Description lines are multi-color/multi-line (see SynergyDescriptionLine) and are
+  // rendered straight from SYNERGIES + GameText instead — only the name gets a formal
+  // gameData entry here, same as FUSIONS' names (never formally catalogued either, both
+  // rely on useGameDataText()'s fallback since the source text is already English).
+  for (const synergy of SYNERGIES) set(resource, "synergy", String(synergy.id), "name", synergy.name);
 
   return resource;
 }
