@@ -29,6 +29,7 @@ const TARGETS = [
   { dir: "classImages", maxSize: 100 },
   { dir: "baseMagicImages", maxSize: 120 },
   { dir: "researchImages", maxSize: 160 },
+  { dir: "synergyImages", maxSize: 160 },
 ];
 
 async function optimizeDir(dir, maxSize) {
