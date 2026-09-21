@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { uiImage } from "../../config/assets";
+import { NavIconButton } from "../shared/NavIconButton";
 
 interface HomeScreenProps {
   onStartGame: () => void;
   onOpenCharacter: () => void;
   onOpenResearch: () => void;
+  onOpenDropProbability: () => void;
+  onOpenRecommender: () => void;
 }
 
 /** The 3-frame title art loops as a subtle idle flicker, same idea as the Subject idle-sway frames. */
@@ -35,7 +38,7 @@ function TitleBackdrop() {
   );
 }
 
-export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch }: HomeScreenProps) {
+export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch, onOpenDropProbability, onOpenRecommender }: HomeScreenProps) {
   const { t } = useTranslation("translation");
   return (
     <div className="absolute inset-0 bg-black overflow-hidden flex flex-col">
@@ -62,15 +65,11 @@ export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch }: Hom
           {t("home.startGame")}
         </button>
         <div className="grid grid-cols-5 items-center justify-items-center mt-7 px-1">
+          <NavIconButton onClick={onOpenDropProbability} ariaLabel={t("home.dropProbabilityAria")} icon={uiImage("icons/UI_Icon007.png")} />
+          <NavIconButton onClick={onOpenResearch} ariaLabel={t("home.researchAria")} icon={uiImage("icons/UI_Icon002.png")} />
           <div />
-          <button type="button" onClick={onOpenResearch} aria-label={t("home.researchAria")} className="bg-transparent border-none p-0 cursor-pointer">
-            <img src={uiImage("icons/UI_Icon002.png")} alt="" className="w-[50px] h-[50px] object-contain" />
-          </button>
-          <div />
-          <button type="button" onClick={onOpenCharacter} aria-label={t("home.subjectAria")} className="bg-transparent border-none p-0 cursor-pointer">
-            <img src={uiImage("icons/UI_Icon003.png")} alt="" className="w-[50px] h-[50px] object-contain" />
-          </button>
-          <div />
+          <NavIconButton onClick={onOpenCharacter} ariaLabel={t("home.subjectAria")} icon={uiImage("icons/UI_Icon003.png")} />
+          <NavIconButton onClick={onOpenRecommender} ariaLabel={t("home.recommenderAria")} icon={uiImage("icons/UI_Icon008.png")} />
         </div>
       </div>
     </div>

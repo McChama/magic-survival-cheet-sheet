@@ -7,6 +7,8 @@ import { ScreenHeader } from "../shared/ScreenHeader";
 import { ScreenTitle } from "../shared/ScreenTitle";
 import { ScreenFooter } from "../shared/ScreenFooter";
 import { GameText } from "../shared/GameText";
+import { MaskedSprite } from "../shared/MaskedSprite";
+import { PipDot } from "../shared/PipDot";
 import type { ResearchDefinition } from "../../types/game";
 
 interface ResearchScreenProps {
@@ -52,10 +54,10 @@ function describeNode(def: ResearchDefinition, level: number, gt: (key: string, 
  * `isSelected ? "#efe18a" : ...` mask-color ternary), so "has progress" and "currently
  * viewing" never collide into one ambiguous color.
  */
-function nodeTint(level: number, isSelected: boolean): string {
-  if (isSelected) return "#ffffff";
-  if (level > 0) return "#efe18a";
-  return "rgba(232,232,226,.35)";
+function nodeTint(level: number, isSelected: boolean): { bg: string; text: string } {
+  if (isSelected) return { bg: "bg-white", text: "text-white" };
+  if (level > 0) return { bg: "bg-[#efe18a]", text: "text-[#efe18a]" };
+  return { bg: "bg-[#e8e8e2]/35", text: "text-[#e8e8e2]/35" };
 }
 
 /**
@@ -72,44 +74,14 @@ function nodeTint(level: number, isSelected: boolean): string {
  * extracted for them yet, only the 9 that double as an in-run passive icon are real (see
  * the sourcing note at the top of `data/research.ts`).
  */
-function NodeIcon({ src, alt, tint }: { src: string; alt: string; tint: string }) {
+function NodeIcon({ src, alt, tint }: { src: string; alt: string; tint: { bg: string; text: string } }) {
   const [failed, setFailed] = useState(false);
-  if (failed) {
-    return (
-      <span className="text-[0.7rem]" style={{ color: tint }}>
-        ?
-      </span>
-    );
-  }
+  if (failed) return <span className={`text-[0.7rem] ${tint.text}`}>?</span>;
   return (
     <>
       <img src={src} alt="" className="hidden" onError={() => setFailed(true)} />
-      <span
-        role="img"
-        aria-label={alt}
-        className="block w-full h-full"
-        style={{
-          backgroundColor: tint,
-          WebkitMaskImage: `url(${src})`,
-          maskImage: `url(${src})`,
-          WebkitMaskSize: "contain",
-          maskSize: "contain",
-          WebkitMaskRepeat: "no-repeat",
-          maskRepeat: "no-repeat",
-          WebkitMaskPosition: "center",
-          maskPosition: "center",
-        }}
-      />
+      <MaskedSprite src={src} label={alt} className={`block w-full h-full ${tint.bg}`} />
     </>
-  );
-}
-
-function Pip({ filled, size, tone }: { filled: boolean; size: number; tone: string }) {
-  return (
-    <span
-      className="rounded-full border border-[#e8e8e2]/45"
-      style={{ width: size, height: size, background: filled ? tone : "transparent" }}
-    />
   );
 }
 
@@ -119,6 +91,7 @@ export function ResearchScreen({ onClose }: ResearchScreenProps) {
   const run = useRunStore((s) => s.run);
   const researchUp = useRunStore((s) => s.researchUp);
   const researchDown = useRunStore((s) => s.researchDown);
+  const resetResearch = useRunStore((s) => s.resetResearch);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = selectedId ? RESEARCH_BY_ID[selectedId] : null;
@@ -126,6 +99,7 @@ export function ResearchScreen({ onClose }: ResearchScreenProps) {
 
   const canResearch = !!selected && run.meta.researchPoints > 0 && selectedLevel < selected.maxLevel;
   const canRevert = selectedLevel > 0;
+  const hasResearch = Object.values(run.researchLevels).some((level) => level > 0);
 
   return (
     <div className="absolute inset-0 flex flex-col bg-[#050506]">
@@ -148,7 +122,7 @@ export function ResearchScreen({ onClose }: ResearchScreenProps) {
           <>
             <div className="flex gap-[5px] items-center">
               {Array.from({ length: selected.maxLevel }, (_, i) => (
-                <Pip key={i} filled={i < selectedLevel} size={7} tone="#efe18a" />
+                <PipDot key={i} filled={i < selectedLevel} size="w-[7px] h-[7px]" fill="bg-[#efe18a]" />
               ))}
             </div>
             <div className="w-full h-9 flex items-center justify-center">
@@ -177,12 +151,12 @@ export function ResearchScreen({ onClose }: ResearchScreenProps) {
                   className={`h-full flex-none bg-transparent border-none p-0 cursor-pointer flex flex-col items-center justify-center gap-1 font-[inherit] transition-transform duration-150 ${isSelected ? "scale-110" : "scale-100"}`}
                   style={{ width: `calc((100% - ${RESEARCH_ROW_GAP_REM * (RESEARCH_ROW_COLUMNS - 1)}rem) / ${RESEARCH_ROW_COLUMNS})` }}
                 >
-                  <span className="h-[70%] aspect-square max-w-full flex items-center justify-center">
+                  <span className="h-[50%] aspect-square max-w-full flex items-center justify-center">
                     <NodeIcon src={node.image} alt={nodeLabel} tint={tint} />
                   </span>
                   <span className="flex-none flex gap-[3px] items-center">
                     {Array.from({ length: node.maxLevel }, (_, i) => (
-                      <Pip key={i} filled={i < level} size={6} tone={isSelected ? "#fff" : "#efe18a"} />
+                      <PipDot key={i} filled={i < level} size="w-[6px] h-[6px]" fill={isSelected ? "bg-white" : "bg-[#efe18a]"} />
                     ))}
                   </span>
                 </button>
@@ -211,6 +185,14 @@ export function ResearchScreen({ onClose }: ResearchScreenProps) {
             {t("research.revertBtn")}
           </button>
         </div>
+        <button
+          type="button"
+          disabled={!hasResearch}
+          onClick={resetResearch}
+          className={`bg-transparent border-none text-[0.9rem] cursor-pointer ${hasResearch ? "text-[#f0603c]" : "text-[#e8e8e2]/30"}`}
+        >
+          {t("research.resetBtn")}
+        </button>
       </ScreenFooter>
     </div>
   );

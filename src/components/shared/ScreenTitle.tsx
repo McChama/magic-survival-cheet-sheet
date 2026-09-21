@@ -1,10 +1,18 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 interface ScreenTitleProps {
   children: ReactNode;
-  /** Rare per-screen override (e.g. Subject Select's dark-on-light color + text-shadow). */
-  style?: CSSProperties;
+  /** Named color of the title: the default off-white, the gold the real game uses on its
+   *  Owned Magic / Owned Artifact / Synergy screens, or the dark teal + soft light shadow Subject Select
+   *  needs over its light background. */
+  tone?: "default" | "gold" | "dark";
 }
+
+const TONE_CLASS = {
+  default: "text-[#e8e8e2]",
+  gold: "text-[#efc84f]",
+  dark: "text-[#16333a] [text-shadow:0_1px_0_rgba(255,255,255,.25)]",
+} as const;
 
 /**
  * Fixed 48px title zone shared by every non-home screen: one line, 1.75rem, regular
@@ -12,12 +20,9 @@ interface ScreenTitleProps {
  * for what is conceptually the same "screen name" role). See CLAUDE.md's Screen layout
  * structure section.
  */
-export function ScreenTitle({ children, style }: ScreenTitleProps) {
+export function ScreenTitle({ children, tone = "default" }: ScreenTitleProps) {
   return (
-    <div
-      className="flex-none h-12 px-4 flex items-center justify-center font-magic text-[1.75rem] font-normal text-center text-[#e8e8e2]"
-      style={style}
-    >
+    <div className={`flex-none h-12 px-4 flex items-center justify-center font-magic text-[1.75rem] font-normal text-center ${TONE_CLASS[tone]}`}>
       {children}
     </div>
   );

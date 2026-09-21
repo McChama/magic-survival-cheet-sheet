@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { subjectAnimFrame, subjectImage, uiImage } from "../../config/assets";
-import { SUBJECTS } from "../../data/classes";
+import { ALWAYS_UNLOCKED_SUBJECT, SUBJECTS, isSubjectUnlocked } from "../../data/classes";
 import { useRunStore } from "../../store/useRunStore";
 import { slug as subjectSlug } from "../../i18n/gameData";
 import { useGameDataText } from "../../i18n/useGameDataText";
@@ -47,12 +47,11 @@ const IDLE_FRAME_MS = 150;
  * full 21-frame set — see IDLE_FRAMES). Sized in percentages of its row's height (not fixed
  * pixels) so all 6 rows scale to fit whatever vertical space is available without scrolling.
  */
-function SubjectSilhouette({ name, label, selected, applied }: { name: string; label: string; selected: boolean; applied: boolean }) {
+function SubjectSilhouette({ name, label, selected, applied, locked }: { name: string; label: string; selected: boolean; applied: boolean; locked: boolean }) {
   const slug = subjectSlug(name);
   const [frameIndex, setFrameIndex] = useState(0);
 
   useEffect(() => {
-    setFrameIndex(0);
     const id = window.setInterval(() => {
       setFrameIndex((i) => (i + 1) % IDLE_FRAMES.length);
     }, IDLE_FRAME_MS);
@@ -64,7 +63,7 @@ function SubjectSilhouette({ name, label, selected, applied }: { name: string; l
       <img
         src={subjectAnimFrame(slug, IDLE_FRAMES[frameIndex])}
         alt={label}
-        className={`max-w-full max-h-[68%] object-contain relative z-10 ${selected ? "opacity-100" : "opacity-[.85]"}`}
+        className={`max-w-full max-h-[68%] object-contain relative z-10 ${locked ? "grayscale opacity-40" : selected ? "opacity-100" : "opacity-[.85]"}`}
         onError={(e) => {
           // Fall back to the static portrait if this subject's animation set is somehow incomplete.
           e.currentTarget.onerror = null;
@@ -110,11 +109,16 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
   const appliedSubject = useRunStore((s) => s.run.meta.subject);
   const setSubject = useRunStore((s) => s.setSubject);
   const clearLoadout = useRunStore((s) => s.clearLoadout);
+  const unlockedSubjects = useRunStore((s) => s.run.meta.unlockedSubjects);
+  const toggleSubjectUnlocked = useRunStore((s) => s.toggleSubjectUnlocked);
 
   // A subject is always selected (defaults to SUBJECTS[0] "Wizard" in the store), so the
   // preview always has something to show — no "nothing chosen yet" state to handle here.
   const [previewName, setPreviewName] = useState<string>(appliedSubject);
   const isApplied = previewName === appliedSubject;
+  // Every Subject starts locked except Wizard, which is always unlocked and can't be locked.
+  const isUnlocked = isSubjectUnlocked(previewName, unlockedSubjects);
+  const isAlwaysUnlocked = previewName === ALWAYS_UNLOCKED_SUBJECT;
   const previewId = subjectSlug(previewName);
   const previewLabel = gt(`subject.${previewId}.name`, previewName);
   const description = gt(`subject.${previewId}.description`, "");
@@ -127,24 +131,15 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
 
   return (
     <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        display: "flex",
-        flexDirection: "column",
-        backgroundImage: `url(${uiImage("unit/UnitSkinBackGround.png")})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
+      className="absolute inset-0 flex flex-col bg-cover bg-center"
+      style={{ backgroundImage: `url(${uiImage("unit/UnitSkinBackGround.png")})` }}
     >
       <ScreenHeader
         onAction={handleClose}
         actionAria={t("subject.closeAria")}
         actionIcon={<img src={uiImage("icons/UI_Exit_Black.png")} alt="" className="w-[18px] h-[18px] object-contain" />}
       />
-      <ScreenTitle style={{ color: "#16333a", textShadow: "0 1px 0 rgba(255,255,255,.25)" }}>
-        {t("subject.title")}
-      </ScreenTitle>
+      <ScreenTitle tone="dark">{t("subject.title")}</ScreenTitle>
 
       <div className="flex-1 min-h-0 flex flex-col justify-evenly py-2.5 px-2.5 pb-1.5 gap-2.5">
         {SUBJECT_ROWS.map((row, rowIndex) => (
@@ -160,7 +155,7 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
                   onClick={() => setPreviewName(name)}
                   className={`relative bg-transparent border-none p-0 cursor-pointer flex flex-col items-center justify-end h-full flex-initial min-w-0 font-[inherit] origin-bottom transition-transform duration-150 ${isSelected ? "scale-110" : "scale-100"}`}
                 >
-                  <SubjectSilhouette name={name} label={label} selected={isSelected} applied={isAppliedSubject} />
+                  <SubjectSilhouette name={name} label={label} selected={isSelected} applied={isAppliedSubject} locked={!isSubjectUnlocked(name, unlockedSubjects)} />
                 </button>
               );
             })}
@@ -173,10 +168,10 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
 
         <SubjectDetailDivider />
 
-        <div className="text-[0.8rem] text-[#efc84f] text-center">
+        <div className={`text-[0.8rem] text-center ${isUnlocked ? "text-[#efc84f]" : "text-[#7c7c80]"}`}>
           {description ? `${description} ${t("subject.startingArtifactCount", { count: 1 })}` : t("subject.noDetail")}
         </div>
-        <div className="text-[0.8rem] text-[#e88fc0] text-center">
+        <div className={`text-[0.8rem] text-center ${isUnlocked ? "text-[#e88fc0]" : "text-[#7c7c80]"}`}>
           {trait || t("subject.noDetail")}
         </div>
 
@@ -186,6 +181,15 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
           className={`w-[70%] max-w-[220px] h-[1.2rem] flex items-center justify-center border-none rounded leading-none cursor-pointer text-[0.9rem] ${isApplied ? "bg-[#3a2420] text-[#f0603c]" : "bg-[#2d2d31] text-white"}`}
         >
           {isApplied ? t("subject.applying") : t("subject.select")}
+        </button>
+
+        <button
+          type="button"
+          disabled={isAlwaysUnlocked}
+          onClick={() => toggleSubjectUnlocked(previewName)}
+          className={`w-[70%] max-w-[220px] h-[1.2rem] flex items-center justify-center border-none rounded leading-none text-[0.8rem] ${isAlwaysUnlocked ? "cursor-default" : "cursor-pointer"}${isUnlocked ? "bg-[#1f3a26] text-[#7dff9c]" : "bg-[#2d2d31] text-white/60"}`}
+        >
+          {isUnlocked ? t("subject.unlocked") : t("subject.locked")}
         </button>
       </ScreenFooter>
     </div>

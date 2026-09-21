@@ -1,27 +1,23 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FilterChip } from "./FilterChip";
 import type { TFunction } from "i18next";
 import { MAGIC_CATEGORY } from "../../data/magicCategories";
+import { getMagicLevel, TALENT_OPTIONS_BY_MAGIC_ID } from "../../data/fusions";
 import { optionsByKind, type QuickAddKind } from "../../data/quickAddOptions";
 import { STAT_DEFINITIONS } from "../../data/statDefinitions";
 import { useRunStore } from "../../store/useRunStore";
 import { useGameDataText } from "../../i18n/useGameDataText";
+import { uiImage } from "../../config/assets";
 import { ScreenHeader } from "./ScreenHeader";
+import { RARITY_RING } from "../../config/rarityColors";
 import type { RecommenderOption } from "../../engine/scoring";
-import type { Rarity, StatKey } from "../../types/game";
+import type { StatKey } from "../../types/game";
 
 /** The gameData translation key for an option's display name — items use their own id, base magics use the bare magic id (option.id is prefixed "magic:"). */
 function optionNameKey(option: RecommenderOption): string {
   return option.item ? `item.${option.item.id}.name` : `magic.${option.magicId}.name`;
 }
-
-const RARITY_RING: Record<Rarity, string> = {
-  common: "rgb(121,119,120)",
-  rare: "rgb(47,77,97)",
-  epic: "rgb(82,40,90)",
-  special: "rgb(107,25,34)",
-  legendary: "rgb(161,163,51)",
-};
 
 /** The category's own identity color, used as the "owned" ring for items with no per-item accent (magics). */
 const RING_BY_KIND: Record<QuickAddKind, string> = {
@@ -109,6 +105,66 @@ function describeOption(option: RecommenderOption, t: TFunction, gt: (key: strin
   return t("loadoutSheet.baseMagicPickup");
 }
 
+interface MagicLevelTalentTrackerProps {
+  magicId: string;
+  level: number;
+  talent: string | null;
+  onLevelChange: (level: number) => void;
+  onTalentChange: (talent: string | null) => void;
+}
+
+/**
+ * Lets the player record a currently-acquired magic's level and (real, extracted) talent
+ * branch, so the synergy engine can match fusion ingredients precisely instead of just
+ * "you own this magic." Level has no upper bound — the real in-game max level isn't
+ * datamined anywhere in this repo (unlike Class Level's known 1-5), so this is a plain
+ * stepper, not a fixed pip row like `ClassSelectScreen.tsx`'s. Talent chips only render
+ * for names `TALENT_OPTIONS_BY_MAGIC_ID` actually has real data for — a magic with 0 or 1
+ * known talent name shows that many chips, never a padded-out fake 3-way choice.
+ */
+function MagicLevelTalentTracker({ magicId, level, talent, onLevelChange, onTalentChange }: MagicLevelTalentTrackerProps) {
+  const { t } = useTranslation("translation");
+  const talentOptions = TALENT_OPTIONS_BY_MAGIC_ID[magicId] ?? [];
+
+  return (
+    <div className="flex flex-col items-center gap-1.5 pt-1">
+      <div className="flex items-center gap-3">
+        <span className="text-[0.7rem] text-[#e8e8e2]/55">{t("loadoutSheet.magicLevelLabel")}</span>
+        <button
+          type="button"
+          disabled={level <= 1}
+          onClick={() => onLevelChange(level - 1)}
+          aria-label={t("loadoutSheet.magicLevelDownAria")}
+          className="w-3 h-3 bg-transparent border-none p-0 cursor-pointer disabled:opacity-25 disabled:cursor-default"
+        >
+          <img src={uiImage("icons/UI_AreaMove_L.png")} alt="" className="w-full h-full object-contain" />
+        </button>
+        <span className="font-magic text-[0.95rem] text-[#e8e8e2] w-4 text-center">{level}</span>
+        <button
+          type="button"
+          onClick={() => onLevelChange(level + 1)}
+          aria-label={t("loadoutSheet.magicLevelUpAria")}
+          className="w-3 h-3 bg-transparent border-none p-0 cursor-pointer"
+        >
+          <img src={uiImage("icons/UI_AreaMove_R.png")} alt="" className="w-full h-full object-contain" />
+        </button>
+      </div>
+      {talentOptions.length > 0 && (
+        <div className="flex gap-1.5 flex-wrap justify-center">
+          {talentOptions.map((name) => {
+            const active = talent === name;
+            return (
+              <FilterChip key={name} active={active} color="#5fe3c4" activeText="#0d0d10" onClick={() => onTalentChange(active ? null : name)} className="flex-none py-[3px] px-2.5 text-[0.68rem]">
+                {name}
+              </FilterChip>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface LoadoutSheetProps {
   kind: QuickAddKind;
   onClose: () => void;
@@ -128,6 +184,8 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
   const equipItem = useRunStore((s) => s.equipItem);
   const unequipItem = useRunStore((s) => s.unequipItem);
   const toggleAcquiredMagic = useRunStore((s) => s.toggleAcquiredMagic);
+  const setMagicLevel = useRunStore((s) => s.setMagicLevel);
+  const setMagicTalent = useRunStore((s) => s.setMagicTalent);
 
   const categories = kind === "magic" ? MAGIC_CATEGORIES : RARITY_CATEGORIES;
   const [activeKey, setActiveKey] = useState("all");
@@ -168,19 +226,9 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
         {categories.map((c) => {
           const active = c.key === activeKey;
           return (
-            <button
-              key={c.key}
-              type="button"
-              onClick={() => setActiveKey(c.key)}
-              className="flex-none py-[7px] px-3.5 rounded-full font-[inherit] text-[0.8rem] cursor-pointer"
-              style={{
-                background: active ? c.color : "transparent",
-                color: active ? "#fff" : "rgba(232,232,226,.6)",
-                border: `1px solid ${active ? c.color : "rgba(255,255,255,.14)"}`,
-              }}
-            >
+            <FilterChip key={c.key} active={active} color={c.color} activeText="#fff" onClick={() => setActiveKey(c.key)} className="flex-none py-[7px] px-3.5 text-[0.8rem]">
               {t(CATEGORY_LABEL_KEY[c.key])}
-            </button>
+            </FilterChip>
           );
         })}
       </div>
@@ -198,8 +246,8 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
                 type="button"
                 title={label}
                 onClick={() => toggle(option)}
-                className={`relative aspect-square rounded-[7px] bg-[#0d0d10] cursor-pointer flex items-center justify-center p-0 overflow-hidden transition-transform duration-150 ${isSelected ? "scale-110" : "scale-100"}`}
-                style={{ border: isSelected ? "2px solid #fff" : `1px solid ${ring}` }}
+                className={`relative aspect-square rounded-[7px] bg-[#0d0d10] cursor-pointer flex items-center justify-center p-0 overflow-hidden transition-transform duration-150 ${isSelected ? "scale-110 border-2 border-white" : "scale-100 border"}`}
+                style={isSelected ? undefined : { borderColor: ring }}
               >
                 {option.image ? <OptionIcon src={option.image} alt={label} /> : <span className="text-[#e8e8e2]/30 text-2xl">?</span>}
                 {owned && (
@@ -219,6 +267,15 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
         <div className="text-[0.75rem] text-[#e8e8e2]/55">
           {lastPicked ? describeOption(lastPicked, t, gt) : t("loadoutSheet.tapHint")}
         </div>
+        {lastPicked?.magicId && isOwned(lastPicked) && (
+          <MagicLevelTalentTracker
+            magicId={lastPicked.magicId}
+            level={getMagicLevel(run.magicLevels, lastPicked.magicId)}
+            talent={run.magicTalents[lastPicked.magicId] ?? null}
+            onLevelChange={(level) => setMagicLevel(lastPicked.magicId!, level)}
+            onTalentChange={(talent) => setMagicTalent(lastPicked.magicId!, talent)}
+          />
+        )}
       </div>
     </div>
   );
