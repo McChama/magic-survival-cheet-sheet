@@ -6,7 +6,7 @@ ground truth instead of re-discovering or re-deciding things. Read the
 relevant file here before making a judgment call this project has already
 made once.
 
-- **`game-data-sources.md`** — where the game data in `src/data/` came from
+- **`../research/game-data-sources.md`** (private: `research/` is gitignored, so it only exists on the author's machine) — where the game data in `src/data/` came from
   (extraction methodology, priority order, wiki pages used), known
   discrepancies that are deliberate (not bugs to "fix"), missing sprites,
   and structural notes on `fusions.ts`'s sentinel conventions. Read this
