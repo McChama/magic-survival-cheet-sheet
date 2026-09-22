@@ -33,6 +33,16 @@ export const MAGIC_CATEGORY: Record<string, MagicCategory> = {
 };
 
 export const MAGIC_CATEGORY_LABEL: Record<MagicCategory, string> = {
-  offensive: "Offensive",
+  offensive: "Active",
   utility: "Utility",
 };
+
+/** The four kinds of magic the "+" menu tells apart: the two base-magic categories, the regular passives and the special passives. */
+export type MagicKind = MagicCategory | "passive" | "special";
+
+/** The kind of a pickable option: a base magic by its category, a passive by its rarity (common = regular, special = special). */
+export function magicKindOf(option: { magicId?: string; item?: { kind: string; rarity: string } }): MagicKind | null {
+  if (option.magicId) return MAGIC_CATEGORY[option.magicId] ?? null;
+  if (option.item?.kind !== "passive") return null;
+  return option.item.rarity === "special" ? "special" : "passive";
+}

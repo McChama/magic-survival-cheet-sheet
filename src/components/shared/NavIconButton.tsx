@@ -4,7 +4,8 @@ interface NavIconButtonProps {
   icon: string;
   /** Circular chip background (Dashboard's colored nav row) — omitted for Home's bare,
    *  background-less icon buttons. Either way the button's own footprint is the same
-   *  50×50 standard; a background just shrinks the icon inside it to leave visible chip. */
+   *  50×50 standard; a background just shrinks the icon inside it (a fixed 24px glyph box, so every
+   *  chip's icon reads the same size) to leave visible chip. */
   background?: string;
 }
 
@@ -24,7 +25,7 @@ export function NavIconButton({ onClick, ariaLabel, icon, background }: NavIconB
       className="w-[50px] h-[50px] bg-transparent border-none p-0 cursor-pointer flex items-center justify-center rounded-full"
       style={background ? { background } : undefined}
     >
-      <img src={icon} alt="" className={background ? "w-7 h-7 object-contain" : "w-[50px] h-[50px] object-contain"} />
+      <img src={icon} alt="" className={background ? "w-6 h-6 object-contain" : "w-[50px] h-[50px] object-contain"} />
     </button>
   );
 }

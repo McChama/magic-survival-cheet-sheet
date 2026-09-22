@@ -1,4 +1,4 @@
-import { passiveImage } from "../config/assets";
+import { passiveImage, researchImage } from "../config/assets";
 import type { EquippableItem } from "../types/game";
 
 /**
@@ -7,20 +7,22 @@ import type { EquippableItem } from "../types/game";
  * leveled passives you pick during a run + 24 unique "special" ones), not the
  * previous 19-item subset sourced from TomkoSK/magic-survival-builder.
  *
+ * The 8 base passives whose icon is the same sprite as their Research node (Intelligence, Fast Casting, Vitality, Haste, Arcane
+ * Effuse, Concentration, Snipe, Explorer — the game reuses it) load it from `researchImages/`: there is no `passiveImages/` copy.
  * Base leveled passives keep the app's existing "-passive" id suffix convention
  * and are shown at max level, same as before. Stats/specialEffect extraction uses
  * the same method as artifacts.ts — see that file's header comment.
  */
 export const PASSIVES: EquippableItem[] = [
   { id: "magiaavanzada-passive", name: "Advanced Magic", rarity: "common", kind: "passive", image: passiveImage("magiaavanzada-passive.png"), stats: {}, specialEffect: "Increases the Damage of [Magic Combinations] by 〈15%〉." }, // source id 30
-  { id: "intelligence-passive", name: "Intelligence", rarity: "common", kind: "passive", image: passiveImage("intelligence.png"), stats: { atk: 22 } }, // source id 31
-  { id: "fastcasting-passive", name: "Fast Casting", rarity: "common", kind: "passive", image: passiveImage("fastcasting.png"), stats: { cooldown: 7 }, tags: ["cooldown"] }, // source id 32
-  { id: "vitality-passive", name: "Vitality", rarity: "common", kind: "passive", image: passiveImage("vitality.png"), stats: { hp: 60, lifeOrbRecovery: 10 } }, // source id 33
-  { id: "haste-passive", name: "Haste", rarity: "common", kind: "passive", image: passiveImage("haste.png"), stats: { moveSpeed: 12 }, tags: ["moveSpeed"] }, // source id 34
-  { id: "arcaneeffuse-passive", name: "Arcane Effuse", rarity: "common", kind: "passive", image: passiveImage("arcaneeffuse.png"), stats: { magicSize: 9 } }, // source id 35
-  { id: "concentration-passive", name: "Concentration", rarity: "common", kind: "passive", image: passiveImage("concentration.png"), stats: { magicDuration: 16 } }, // source id 36
-  { id: "snipe-passive", name: "Snipe", rarity: "common", kind: "passive", image: passiveImage("snipe.png"), stats: { critRate: 7 } }, // source id 37
-  { id: "explorer-passive", name: "Explorer", rarity: "common", kind: "passive", image: passiveImage("explorer.png"), stats: { itemPickupRange: 53 } }, // source id 38
+  { id: "intelligence-passive", name: "Intelligence", rarity: "common", kind: "passive", image: researchImage("intelligence.png"), stats: { atk: 22 } }, // source id 31
+  { id: "fastcasting-passive", name: "Fast Casting", rarity: "common", kind: "passive", image: researchImage("fastcasting.png"), stats: { cooldown: 7 }, tags: ["cooldown"] }, // source id 32
+  { id: "vitality-passive", name: "Vitality", rarity: "common", kind: "passive", image: researchImage("vitality.png"), stats: { hp: 60, lifeOrbRecovery: 10 } }, // source id 33
+  { id: "haste-passive", name: "Haste", rarity: "common", kind: "passive", image: researchImage("haste.png"), stats: { moveSpeed: 12 }, tags: ["moveSpeed"] }, // source id 34
+  { id: "arcaneeffuse-passive", name: "Arcane Effuse", rarity: "common", kind: "passive", image: researchImage("arcaneeffuse.png"), stats: { magicSize: 9 } }, // source id 35
+  { id: "concentration-passive", name: "Concentration", rarity: "common", kind: "passive", image: researchImage("concentration.png"), stats: { magicDuration: 16 } }, // source id 36
+  { id: "snipe-passive", name: "Snipe", rarity: "common", kind: "passive", image: researchImage("snipe.png"), stats: { critRate: 7 } }, // source id 37
+  { id: "explorer-passive", name: "Explorer", rarity: "common", kind: "passive", image: researchImage("explorer.png"), stats: { itemPickupRange: 53 } }, // source id 38
   { id: "ruptura-passive", name: "Rupture", rarity: "common", kind: "passive", image: passiveImage("ruptura-passive.png"), stats: { critMultiplier: 25 } }, // source id 39
   { id: "lordoffire", name: "Lord of Fire", rarity: "special", kind: "passive", image: passiveImage("lordoffire.png"), stats: {}, specialEffect: "Increases the [Damage] of the following Magic by 〈25%〉. Fireball, Meteor, Incineration, Lava Zone" }, // source id 301
   { id: "stormyclouds", name: "Stormy Clouds", rarity: "special", kind: "passive", image: passiveImage("stormyclouds.png"), stats: {}, specialEffect: "Increases the [Damage] of the following Magic by 〈25%〉. Thunderstorm, Electric Shock, Electric Zone, Flash Shock" }, // source id 302

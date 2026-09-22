@@ -53,7 +53,7 @@ import type { ResearchDefinition } from "../types/game";
  *
  * `descriptionTemplate`/`descriptionColor` were added 2026-09-15, sourced directly from
  * `eng_Dictionary_Ability.txt` (type "연구", ids 261-282 — the same file/methodology as
- * `classes.ts`'s `CLASS_BONUSES`, see `reference/game-data-sources.md`). Before this,
+ * `classes.ts`'s `CLASS_BONUSES`, see `research/game-data-sources.md`). Before this,
  * `ResearchScreen.tsx` displayed a synthetic, app-generated sentence ("Increase {stat} by
  * {step}%") instead of the game's own text — close for the flat-stat nodes but wrong for
  * anything with a more specific real sentence (e.g. Recycle's real text is "Retrieve 〈□%〉

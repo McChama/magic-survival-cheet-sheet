@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { uiImage } from "../../config/assets";
 import { LoadoutSheet } from "../shared/LoadoutSheet";
 import type { QuickAddKind } from "../../data/quickAddOptions";
 
@@ -8,18 +9,19 @@ interface LoadoutFabProps {
 }
 
 /**
- * The 4th ("Add") circle in the Dashboard's nav row — inline now, not a floating
+ * The "Add" circle under the Dashboard's nav row — inline, not a floating
  * corner FAB, so its popup opens *upward* from the button (`bottom-full`) instead of
- * being pinned to a screen corner. The dismiss backdrop stays `fixed inset-0` (not
+ * being pinned to a screen corner. Its glyph is the game's X sprite turned 45° so it reads as a "+"
+ * (and back to an X while the menu is open). The dismiss backdrop stays `fixed inset-0` (not
  * `absolute`) specifically because this button no longer sits in a full-screen-positioned
  * wrapper — an `absolute` backdrop would only cover this footer row, not the whole screen.
  */
 export function LoadoutFab({ onOpenRecommender }: LoadoutFabProps) {
   const { t } = useTranslation("translation");
   const [fabOpen, setFabOpen] = useState(false);
-  const [activeKind, setActiveKind] = useState<QuickAddKind | null>(null);
+  const [activeKind, setActiveKind] = useState<Exclude<QuickAddKind, "passive"> | null>(null);
 
-  function openSheet(kind: QuickAddKind) {
+  function openSheet(kind: Exclude<QuickAddKind, "passive">) {
     setActiveKind(kind);
     setFabOpen(false);
   }
@@ -73,9 +75,13 @@ export function LoadoutFab({ onOpenRecommender }: LoadoutFabProps) {
         type="button"
         aria-label={fabOpen ? t("loadoutFab.closeAria") : t("loadoutFab.openAria")}
         onClick={() => setFabOpen((v) => !v)}
-        className={`w-[50px] h-[50px] rounded-full border-none bg-[#5c1a1a] text-white text-2xl leading-none cursor-pointer flex items-center justify-center transition-transform duration-[180ms] ease-in-out ${fabOpen ? "rotate-45" : "rotate-0"}`}
+        className="w-[50px] h-[50px] rounded-full border-none bg-[#5c1a1a] p-0 cursor-pointer flex items-center justify-center"
       >
-        +
+        <img
+          src={uiImage("icons/UI_Exit.png")}
+          alt=""
+          className={`w-[30px] h-[30px] object-contain transition-transform duration-[180ms] ease-in-out ${fabOpen ? "rotate-0" : "rotate-45"}`}
+        />
       </button>
     </div>
 

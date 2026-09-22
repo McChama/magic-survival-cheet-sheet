@@ -62,7 +62,7 @@ export interface BaseMagic {
 
 /**
  * The 5 drop sources this app models — see `src/data/dropProbability.ts`'s top comment
- * and `reference/game-data-sources.md`'s "Drop-probability investigation" section for
+ * and `research/game-data-sources.md`'s "Drop-probability investigation" section for
  * the full sourcing/citations. `obelisk` is the real in-game mechanic (see DNA's own
  * effect text, "For each [Obelisk] obtained...") offering 3 legendary items; once a
  * player has enough legendary artifacts it stops offering legendaries and becomes a

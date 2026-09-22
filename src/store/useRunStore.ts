@@ -135,9 +135,11 @@ export const useRunStore = create<RunStore>()(
         }),
 
       unequipItem: (itemId) =>
-        set((state) => ({
-          run: { ...state.run, equipped: state.run.equipped.filter((e) => e.itemId !== itemId) },
-        })),
+        set((state) => {
+          // A passive's recorded level goes with it.
+          const { [itemId]: _level, ...magicLevels } = state.run.magicLevels;
+          return { run: { ...state.run, equipped: state.run.equipped.filter((e) => e.itemId !== itemId), magicLevels } };
+        }),
 
       toggleAcquiredMagic: (magicId) =>
         set((state) => {

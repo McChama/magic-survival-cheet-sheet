@@ -7,8 +7,6 @@ interface HomeScreenProps {
   onStartGame: () => void;
   onOpenCharacter: () => void;
   onOpenResearch: () => void;
-  onOpenDropProbability: () => void;
-  onOpenRecommender: () => void;
 }
 
 /** The 3-frame title art loops as a subtle idle flicker, same idea as the Subject idle-sway frames. */
@@ -38,7 +36,7 @@ function TitleBackdrop() {
   );
 }
 
-export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch, onOpenDropProbability, onOpenRecommender }: HomeScreenProps) {
+export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch }: HomeScreenProps) {
   const { t } = useTranslation("translation");
   return (
     <div className="absolute inset-0 bg-black overflow-hidden flex flex-col">
@@ -64,12 +62,9 @@ export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch, onOpe
         >
           {t("home.startGame")}
         </button>
-        <div className="grid grid-cols-5 items-center justify-items-center mt-7 px-1">
-          <NavIconButton onClick={onOpenDropProbability} ariaLabel={t("home.dropProbabilityAria")} icon={uiImage("icons/UI_Icon007.png")} />
+        <div className="flex items-center justify-around mt-7 px-[15%]">
           <NavIconButton onClick={onOpenResearch} ariaLabel={t("home.researchAria")} icon={uiImage("icons/UI_Icon002.png")} />
-          <div />
           <NavIconButton onClick={onOpenCharacter} ariaLabel={t("home.subjectAria")} icon={uiImage("icons/UI_Icon003.png")} />
-          <NavIconButton onClick={onOpenRecommender} ariaLabel={t("home.recommenderAria")} icon={uiImage("icons/UI_Icon008.png")} />
         </div>
       </div>
     </div>

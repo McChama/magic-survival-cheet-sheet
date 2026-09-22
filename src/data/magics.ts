@@ -101,10 +101,15 @@ export function getMagicMaxLevel(magicId: string): number {
 /**
  * All 63 fusion sprites (including Exidium/Deus Ex Machina/Glacium/Soul Blade/Discharge,
  * which the original wiki-sourced dump was missing) now come from the real APK sprite
- * extraction — see scripts/organize-assets.mjs and reference/game-data-sources.md.
+ * extraction — see scripts/organize-assets.mjs and research/game-data-sources.md.
  */
 export function magicSpriteUrl(fusionId: string): string {
   return magicImage(`${fusionId}.png`);
+}
+
+/** The larger copy of a combination's portrait (`magicImages/large/`), for the Magic Combination detail. */
+export function magicLargeSpriteUrl(fusionId: string): string {
+  return magicImage(`large/${fusionId}.png`);
 }
 
 /**
@@ -122,7 +127,7 @@ export function magicSpriteUrl(fusionId: string): string {
  *    remaining candidate that looks like a beam/ray effect.
  *  - intelligence: a stat-boost passive, not a projectile, so there was no strong visual
  *    signal to match against; picked the leftover unassigned candidate (a simple sparkle).
- * See reference/game-data-sources.md for the full candidate grid this was chosen from.
+ * See research/game-data-sources.md for the full candidate grid this was chosen from.
  */
 export function baseMagicSpriteUrl(magicId: string): string {
   return baseMagicImage(`${magicId}.png`);

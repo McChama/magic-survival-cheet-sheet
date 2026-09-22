@@ -6,7 +6,7 @@
  * unorganized ~300MB APK sprite dump — source material for `scripts/organize-assets.mjs`,
  * not something the app itself ever loads) from component code. If the asset you need isn't
  * under `public/assets/` yet, it needs organizing first — see
- * reference/game-data-sources.md's "Sprites: real APK extraction" section.
+ * research/game-data-sources.md's "Sprites: real APK extraction" section.
  *
  * These sprites and the MagicSurvival.ttf font are extracted game assets originally
  * sourced from the public repo TomkoSK/magic-survival-builder, not original artwork
@@ -74,7 +74,7 @@ export function uiImage(fileName: string): string {
 
 /**
  * One of the 7 real in-game button-click sound variants (public/assets/audio/ui/) — the
- * game picks one at random per click, see reference/game-data-sources.md. Not wired up to
+ * game picks one at random per click, see research/game-data-sources.md. Not wired up to
  * any button yet; this is just the path helper for when that lands.
  */
 export function uiClickSound(variant: number): string {

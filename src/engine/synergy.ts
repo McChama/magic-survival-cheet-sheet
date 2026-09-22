@@ -12,7 +12,7 @@ import type { CurrentRunState } from "../types/game";
  * or an item's own extracted `specialEffect` text) — never a fabricated number. An item
  * with no real signal returns `[]`, which the UI must show honestly as "no confirmed
  * synergy," not hide or paper over with a guessed one. See
- * `reference/game-data-sources.md` and this session's plan for the full derivation.
+ * `research/game-data-sources.md` and this session's plan for the full derivation.
  */
 
 export type SynergyTier = 1 | 2 | 3 | 4 | 5 | 6;

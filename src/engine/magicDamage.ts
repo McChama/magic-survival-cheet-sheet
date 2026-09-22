@@ -19,7 +19,7 @@ function permanentBonusFor(magicId: string, text?: string): number {
  * "Increase Magic Bolt Damage by 5% (All Classes)"; the Subject in use has no special status) and the Lv5 bonus of every Class leveled to 5
  * (Wizard's "Increase Magic Bolt Damage by 20% (All Classes)"). In the game these feed one
  * per-magic ratio that adds up with "All Magic Damage" (`AllyUnitVar_MagicBulletDamageRatioU`
- * += the general ratio — see reference/game-data-sources.md). Not included yet: a magic's own
+ * += the general ratio — see research/game-data-sources.md). Not included yet: a magic's own
  * level-ups, completed "Mastery" Synergies, artifacts, and a Class's character-level bonuses.
  */
 export function permanentMagicDamageBonus(magicId: string, run: CurrentRunState): number {

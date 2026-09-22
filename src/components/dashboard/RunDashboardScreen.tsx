@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { DASHBOARD_STAT_LAYOUT } from "../../data/statGlyphs";
 import { uiImage } from "../../config/assets";
+import { getAvailableFusions } from "../../engine/magicCombination";
 import { useRunStore } from "../../store/useRunStore";
 import { slug as gameDataSlug } from "../../i18n/gameData";
 import { useGameDataText } from "../../i18n/useGameDataText";
@@ -17,11 +18,12 @@ interface RunDashboardScreenProps {
   onOpenOwnedMagic: () => void;
   onOpenOwnedArtifact: () => void;
   onOpenSynergy: () => void;
+  onOpenMagicCombination: () => void;
 }
 
 const NAV_BG = "#1b2a3a";
 
-export function RunDashboardScreen({ onChangeClass, onOpenRecommender, onOpenOwnedMagic, onOpenOwnedArtifact, onOpenSynergy }: RunDashboardScreenProps) {
+export function RunDashboardScreen({ onChangeClass, onOpenRecommender, onOpenOwnedMagic, onOpenOwnedArtifact, onOpenSynergy, onOpenMagicCombination }: RunDashboardScreenProps) {
   const { t } = useTranslation("translation");
   const gt = useGameDataText();
   const run = useRunStore((s) => s.run);
@@ -30,6 +32,7 @@ export function RunDashboardScreen({ onChangeClass, onOpenRecommender, onOpenOwn
 
   const subjectLabel = gt(`subject.${gameDataSlug(run.meta.subject)}.name`, run.meta.subject);
   const classLabel = run.meta.characterClass ? gt(`class.${gameDataSlug(run.meta.characterClass)}.name`, run.meta.characterClass) : null;
+  const combinationAvailable = getAvailableFusions(run).length > 0;
 
   return (
     <div className="absolute inset-0 flex flex-col bg-[#050506]">
@@ -55,10 +58,20 @@ export function RunDashboardScreen({ onChangeClass, onOpenRecommender, onOpenOwn
         </div>
       </div>
 
-      <div className="flex-none flex items-center justify-center gap-5 pb-6 pt-2">
-        <NavIconButton onClick={onOpenOwnedMagic} ariaLabel={t("dashboard.ownedMagicAria")} icon={uiImage("icons/UI_Icon007.png")} background={NAV_BG} />
-        <NavIconButton onClick={onOpenOwnedArtifact} ariaLabel={t("dashboard.ownedArtifactAria")} icon={uiImage("icons/UI_Icon009.png")} background={NAV_BG} />
-        <NavIconButton onClick={onOpenSynergy} ariaLabel={t("dashboard.synergyAria")} icon={uiImage("icons/UI_Icon010.png")} background={NAV_BG} />
+      <div className="flex-none flex flex-col items-center gap-3 pb-6 pt-2">
+        <div className="flex items-center justify-center gap-5">
+          <NavIconButton onClick={onOpenOwnedMagic} ariaLabel={t("dashboard.ownedMagicAria")} icon={uiImage("icons/UI_Icon007.png")} background={NAV_BG} />
+          <NavIconButton onClick={onOpenOwnedArtifact} ariaLabel={t("dashboard.ownedArtifactAria")} icon={uiImage("icons/UI_Icon009.png")} background={NAV_BG} />
+          <NavIconButton onClick={onOpenSynergy} ariaLabel={t("dashboard.synergyAria")} icon={uiImage("icons/UI_Icon010.png")} background={NAV_BG} />
+          {/* The game's own Magic Combination heptagram (its icon with the black disc cut out, so it sits on the same chip as
+              the others): gray while no combination is available, red once one is. */}
+          <NavIconButton
+            onClick={onOpenMagicCombination}
+            ariaLabel={t("dashboard.magicCombinationAria")}
+            icon={uiImage(combinationAvailable ? "icons/UI_MagicCom_GlyphB.png" : "icons/UI_MagicCom_GlyphA.png")}
+            background={NAV_BG}
+          />
+        </div>
         <LoadoutFab onOpenRecommender={onOpenRecommender} />
       </div>
     </div>

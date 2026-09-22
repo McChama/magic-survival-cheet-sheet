@@ -31,12 +31,12 @@ export function RarityFilterChips({ value, onChange }: RarityFilterChipsProps) {
   const { t } = useTranslation("translation");
   const keys: RarityFilterKey[] = ["all", ...RARITY_ORDER];
   return (
-    <div className="px-4 pb-2.5 flex-none flex gap-2 overflow-x-auto">
+    <div className="px-4 pb-2.5 flex-none flex flex-wrap justify-center gap-1.5">
       {keys.map((key) => {
         const active = key === value;
         const color = key === "all" ? ALL_CHIP_COLOR : RARITY_RING[key];
         return (
-          <FilterChip key={key} active={active} color={color} activeText="#fff" onClick={() => onChange(key)} className="flex-none py-[7px] px-3.5 text-[0.8rem]">
+          <FilterChip key={key} active={active} color={color} activeText="#fff" onClick={() => onChange(key)} className="flex-none py-[5px] px-2.5 text-[0.72rem]">
             {t(CATEGORY_LABEL_KEY[key])}
           </FilterChip>
         );

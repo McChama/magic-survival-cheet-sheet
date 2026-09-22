@@ -1,5 +1,5 @@
 // Regression guard for the stat/magic formulas: every case below is a number a real screen of the game
-// showed (see CLAUDE.md's Owned Magic section and reference/game-data-sources.md for how each was found).
+// showed (see CLAUDE.md's Owned Magic section and research/game-data-sources.md for how each was found).
 // Fails if a change to src/engine or src/data makes the app disagree with the game again.
 //
 //   npm run check:formulas
@@ -10,6 +10,8 @@ import { emptyStatBlock } from "../src/data/statDefinitions.ts";
 import { magicDamageMultiplier } from "../src/engine/magicDamage.ts";
 import { applyMagicEffects, collectMagicEffects } from "../src/engine/magicEffects.ts";
 import { getRunStats } from "../src/engine/runStats.ts";
+import { PASSIVES } from "../src/data/passives.ts";
+import { passiveLinesAtLevel, passiveStatsAtLevel } from "../src/data/passiveLevels.ts";
 
 /** A run with only what a case sets; everything else is the empty default. */
 function makeRun(o = {}) {
@@ -100,6 +102,12 @@ for (const [level, amplification, duration] of [[1, "25%", "6 s"], [2, "30%", "7
 const circleRun = (level) => ({ ...globals, acquiredMagicIds: ["magicCircle"], magicLevels: { magicCircle: level }, magicCircleActive: true });
 expectEqual("Spirit Lv4 with Magic Circle Lv2 active", rows("spirit", 4, circleRun(2)).damage, "1,521");
 expectEqual("Spirit Lv4 with Magic Circle Lv3 active", rows("spirit", 4, circleRun(3)).damage, "1,580");
+
+// ---- Passives: the Select Magic screen showed "Vitality Lv 1: Increase Max HP by 20%, Increase Life Orb HP Recovery by 10%" ----
+const vitality = PASSIVES.find((p) => p.id === "vitality-passive");
+expectEqual("Vitality passive Lv1 stats", pick(passiveStatsAtLevel(vitality, 1), ["hp", "lifeOrbRecovery"]), { hp: 20, lifeOrbRecovery: 10 });
+expectEqual("Vitality passive Lv1 lines", passiveLinesAtLevel("vitality-passive", 1).map((l) => l.text), ["Increase Max HP by 20%", "Increase Life Orb HP Recovery by 10%"]);
+expectEqual("Vitality passive Lv1 on the dashboard (HP 200 x 1.2)", getRunStats(makeRun({ equipped: [{ itemId: "vitality-passive", count: 1 }] })).hp, 240);
 
 if (failures > 0) {
   console.error(`\n${failures} of ${checks} formula checks failed.`);

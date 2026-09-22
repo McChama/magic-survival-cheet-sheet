@@ -3,7 +3,7 @@ import type { StatKey } from "../types/game";
 
 /**
  * Per-stat icon + accent color. `icon` is the real in-game status icon (from the APK
- * sprite dump — see public/assets/uiImages/statusIcons/ and reference/game-data-sources.md
+ * sprite dump — see public/assets/uiImages/statusIcons/ and research/game-data-sources.md
  * for how the StatusIcon_* -> StatKey mapping was confirmed). `glyph` is the original
  * unicode symbol from the Claude Design canvas handoff, kept as an onError fallback in
  * StatGridRow.tsx rather than deleted, since it's a real fallback path, not dead code.
