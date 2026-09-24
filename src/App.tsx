@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { RunDashboardScreen } from "./components/dashboard/RunDashboardScreen";
 import { MagicCircleBubble } from "./components/layout/MagicCircleBubble";
 import { ClassSelectScreen } from "./components/screens/ClassSelectScreen";
@@ -10,25 +9,16 @@ import { RecommenderScreen } from "./components/screens/RecommenderScreen";
 import { ResearchScreen } from "./components/screens/ResearchScreen";
 import { SubjectSelectScreen } from "./components/screens/SubjectSelectScreen";
 import { SynergyScreen } from "./components/screens/SynergyScreen";
-
-type Screen =
-  | "home"
-  | "subject"
-  | "class"
-  | "dashboard"
-  | "research"
-  | "dropProbability"
-  | "recommender"
-  | "ownedMagic"
-  | "ownedArtifact"
-  | "synergy"
-  | "magicCombination";
+import { useNavigationStore, type Screen } from "./store/useNavigationStore";
 
 /** The screens of a run in progress — the Magic Circle bubble floats over these and nowhere else. */
 const RUN_SCREENS: Screen[] = ["dashboard", "ownedMagic", "ownedArtifact", "synergy"];
 
 function App() {
-  const [screen, setScreen] = useState<Screen>("home");
+  // Persisted (`useNavigationStore`), not local state, so a reload resumes on the same screen instead of always
+  // starting over at Home.
+  const screen = useNavigationStore((s) => s.screen);
+  const setScreen = useNavigationStore((s) => s.setScreen);
   return (
     <div className="w-full max-w-[430px] h-[100dvh] min-h-[640px] mx-auto relative overflow-hidden bg-[#08080a] font-magic text-[#e8e8e2] shadow-[0_0_0_1px_rgba(255,255,255,.08)]">
       {screen === "home" && (

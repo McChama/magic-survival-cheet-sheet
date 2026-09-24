@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { uiImage } from "../../config/assets";
 import { MaskedSprite } from "./MaskedSprite";
 
@@ -9,14 +9,18 @@ import { MaskedSprite } from "./MaskedSprite";
  * scroll (the "+" menu's artifacts). Margins and
  * padding are percentages measured off a real screenshot: 10% screen margins, and 12px
  * sides / 18px top on a 704px-wide panel (1.7% / 2.6% — % padding is width-relative on
- * every side).
+ * every side). `scrollRef` gives a caller direct access to the scrollable div — for saving/restoring its scrollTop
+ * across a navigation that unmounts it (Magic Combination's grid, so paging into a combination's detail and back
+ * doesn't reset the scroll position).
  */
-export function GridPanel({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
+export function GridPanel({ children, scroll = true, scrollRef }: { children: ReactNode; scroll?: boolean; scrollRef?: RefObject<HTMLDivElement | null> }) {
   return (
     <div className="flex-1 min-h-0 px-[10%] pb-[7%] mt-6">
       <div className="relative h-full">
         <MaskedSprite src={uiImage("frames/ArtifactBackGroundA.png")} stretch className="absolute inset-0 pointer-events-none bg-[#242121]" />
-        <div className={`relative h-full p-[1.7%] pt-[2.6%] ${scroll ? "overflow-y-auto" : "overflow-hidden"}`}>{children}</div>
+        <div ref={scrollRef} className={`relative h-full p-[1.7%] pt-[2.6%] ${scroll ? "overflow-y-auto" : "overflow-hidden"}`}>
+          {children}
+        </div>
       </div>
     </div>
   );

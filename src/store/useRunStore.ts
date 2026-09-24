@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { emptyStatBlock } from "../data/statDefinitions";
 import { FUSION_BY_ID, MAX_FUSION_TARGETS, fusionRefId } from "../data/fusions";
+import { withMagicTalent } from "../data/magicTalents";
 import { RESEARCH_BY_ID, TOTAL_RESEARCH_POINTS } from "../data/research";
 import { ALWAYS_UNLOCKED_SUBJECT, SUBJECTS } from "../data/classes";
 import { computeStartingStats } from "../engine/runStats";
@@ -9,6 +10,11 @@ import type { CurrentRunState, StatKey } from "../types/game";
 
 /** Default Test Subject for a fresh run — always the first entry ("Wizard"), never unset. */
 const DEFAULT_SUBJECT = SUBJECTS[0];
+
+/** Wraps a pre-array-talents save's bare `string` per magic into `[string]` — see the `merge` config below. */
+function migrateMagicTalents(talents: Record<string, string | string[]>): Record<string, string[]> {
+  return Object.fromEntries(Object.entries(talents).map(([id, value]) => [id, Array.isArray(value) ? value : [value]]));
+}
 
 /** Fusions-of-fusions like Deus Ex Machina must be dropped if their prerequisite fusion is deselected. */
 function dropOrphanedDependents(fusionTargets: string[]): string[] {
@@ -54,8 +60,10 @@ interface RunStore {
   toggleAcquiredMagic: (magicId: string) => void;
   /** Clamps to >= 1 — no upper bound, the real in-game max level isn't datamined here. */
   setMagicLevel: (magicId: string, level: number) => void;
-  /** `null` clears a previously-recorded talent choice. */
-  setMagicTalent: (magicId: string, talentName: string | null) => void;
+  /** Replaces whichever talent (if any) was previously recorded for this magic's `level`-group with `talentName`
+   *  (`null` clears it) — the other groups' recorded talents (Magic Bolt's level-4 pick while setting its level-7
+   *  one, or vice versa) are left alone. */
+  setMagicTalent: (magicId: string, level: number, talentName: string | null) => void;
   clearLoadout: () => void;
   researchUp: (id: string) => void;
   researchDown: (id: string) => void;
@@ -168,14 +176,8 @@ export const useRunStore = create<RunStore>()(
           run: { ...state.run, magicLevels: { ...state.run.magicLevels, [magicId]: Math.max(1, Math.round(level)) } },
         })),
 
-      setMagicTalent: (magicId, talentName) =>
-        set((state) => {
-          if (talentName === null) {
-            const { [magicId]: _removed, ...magicTalents } = state.run.magicTalents;
-            return { run: { ...state.run, magicTalents } };
-          }
-          return { run: { ...state.run, magicTalents: { ...state.run.magicTalents, [magicId]: talentName } } };
-        }),
+      setMagicTalent: (magicId, level, talentName) =>
+        set((state) => ({ run: { ...state.run, magicTalents: withMagicTalent(state.run.magicTalents, magicId, level, talentName) } })),
 
       clearLoadout: () =>
         set((state) => ({
@@ -253,7 +255,10 @@ export const useRunStore = create<RunStore>()(
             // Backfill for a run persisted before magic level/talent tracking existed
             // (no `magicLevels`/`magicTalents` key at all).
             magicLevels: { ...current.run.magicLevels, ...persistedRun?.magicLevels },
-            magicTalents: { ...current.run.magicTalents, ...persistedRun?.magicTalents },
+            // A save from before a magic could record more than one talent (Magic Bolt's independent level-4 and
+            // level-7 picks) has a plain string per magic instead of an array — wrapped here rather than trusted,
+            // since `Array.prototype` methods (setMagicTalent's `.filter`) would throw on a bare string.
+            magicTalents: migrateMagicTalents({ ...current.run.magicTalents, ...persistedRun?.magicTalents }),
           },
         };
       },

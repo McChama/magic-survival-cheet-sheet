@@ -6,16 +6,16 @@ import { optionsByKind, type QuickAddKind } from "../../data/quickAddOptions";
 import { useRunStore } from "../../store/useRunStore";
 import { useUiStore } from "../../store/useUiStore";
 import { useGameDataText } from "../../i18n/useGameDataText";
-import { getOwnedMagics } from "../../engine/ownedMagics";
-import { getObtainedPassiveIds } from "../../engine/ownedPassives";
+import { getMagicLevelPick, getPassiveLevelPick } from "../../engine/magicLeveling";
 import { getEquippedItems } from "../../engine/tierAdaptive";
 import { ScreenHeader } from "./ScreenHeader";
 import { ScreenTitle } from "./ScreenTitle";
 import { ScreenFooter } from "./ScreenFooter";
 import { ArtifactOfferModal } from "./ArtifactOfferModal";
+import { AttributeSelect } from "./AttributeSelect";
 import { CARD_ASPECT, CardArt, GridIcon, GridTile } from "./GridCard";
 import { GridPanel } from "./GridPanel";
-import { MagicPickList } from "./MagicPickList";
+import { MagicPickList, type AttributeSelectRequest } from "./MagicPickList";
 import { MAGIC_KIND_COLOR } from "../../config/frameColors";
 import { RARITY_RING } from "../../config/rarityColors";
 import type { RecommenderOption } from "../../engine/scoring";
@@ -71,6 +71,8 @@ const HIDDEN_BASE_MAGICS = new Set(["intelligence"]);
 interface LoadoutSheetProps {
   kind: Exclude<QuickAddKind, "passive">;
   onClose: () => void;
+  /** Select Magic reached from the Dashboard's level-up star, not the "+" menu's plain catalog — see `useLevelUpActions`. */
+  isLevelUp?: boolean;
 }
 
 const TITLE_KEY_BY_KIND = {
@@ -124,13 +126,22 @@ function ArtifactPickGrid({ options, picked, onToggle }: ArtifactPickGridProps) 
 }
 
 /**
- * The full-screen sheet behind the Dashboard's "+" menu — a scrolling catalog of what the run doesn't have yet. **Select Magic**: the game's own rows (`MagicPickList`) — tap one to select it and its Obtain button appears;
- * its level and talent are then managed on Owned Magic. **Select Artifact**: pick the artifacts the game just offered (up to 3, like a
- * chest) on the same rough-bordered cards as Owned Artifact, filtered by rarity (Normal first); the third opens the Treasure
- * Chest window (`ArtifactOfferModal`) — or the button does, with fewer — where the one the player took is chosen and obtained
- * (and the sheet stays open). While it's open the floating Magic Circle bubble hides.
+ * The full-screen sheet behind the Dashboard's "+" menu — reached either from there or, for **Select Magic**
+ * specifically, from the Dashboard's level-up star (`isLevelUp`). **Select Magic** lists everything not yet at its
+ * real max level (`MagicPickList`), no close button and no separate action button either — tapping a row anywhere
+ * obtains a fresh pickup, levels up an owned one, or, once the next level is a talent pick, opens `AttributeSelect`
+ * instead of committing directly. It's select-then-commit: pressing the star only opens this sheet with `isLevelUp`
+ * set, it does **not** touch `run.currentLevel` by itself — that only happens as part of the row's own commit (see
+ * `useLevelUpActions`), so a level-up can be abandoned (backed out via a reload) up until a row is actually tapped.
+ * Any commit closes the whole sheet — a level-up grants exactly one pick, in the real game and here, so there's
+ * nothing left to back out of once a row is tapped. **Select Artifact** keeps its own header/X and is never a
+ * level-up (`isLevelUp` only ever applies to `kind === "magic"`): pick the artifacts the game just offered (up to 3,
+ * like a chest) on the same rough-bordered cards as Owned Artifact, filtered by rarity (Normal first); the third
+ * opens the Treasure Chest window (`ArtifactOfferModal`) — or the button does, with fewer — where the one the
+ * player took is chosen and obtained (and the sheet stays open, ready for the next offer — a chest visit isn't a
+ * one-shot pick the way a level-up is). While it's open the floating Magic Circle bubble hides.
  */
-export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
+export function LoadoutSheet({ kind, onClose, isLevelUp = false }: LoadoutSheetProps) {
   const { t } = useTranslation("translation");
   const run = useRunStore((s) => s.run);
   const equipItem = useRunStore((s) => s.equipItem);
@@ -145,22 +156,25 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
   const [activeKey, setActiveKey] = useState(kind === "artifact" ? "normal" : "offensive");
   const [picked, setPicked] = useState<RecommenderOption[]>([]);
   const [offerOpen, setOfferOpen] = useState(false);
-  // The catalog is what the run doesn't have yet: obtained magics, passives and artifacts leave it. The Magic sheet covers all 4
-  // wiki categories, so it pulls in Passives too (see MAGIC_CATEGORIES above).
-  const ownedMagicIds = getOwnedMagics(run).map((m) => m.magicId).join("|");
-  const obtainedPassives = [...getObtainedPassiveIds(run)].join("|");
+  const [attributeSelect, setAttributeSelect] = useState<AttributeSelectRequest | null>(null);
+  // Select Magic is everything not yet at its real max level — a fresh pickup (Obtain) and an owned-but-not-maxed
+  // magic/passive (a level-up) both stay in the list; only "fully done" drops out ("no aparece" once at max). Select
+  // Artifact is still the plain not-yet-owned catalog. The Magic sheet covers all 4 wiki categories, so it pulls in
+  // Passives too (see MAGIC_CATEGORIES above).
   const ownedItemIds = getEquippedItems(run).map((i) => i.id).join("|");
+  const magicLevels = JSON.stringify(run.magicLevels);
+  const acquiredMagicIds = run.acquiredMagicIds.join("|");
   const options = useMemo(() => {
     if (kind === "artifact") {
       const owned = new Set(ownedItemIds.split("|"));
       return optionsByKind("artifact").filter((o) => !owned.has(o.item!.id));
     }
-    const magics = new Set(ownedMagicIds.split("|"));
-    const passives = new Set(obtainedPassives.split("|"));
-    return [...optionsByKind("magic"), ...optionsByKind("passive")].filter((o) =>
-      o.magicId ? !magics.has(o.magicId) && !HIDDEN_BASE_MAGICS.has(o.magicId) : !passives.has(o.item!.id),
-    );
-  }, [kind, ownedMagicIds, obtainedPassives, ownedItemIds]);
+    return [...optionsByKind("magic"), ...optionsByKind("passive")].filter((o) => {
+      if (o.magicId) return !HIDDEN_BASE_MAGICS.has(o.magicId) && !getMagicLevelPick(o.magicId, run).atMax;
+      return !getPassiveLevelPick(o.item!, run).atMax;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-derives off the same run fields the filter reads (magic/passive levels, class, acquired ids), not off `run` itself, so an unrelated run change doesn't rebuild this list.
+  }, [kind, ownedItemIds, magicLevels, acquiredMagicIds, run.meta.characterClass, run.meta.classLevels]);
 
   const filtered = useMemo(() => {
     const active = categories.find((c) => c.key === activeKey);
@@ -179,7 +193,10 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
 
   return (
     <div className="animate-ms-slide-up absolute inset-0 z-30 flex flex-col bg-[#050506]">
-      <ScreenHeader onAction={onClose} actionAria={t("loadoutSheet.closeAria")} />
+      {/* Select Magic has no close button: like the real level-up offer, it can't be dismissed without picking
+          something — every row now commits on tap, so there's nothing left to "cancel out of". Select Artifact
+          keeps it (browsing there doesn't commit anything by itself). */}
+      {kind === "artifact" && <ScreenHeader onAction={onClose} actionAria={t("loadoutSheet.closeAria")} />}
       <ScreenTitle>{t(TITLE_KEY_BY_KIND[kind])}</ScreenTitle>
 
       <div className="px-4 pb-2.5 flex-none flex flex-wrap justify-center gap-1.5">
@@ -194,7 +211,7 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
       </div>
 
       {kind === "magic" ? (
-        <MagicPickList key={activeKey} options={filtered} />
+        <MagicPickList key={activeKey} options={filtered} onPicked={onClose} onOpenAttributeSelect={setAttributeSelect} isLevelUp={isLevelUp} />
       ) : (
         <>
           <ArtifactPickGrid key={activeKey} options={filtered} picked={picked} onToggle={togglePick} />
@@ -222,6 +239,17 @@ export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
             setPicked([]);
             setOfferOpen(false);
           }}
+        />
+      )}
+
+      {attributeSelect && (
+        <AttributeSelect
+          magicId={attributeSelect.magicId}
+          group={attributeSelect.group}
+          targetLevel={attributeSelect.targetLevel}
+          onBack={() => setAttributeSelect(null)}
+          onLearned={onClose}
+          isLevelUp={isLevelUp}
         />
       )}
     </div>

@@ -77,11 +77,20 @@ via the shared `NavIconButton` — see below) links out to the scrollable screen
 circle whose glyph is the game's X sprite turned 45° so it reads "+", and back to an X while its menu is open;
 its popup opens *upward* via `bottom-full`, and its dismiss backdrop is `fixed inset-0`, not `absolute`,
 precisely because it's no longer sitting in its own full-screen wrapper). Every chip in the nav row shows its
-icon in the same 24px glyph box; the Magic Combination button is the game's own `UI_MagicCom_IconA` (gray
-heptagram) while no combination is available and `UI_MagicCom_IconB` (red) once one is.
+icon in the same 24px glyph box; the Magic Combination button is the game's own heptagram, plain white (masked —
+see `NavIconButton`'s `tint` below) while no combination is available and its own red once one is.
 Home has only two icon buttons now (Research, Subject) — the Drop Probability and Recommender buttons are gone
 (`DropProbabilityScreen` is still in the app, just without an entry point until it gets a new home; the Recommender
-is reached from the Dashboard's "+" menu as "Compare Offer").
+is reached from the Dashboard's "+" menu as "Compare Offer"). A small circular button next to "Current Level" starts
+the real level-up event: it opens Select Magic (the same sheet the "+" menu's "Magic" item opens — `RunDashboardScreen`
+owns the one `LoadoutSheet` instance both trigger, not `LoadoutFab`, which is now purely presentational) in level-up
+mode (`isLevelUp`), but **does not** raise `run.currentLevel` by itself — it's select-then-commit, see "Leveling"
+below for where the increment actually happens. Its glyph is the game's own X sprite (`UI_Exit`) turned 45° to read
+"+" — the same technique `LoadoutFab`'s own "+" glyph uses, not the star sprite (`UI_Star01`, since removed) or the
+move-arrow triangle a first pass reused for it before that. Idle, it throbs like a heartbeat: a CSS `scale` pulse
+paired with its tint sweeping from resting gold to the same max-level green a magic's pips turn at max level
+(`LevelMarks.tsx`'s `#3fdc5a`) and back (`animate-pulse-green`, `index.css` — `motion-safe:` so it's skipped under
+reduced motion, same as the Magic Circle bubble's tap effects).
 
 **`MagicCombinationScreen`** (`components/screens/`) is the game's own "Magic Combination" screen (the 63 fusions in
 `data/fusions.ts`). Opened from the Dashboard while some combination's requirements are met (`getAvailableFusions` in
@@ -92,20 +101,88 @@ never counts) it opens on that combination's detail — art (`magicImages/large/
 game's left/right arrows to page through when several are available; its X goes back to the **grid** of every
 combination (3 columns of tall 205:377 cards on the same `GridPanel` as the owned grids, art at 78% of the card's
 width; a white border marks the available ones, a dark-gray one the rest; tap a card for its detail, the "Return"
-button leaves). Opened with none available it starts on the grid. Names, effect lines and colors come from
-`eng_Dictionary_MagicCom.txt` (`data/magicCombinations.ts`, generated); "Unusable" is the second ingredient (the
-dictionary has no field for it — derived from which magic the effect lines talk about; matches the one real
-screenshot, Age of the Sun: "Satellite Unusable"). A magic keeps only **one** recorded talent
-(`run.magicTalents[magicId]`), so a Magic Bolt player who took talents at both level 4 and 7 can only record one.
+button leaves). Opened with none available it starts on the grid. **Leaving a detail restores the grid's scroll
+position** instead of resetting it to the top — the grid unmounts while a detail is open (its own full-screen view,
+not an overlay), so the scroll container's own state can't survive that on its own; `MagicCombinationScreen` saves it
+in a ref on the way into a detail and `GridPanel`'s new `scrollRef` prop re-applies it once the grid remounts
+(`useLayoutEffect`, before paint). Names, effect lines and colors come from
+`eng_Dictionary_MagicCom.txt` (`data/magicCombinations.ts`, generated); "Unusable" is derived as the second
+ingredient (the dictionary has no field for it) — confirmed by the one real screenshot (Age of the Sun: "Satellite
+Unusable"), and matches every combination whose data has 2 real ingredients, but the user flagged real in-game
+exceptions this heuristic doesn't know about yet (Bishop's own special attribute, and Overmind → Deus Ex Machina,
+which is already excluded since it isn't a talent-pair combination at all) — treat `unusable` as a good default, not
+a verified fact, until each of the 63 is checked against a real screenshot. **A magic can record one talent per
+talent-level group it has** (`run.magicTalents[magicId]: string[]`, `store/useRunStore.ts`'s `setMagicTalent(magicId,
+level, talentName)` replacing only the group at `level`) — every magic has one group except Magic Bolt, which picks
+independently at level 4 and again at level 7, and a combination can need either pick (the level-4 one unlocks some
+Combinations on its own, not only the level-7 one) — both are checked (`.includes`), not just the most recent pick.
+
+## Navigation persists across reloads
+
+`App.tsx`'s top-level `screen` state (`Screen` — which of Home/Subject/Class/Dashboard/Research/Owned Magic/etc. is
+showing) lives in `store/useNavigationStore.ts`, a small zustand `persist` store (`localStorage` key
+`magic-survival-navigation`) alongside `useRunStore`'s own persisted run — not a plain `useState` — so reloading the
+page resumes on whatever screen the player was looking at instead of always bouncing back to Home. Only the
+top-level screen persists this way; a screen's own in-progress UI state (an open `LoadoutSheet`, a selected filter
+chip, scroll position) stays local `useState` as before and resets on reload, same as it always has.
+
+## Leveling: gated by Current Level, only through Select Magic, select-then-commit
+
+A magic or passive can never be leveled past `run.currentLevel` — the *only* thing that raises `run.currentLevel` is
+picking a row in Select Magic while it was opened from the Dashboard's level-up star (`isLevelUp`), so a level can
+only ever be spent there. This is **select-then-commit**, not "press the button, then the level is already spent":
+pressing the star only opens Select Magic in level-up mode — `run.currentLevel` itself doesn't move until a row is
+actually tapped (Obtain / +1 Level / a talent pick's Learn). Refresh the page after pressing the star but before
+picking anything and `run.currentLevel` is exactly what it was before — there's nothing to lose, because nothing
+committed yet. `hooks/useLevelUpActions.ts`'s `useLevelUpActions(isLevelUp)` is where this lives: every action it
+returns (acquiring a class-granted magic the first time its level changes, setting the level, recording a talent)
+also bumps `run.currentLevel` by exactly one, but *only* when `isLevelUp` is true — the same hook, called with
+`isLevelUp={false}`, backs the "+" menu's plain catalog and never touches `run.currentLevel`. While Select Magic is
+in level-up mode, a row's own cap check (`engine/magicLeveling.ts`'s `getMagicLevelPick`/`getPassiveLevelPick`:
+`targetLevel = min(realMax, effectiveCurrentLevel)`) is against `run.currentLevel + 1`, not the stored value — the
+pending level-up is still "spendable" while the screen is open, so a magic that needs exactly the level this pick
+would grant isn't wrongly shown as blocked. Opening Select Magic from the "+" menu instead uses the plain
+`run.currentLevel` as the cap (no pending +1), and can still show an owned-but-not-yet-leveled row past it — the row
+goes inert (its description swapped for a real hint, "Reach Current Level N to level this up.") instead of
+disappearing, so the reason is visible, not just absent.
+
+**`AttributeSelect`** (`components/shared/`) is the game's own "Select Attribute" screen (real strings, from
+`eng_Dictionary_Name.txt`: "Select Attribute"; "Attributes make magic even stronger. @ Select an attribute.";
+"You can obtain an attribute." — sampled 2026-09-24 against a real level-up screenshot for this state's colors: a
+teal border + level number + description, all the one color, `LEVEL_PICK_TALENT_COLOR` in `config/frameColors.ts`).
+Opened from a Select Magic row whose next level is one of the magic's talent-level groups, it shows the group's real
+3 talents as the magic's own icon (`baseMagicSpriteUrl`) tinted by `TALENT_TYPE_COLOR` — full color, not dimmed,
+unlike Owned Magic's small talent-icon row — arranged in the real screen's triangle (one centered, two below); tapping
+one turns it white and reveals its name, real colored description lines, and the Magic Combinations that need this
+exact (magic, talent) pair as an ingredient (`engine/magicCombination.ts`'s `getFusionsForTalent`), each a small
+thumbnail using the same white/dark-gray border as `MagicCombinationScreen`'s own grid (`COMBINATION_FRAME_READY`/
+`_IDLE`, moved to `config/frameColors.ts` so both screens share it) — white when picking this talent would complete
+it right now (`wouldCompleteFusion`, a `getFusionRequirements` call against a simulated run with the talent already
+recorded). Learn is disabled until a talent is picked; it commits the level + talent together (and, in level-up mode,
+`run.currentLevel` too — see "Leveling" above) and closes the whole sheet, same as any other Select Magic pick. Its
+header X goes back to the Select Magic list without committing anything — since nothing has committed yet at that
+point (select-then-commit), backing out here loses nothing; the pending level-up is still there to spend on a
+different row.
 
 **The "+" menu** (`LoadoutFab` → `LoadoutSheet`, a full-screen sheet titled "Select Magic" / "Select Artifact", chips centered, scrolling, and the floating Magic Circle bubble hidden while it is open — `useUiStore`) is a **catalog of what the
 run doesn't have yet** — whatever is obtained leaves it (an owned magic, a passive, a class special, an artifact, the Subject's
 starting artifact). **Magic** has four chips, no "All", opening on **Active** (the wiki's "Offensive"): Active white, Utility blue,
 Passive green, Special red (`MAGIC_KIND_COLOR` in `config/frameColors.ts`, for the chips *and* the rows' borders). Each entry is the game's own
-"Select Magic" row (`MagicPickList`): a wide black card with the rough `StripFrame` border (`size="row"`), the icon on the left
-(white for a magic, pale green for a passive, the sprite's own colors for a special), name, real description lines, a red star on a
-special. **Tapping a row selects it, and only the selected row shows its Obtain button** (the same thin button as Test Subject's; its line is always reserved, so a row never changes size). Obtain adds the magic or passive at
-level 1; its level (and a magic's talent) is then managed on **Owned Magic**. Intelligence is not listed as a magic: it is the
+"Select Magic" row (`MagicPickList`): a wide black card with the rough `StripFrame` border (`size="row"`), **tappable anywhere
+— there's no separate button inside it**, so the icon, name and description all trigger the same action; every row is the same
+fixed height regardless of how long its description is (`h-[6rem]`, description clamped to 2 lines — this is what keeps rows
+uniform, not a change to text line-height or the gap *between* rows). The description text specifically (not the title, and
+not the row-to-row gap, both of which stay the app's normal, roomier spacing) uses a tight line-height (`leading-tight`) so
+its two lines read as one compact block under the title instead of spreading out,
+icon vertically centered in it. It shows a level marker in the corner (a star for a not-yet-owned special, otherwise
+**"Lv N" for the level this tap would bring it to** — 1 for a fresh pickup, the owned level + 1 otherwise — colored by what the
+tap does: plain for a fresh pickup, gold for a normal level-up, teal once it unlocks a talent). **The list is everything not yet
+at its real max level, owned or not** — the catalog used to drop an owned magic/passive entirely; now a not-yet-owned one is
+obtained (level 1, description = its real one-line blurb) on tap, an owned not-maxed one levels up by one (description = that
+level's real "+N%" preview line, `data/magicLevelUps.ts`) on tap, or, once the next level is a talent pick, opens Select
+Attribute instead (description replaced with "You can obtain an attribute.", see "Leveling" above) — only a magic/passive
+already at its real max level drops out entirely, and one blocked by the Current Level cap is inert (its description swapped
+for the blocked hint) rather than removed. Intelligence is not listed as a magic: it is the
 Intelligence passive (fusions that ask for it accept the passive, `INGREDIENT_PASSIVE`). **Artifact** lists the artifacts on the
 same `GridPanel` and 6-per-row rough-bordered cards as Owned Artifact (border by rarity, white + zoom for a picked one), filtered
 by rarity chips with no "All" (it opens on Normal), to pick the ones the game just offered (up to 3, like a chest); the third
@@ -118,17 +195,23 @@ Intelligence 5 (+10% ATK, +3% per level), Fast Casting 3 (-5% cooldown, +1%), Vi
 Haste 2 (+10%, +2%), Arcane Effuse 3 (+5%, +2%), Concentration 3 (+10%, +3%), Snipe 3 (+5%, +1%), Explorer 3 (+33%, +10%), Rupture 3 (+15%, +5%)
 and Advanced Magic 3 (no per-level line); the 24 special passives have no levels (a star). The level is the recorded one in `run.magicLevels`
 (`engine/ownedPassives.ts`; 1 until changed), `passives.ts`'s `stats` are the **max-level** values, and `getRunStats` counts a passive at its
-level (`passiveStatsAtLevel`: Vitality Lv1 = +20% HP -> 240). Not modelled: Taoist ("+1 level to all Additional Passives").
+level (`passiveStatsAtLevel`: Vitality Lv1 = +20% HP -> 240). Not modelled: Doctor ("Increase Max Level by 3" is the
+**player's** character-level cap, not a magic's own — the dashboard has no player-max-level stat to raise) and Taoist
+("+1 level to all Additional Passives" applies once the player reaches level 100, or the run's own effective level
+cap if something has raised it — a mechanic this app doesn't model at all yet).
 
 **`OwnedMagicScreen` lists everything the run has** (`engine/ownedMagics.ts`, `getOwnedMagics`): the class icon,
 then one tile per base magic — first the ones the **Class** grants (at their class-derived level), then the ones
 added with the "+" button (`run.acquiredMagicIds`), at the level the player recorded in that sheet
 (`run.magicLevels`; a magic that is both takes the recorded level, since the game's own level already includes the
 class's +1) — then one tile per passive added with "+" (green frame and green pips, max = `getPassiveMaxLevel`) — then one tile per named special
-ability (Guardian Angel, Doctor, ... the class unlocks, plus the ones added with "+"). **Levels are managed here**: a magic's or passive's modal has
-the "‹ Lv N ›" controls (changing the level of a magic the class grants records it, which adds it to the run) and a "Remove" for what the player added;
-a magic's modal lights the talent the player recorded (`run.magicTalents`: full opacity in its category color; the others
-stay at 25%), and a talent's panel has a "Choose"/"Clear" button once the magic has reached the level it unlocks at. See `getClassMagicProgression` in `data/classes.ts`
+ability (Guardian Angel, Doctor, ... the class unlocks, plus the ones added with "+", each in its own real colors —
+not masked white, unlike a magic/passive icon). **A level is view-only here** — a hint ("Level it up from Select Magic...")
+stands in where the old "‹ Lv N ›" stepper was, once there's still a level left to reach; leveling only ever happens through
+Select Magic now (see "Leveling" above) — but a "Remove" for what the player added still lives here, and
+a magic's modal still lights the talent the player recorded (`run.magicTalents`: full opacity in its category color; the others
+stay at 25%) and still has a "Choose"/"Clear" button on a talent's panel once the magic has reached the level it unlocks at (a
+manual override independent of how that level was reached). See `getClassMagicProgression` in `data/classes.ts`
 for the derivation (real `CLASS_BONUSES` text only, no invented per-magic max
 level). The class tile opens `ClassBonusDetail` (shared with
 `ClassSelectScreen`'s inline block); a magic tile opens its *own* real detail
@@ -266,6 +349,7 @@ describable items needs its own focused view per tap instead.
 - **`PipDot`** — one level dot (Class Select's stepper, Class detail, Research nodes); size and fill are classes.
 
 - **`RemoveButton`** — the small orange text "Remove" at the bottom of every modal that can drop what the player added (magic, passive, special, artifact).
+- **`AttributeSelect`** / **`hooks/useLevelUpActions`** — the Select Attribute screen and the store-call bundle both it and `MagicPickList`'s row tap commit through; see "Leveling" above.
 - **`Pager`** / **`PagedGrid`** / **`PagedList`** (with `hooks/useElementSize`) — the paging the Recommender uses instead of scrolling, see the Content zone above.
 - **`GridCard`** — `GridTile` (a 108:205 portrait card with the rough border), `CardArt`, `GridIcon` and `MaskedMagicIcon`,
   the pieces of every card in the owned grids, the combination grid and the Treasure Chest window; `LevelMarks` has the level
@@ -279,7 +363,11 @@ describable items needs its own focused view per tap instead.
 - **`NavIconButton`** — the one size (50×50 footprint) for every bottom-row
   icon button (Home's row, the Dashboard's nav row). An optional `background`
   prop adds a colored circular chip (shrinking the icon inside it to a 24px glyph box) for
-  contexts that want one; omit it for a bare icon-only button like Home's.
+  contexts that want one; omit it for a bare icon-only button like Home's. An optional `tint`
+  recolors the icon flat via CSS mask instead of showing its own baked-in colors — for a sprite that needs
+  one state tinted and another left as its native color, like the Magic Combination chip: plain white (masked;
+  the sprite's own colors are an olive/gray, not white) while no combination's requirements are met, its own
+  red once one is (`UI_MagicCom_GlyphB`, left untinted).
   Reach for this instead of a new one-off `<button><img/></button>` — that's
   exactly the per-screen sizing drift the rest of this section exists to stop.
 - **`DetailModal`** — the centered detail card described above.

@@ -35,7 +35,8 @@
     "ownedArtifactAria": "Owned Artifact",
     "synergyAria": "Synergy",
     "magicCombinationAria": "Magic Combination",
-    "addAria": "Add to loadout"
+    "addAria": "Add to loadout",
+    "levelUpAria": "Level up"
   },
   "loadoutFab": {
     "artifact": "Artifact",
@@ -48,13 +49,11 @@
     "title": "Owned Magic",
     "closeAria": "Close",
     "empty": "Select a class first.",
-    "levelBadge": "Lv {{level}}",
-    "levelDownAria": "Decrease level",
-    "levelUpAria": "Increase level",
     "removeBtn": "Remove",
     "chooseTalent": "Choose",
     "clearTalent": "Clear",
     "talentUnlockLevel": "Attribute Unlock Level : {{level}}",
+    "levelUpHint": "Level it up from Select Magic (the Dashboard's Level Up button).",
     "statUnknown": "—"
   },
   "ownedArtifact": {
@@ -91,6 +90,14 @@
     "prevAria": "Previous page",
     "nextAria": "Next page"
   },
+  "levelUp": {
+    "title": "Select Attribute",
+    "hint": "Attributes make magic even stronger. @ Select an attribute.",
+    "obtainAttribute": "You can obtain an attribute.",
+    "selectAttributeBtn": "Select Attribute",
+    "learnBtn": "Learn",
+    "backAria": "Back to Select Magic"
+  },
   "boostSignal": {
     "listLabel": "Boost signals",
     "noSignal": "No magic boosted."
@@ -106,6 +113,9 @@
     "offerHint": "Pick the {{count}} artifacts the game offered you.",
     "showOfferBtn": "Show offer ({{count}})",
     "obtainBtn": "Obtain",
+    "levelUpBtn": "+1 Level",
+    "levelBadge": "Lv {{level}}",
+    "levelBlockedHint": "Reach Current Level {{level}} to level this up.",
     "categories": {
       "all": "All",
       "normal": "Normal",

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ANY_PASSIVE_ID, FUSIONS, fusionRefId } from "../../data/fusions";
 import { MAGIC_COMBINATION_INFO } from "../../data/magicCombinations";
@@ -8,6 +8,7 @@ import { ITEM_BY_ID } from "../../engine/tierAdaptive";
 import { useRunStore } from "../../store/useRunStore";
 import { useGameDataText } from "../../i18n/useGameDataText";
 import { uiImage } from "../../config/assets";
+import { COMBINATION_FRAME_IDLE, COMBINATION_FRAME_READY } from "../../config/frameColors";
 import { ScreenHeader } from "../shared/ScreenHeader";
 import { ScreenTitle } from "../shared/ScreenTitle";
 import { ScreenFooter } from "../shared/ScreenFooter";
@@ -20,10 +21,6 @@ interface MagicCombinationScreenProps {
   onClose: () => void;
 }
 
-/** A combination's border in the grid: plain white while its requirements are met, dark gray otherwise. */
-const COMBINATION_FRAME_READY = "#fff";
-const COMBINATION_FRAME_IDLE = "#4a4646";
-
 /** The game's pink for this screen's subtitle (handed to `GameText`, which sets its own color). */
 const HINT_COLOR = "#e890a8";
 
@@ -35,15 +32,29 @@ type View = { kind: "grid" } | { kind: "detail"; ids: string[]; index: number };
  * starts on the detail of the available one(s) — the arrows page through them when there are several — and its X goes back to
  * the grid of every combination; the grid marks the available ones with a white border. Opened with none available (the
  * gray button), it starts on the grid. A combination's art, name, "<Magic> Unusable" subtitle and colored effect lines are the
- * game's own (`data/magicCombinations.ts`).
+ * game's own (`data/magicCombinations.ts`). Leaving a combination's detail restores the grid's scroll position instead
+ * of resetting it to the top — the grid unmounts while the detail is showing (a different full-screen view, not an
+ * overlay), so its scroll container's own scrollTop can't survive the round trip on its own; it's saved in a ref on
+ * the way into the detail and re-applied once the grid remounts (`useLayoutEffect`, so it happens before paint).
  */
 export function MagicCombinationScreen({ onClose }: MagicCombinationScreenProps) {
   const { t } = useTranslation("translation");
   const gt = useGameDataText();
   const run = useRunStore((s) => s.run);
+  const gridScrollRef = useRef<HTMLDivElement | null>(null);
+  const savedScrollTop = useRef(0);
 
   const availableIds = useMemo(() => getAvailableFusions(run).map((f) => f.id), [run]);
   const [view, setView] = useState<View>(() => (availableIds.length > 0 ? { kind: "detail", ids: availableIds, index: 0 } : { kind: "grid" }));
+
+  function openDetail(ids: string[], index: number) {
+    savedScrollTop.current = gridScrollRef.current?.scrollTop ?? 0;
+    setView({ kind: "detail", ids, index });
+  }
+
+  useLayoutEffect(() => {
+    if (view.kind === "grid" && gridScrollRef.current) gridScrollRef.current.scrollTop = savedScrollTop.current;
+  }, [view.kind]);
 
   const magicName = (id: string) => gt(`magic.${id}.name`, BASE_MAGIC_BY_ID[id]?.name ?? id);
   const combinationName = (fusion: FusionDefinition) => MAGIC_COMBINATION_INFO[fusion.id]?.name ?? fusion.name;
@@ -116,14 +127,14 @@ export function MagicCombinationScreen({ onClose }: MagicCombinationScreenProps)
         <GameText text={t("magicCombination.hint")} color={HINT_COLOR} />
       </div>
 
-      <GridPanel>
+      <GridPanel scrollRef={gridScrollRef}>
         <div className="grid grid-cols-3 gap-x-[2%] gap-y-2">
           {FUSIONS.map((fusion, index) => {
             const name = combinationName(fusion);
             return (
               <GridTile
                 key={fusion.id}
-                onClick={() => setView({ kind: "detail", ids: FUSIONS.map((f) => f.id), index })}
+                onClick={() => openDetail(FUSIONS.map((f) => f.id), index)}
                 frame={availableIds.includes(fusion.id) ? COMBINATION_FRAME_READY : COMBINATION_FRAME_IDLE}
                 label={name}
                 aspect="aspect-[205/377]"

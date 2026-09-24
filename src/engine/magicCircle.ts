@@ -16,7 +16,7 @@ export function getMagicCircleLevel(run: CurrentRunState): number | null {
 /** True when the run took the talent the Overmind fusion needs from Magic Circle ("Great Magic Circle"). */
 export function isOvermindChosen(run: CurrentRunState): boolean {
   const required = FUSION_BY_ID["overmind"]?.requiredTalents?.[1]?.talentName;
-  return !!required && run.magicTalents[MAGIC_ID] === required;
+  return !!required && (run.magicTalents[MAGIC_ID] ?? []).includes(required);
 }
 
 /**

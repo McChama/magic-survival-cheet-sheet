@@ -286,11 +286,14 @@ export interface CurrentRunState {
    *  cross-run meta-progression. No upper bound is enforced — the real in-game max
    *  level isn't datamined anywhere in this repo. */
   magicLevels: Record<string, number>;
-  /** Real talent branch name the player recorded for an acquired magic — see
+  /** Real talent branch name(s) the player recorded for an acquired magic — see
    *  `TALENT_OPTIONS_BY_MAGIC_ID` in `src/data/fusions.ts` for the real names known per
-   *  magic (derived from `FUSIONS`, not exhaustive for every magic). Missing entry means
+   *  magic (derived from `FUSIONS`, not exhaustive for every magic). A magic can have one
+   *  recorded talent per talent-level group it has (every magic has one, at its own max
+   *  level, except Magic Bolt, which picks independently at level 4 and again at level 7 —
+   *  so this is an array, one entry per group, not a single value). Missing entry means
    *  "not recorded yet," not "no talent exists." */
-  magicTalents: Record<string, string>;
+  magicTalents: Record<string, string[]>;
   elapsedMinutes: number;
   currentLevel: number;
   enemiesKilled: number;

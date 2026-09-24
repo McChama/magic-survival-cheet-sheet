@@ -11,7 +11,7 @@ import { classImage } from "../../config/assets";
 import { getClassLevel, getClassMagicProgression } from "../../data/classes";
 import { PASSIVES } from "../../data/passives";
 import { getOwnedMagics } from "../../engine/ownedMagics";
-import { getObtainedPassiveIds, getOwnedPassives, getPassiveLevel } from "../../engine/ownedPassives";
+import { getOwnedPassives, getPassiveLevel } from "../../engine/ownedPassives";
 import { getPassiveMaxLevel, passiveLinesAtLevel } from "../../data/passiveLevels";
 import { getEquippedItems } from "../../engine/tierAdaptive";
 import { namedMagicIdsInText } from "../../engine/synergy";
@@ -28,7 +28,6 @@ import { GameText } from "../shared/GameText";
 import { GridPanel } from "../shared/GridPanel";
 import { RARITY_LABEL_KEY, describeItem } from "../shared/itemText";
 import { ItemSynergies } from "../shared/ItemSynergies";
-import { LevelControls } from "../shared/LevelControls";
 import { RemoveButton } from "../shared/RemoveButton";
 import { Pip, StarIcon } from "../shared/LevelMarks";
 import { MaskedSprite } from "../shared/MaskedSprite";
@@ -63,7 +62,7 @@ const PASSIVE_BY_NAME: Record<string, EquippableItem> = Object.fromEntries(PASSI
 function SpecialGlyph({ name }: { name: string }) {
   const passive = PASSIVE_BY_NAME[name];
   if (!passive) return <span className="text-[#f0603c] text-3xl leading-none">★</span>;
-  return <MaskedMagicIcon src={passive.image} alt={name} full />;
+  return <GridIcon src={passive.image} alt={name} />;
 }
 
 /** The tint of a regular passive's icon: the pale green of the game's Select Magic rows. */
@@ -131,10 +130,6 @@ function TalentPanel({ talent, unlocked, chosen, onChoose, t }: { talent: MagicT
   );
 }
 
-/** The Doctor special ("Increases the Max Level by 3") raises how far a magic can be leveled. */
-const DOCTOR_ID = "doctor";
-const DOCTOR_EXTRA_LEVELS = 3;
-
 /** An active magic's detail, laid out like the real game's: the icon with no frame, its name,
  *  level pips, its real one-line description, the level controls (the level is set here), a compact two-column stats
  *  table (stat on the left, value in gold on the right) and, pinned to the bottom, one row of small talent icons (every
@@ -154,22 +149,13 @@ function MagicDetail({ magicId, talent, onTalentChange, onRemoved, gt, t }: { ma
   const icon = baseMagicSpriteUrl(magicId);
   const run = useRunStore((st) => st.run);
   const toggleAcquiredMagic = useRunStore((st) => st.toggleAcquiredMagic);
-  const setMagicLevel = useRunStore((st) => st.setMagicLevel);
   const setMagicTalent = useRunStore((st) => st.setMagicTalent);
   const level = getOwnedMagics(run).find((m) => m.magicId === magicId)?.level ?? 1;
   const acquired = run.acquiredMagicIds.includes(magicId);
-  const chosenTalent = run.magicTalents[magicId] ?? null;
-  const maxLevel = max + (getObtainedPassiveIds(run).has(DOCTOR_ID) ? DOCTOR_EXTRA_LEVELS : 0);
+  const chosenTalents = run.magicTalents[magicId] ?? [];
   const damageMultiplier = magicDamageMultiplier(magicId, level, run);
   const effects = collectMagicEffects(magicId, level, run);
   const globalStats = getRunStats(run);
-
-  function changeLevel(next: number) {
-    // A level recorded for a magic only counts once the magic is in the added list (see `getOwnedMagics`), so a magic
-    // the Class grants is added the first time its level is changed.
-    if (!acquired) toggleAcquiredMagic(magicId);
-    setMagicLevel(magicId, next);
-  }
 
   return (
     <div className="relative flex flex-col items-center text-center gap-1.5 min-h-full" onClick={() => talent && onTalentChange(null)}>
@@ -181,7 +167,9 @@ function MagicDetail({ magicId, talent, onTalentChange, onRemoved, gt, t }: { ma
           <Pip key={i} filled={i < level} maxed={level >= max} size="w-[6px] h-[6px]" />
         ))}
       />
-      <LevelControls level={level} min={1} max={maxLevel} onChange={changeLevel} />
+      {/* Leveling only happens through Select Magic now (the Dashboard's Level Up button) — this is a plain hint,
+          not a control, once there's still a level left to reach. */}
+      {level < max && <div className="text-[0.7rem] text-[#e8e8e2]/45">{t("ownedMagic.levelUpHint")}</div>}
       {MAGIC_DESCRIPTION[magicId] && <GameText text={MAGIC_DESCRIPTION[magicId]} color="#EBEBEB" className="text-[0.8rem]" />}
 
       {stats.length > 0 && (
@@ -200,7 +188,7 @@ function MagicDetail({ magicId, talent, onTalentChange, onRemoved, gt, t }: { ma
           {talentGroups.map((group) => (
             <div key={group.level} className="flex items-center gap-[1cqw]">
               {group.talents.map((tal) => (
-                <TalentIcon key={tal.name} src={icon} talent={tal} selected={talent?.name === tal.name} chosen={chosenTalent === tal.name} onSelect={() => onTalentChange(talent?.name === tal.name ? null : tal.name)} />
+                <TalentIcon key={tal.name} src={icon} talent={tal} selected={talent?.name === tal.name} chosen={chosenTalents.includes(tal.name)} onSelect={() => onTalentChange(talent?.name === tal.name ? null : tal.name)} />
               ))}
             </div>
           ))}
@@ -218,19 +206,26 @@ function MagicDetail({ magicId, talent, onTalentChange, onRemoved, gt, t }: { ma
       )}
 
       {talent && (
-        <TalentPanel talent={talent} unlocked={level >= talent.level} chosen={chosenTalent === talent.name} onChoose={() => setMagicTalent(magicId, chosenTalent === talent.name ? null : talent.name)} t={t} />
+        <TalentPanel
+          talent={talent}
+          unlocked={level >= talent.level}
+          chosen={chosenTalents.includes(talent.name)}
+          onChoose={() => setMagicTalent(magicId, talent.level, chosenTalents.includes(talent.name) ? null : talent.name)}
+          t={t}
+        />
       )}
     </div>
   );
 }
 
-/** The top of every active-magic-style modal: the unframed icon (white unless `iconClass` tints it), the name, and a row where
- *  the level goes (level pips for a magic, a star for a special ability). */
-function DetailHero({ icon, alt, name, levelRow, iconClass }: { icon: string; alt: string; name: string; levelRow: React.ReactNode; iconClass?: string }) {
+/** The top of every active-magic-style modal: the icon (white-masked unless `iconClass` tints it, or in its own real
+ *  colors when `unmasked` — a special ability's, per the game), the name, and a row where the level goes (level pips
+ *  for a magic or passive, a star for a special ability). */
+function DetailHero({ icon, alt, name, levelRow, iconClass, unmasked }: { icon: string; alt: string; name: string; levelRow: React.ReactNode; iconClass?: string; unmasked?: boolean }) {
   return (
     <>
       <div className="w-[20%] aspect-square mt-[4cqh] flex items-center justify-center">
-        <MaskedMagicIcon src={icon} alt={alt} full className={iconClass} />
+        {unmasked ? <GridIcon src={icon} alt={alt} /> : <MaskedMagicIcon src={icon} alt={alt} full className={iconClass} />}
       </div>
       <div className="font-magic text-[1.2rem] text-[#e8e8e2]">{name}</div>
       <div className="flex items-center gap-[3px] h-[6px]">{levelRow}</div>
@@ -243,7 +238,6 @@ function DetailHero({ icon, alt, name, levelRow, iconClass }: { icon: string; al
  *  Max HP by 40%" at Lv3), each in its real color. */
 function PassiveDetail({ item, onRemoved, gt, t }: { item: EquippableItem; onRemoved: () => void; gt: (key: string, fallback: string) => string; t: (key: string, options?: Record<string, unknown>) => string }) {
   const run = useRunStore((st) => st.run);
-  const setMagicLevel = useRunStore((st) => st.setMagicLevel);
   const unequipItem = useRunStore((st) => st.unequipItem);
   const label = gt(`item.${item.id}.name`, item.name);
   const level = getPassiveLevel(run, item);
@@ -259,7 +253,7 @@ function PassiveDetail({ item, onRemoved, gt, t }: { item: EquippableItem; onRem
           <Pip key={i} filled={i < level} maxed size="w-[6px] h-[6px]" />
         ))}
       />
-      {max > 1 && <LevelControls level={level} min={1} max={max} onChange={(next) => setMagicLevel(item.id, next)} />}
+      {level < max && <div className="text-[0.7rem] text-[#e8e8e2]/45">{t("ownedMagic.levelUpHint")}</div>}
       <div className="flex flex-col gap-1 mt-1 text-[0.8rem]">
         {passiveLinesAtLevel(item.id, level).map((line, i) => (
           <GameText key={i} text={line.text} color={line.color} />
@@ -285,7 +279,7 @@ function SpecialDetail({ passive, onRemove, gt, t }: { passive: EquippableItem; 
   const lines = PASSIVE_EFFECT_LINES[passive.id] ?? [];
   return (
     <div className="relative flex flex-col items-center text-center gap-2 min-h-full">
-      <DetailHero icon={passive.image} alt={label} name={label} levelRow={<StarIcon size="w-[14px] h-[14px]" />} />
+      <DetailHero icon={passive.image} alt={label} name={label} levelRow={<StarIcon size="w-[14px] h-[14px]" />} unmasked />
       <div className="flex flex-col gap-1 mt-1 text-[0.8rem]">
         {lines.map((line, i) => (
           <GameText key={i} text={line.text} color={line.color} />

@@ -1,5 +1,6 @@
 import { ANY_PASSIVE_ID, FUSIONS, fusionRefId } from "../data/fusions";
 import { BASE_MAGIC_BY_ID } from "../data/magics";
+import { withMagicTalent } from "../data/magicTalents";
 import { getOwnedMagics } from "./ownedMagics";
 import { getEquippedItems } from "./tierAdaptive";
 import type { CurrentRunState, FusionDefinition } from "../types/game";
@@ -32,7 +33,7 @@ export function getFusionRequirements(fusion: FusionDefinition, run: CurrentRunS
     const talentName = ingredient?.talentName ?? null;
     if (id === ANY_PASSIVE_ID || fusionRefId(id) !== null) return { id, talentName, met: false };
     const owned = (BASE_MAGIC_BY_ID[id] && ownedMagicIds.has(id)) || equippedItemIds.has(INGREDIENT_PASSIVE[id] ?? id);
-    const talentOk = !talentName || !ingredient?.parentMagicId || run.magicTalents[ingredient.parentMagicId] === talentName;
+    const talentOk = !talentName || !ingredient?.parentMagicId || (run.magicTalents[ingredient.parentMagicId] ?? []).includes(talentName);
     return { id, talentName, met: owned && talentOk };
   });
 }
@@ -44,4 +45,19 @@ export function getFusionRequirements(fusion: FusionDefinition, run: CurrentRunS
  */
 export function getAvailableFusions(run: CurrentRunState): FusionDefinition[] {
   return FUSIONS.filter((fusion) => getFusionRequirements(fusion, run).every((requirement) => requirement.met));
+}
+
+/** Every real Magic Combination that names `(magicId, talentName)` as one of its two ingredients — the "compatible
+ *  Synergies" row of the Select Attribute screen. */
+export function getFusionsForTalent(magicId: string, talentName: string): FusionDefinition[] {
+  return FUSIONS.filter((fusion) => fusion.requiredTalents?.some((ing) => ing.parentMagicId === magicId && ing.talentName === talentName));
+}
+
+/** Whether recording `talentName` for `magicId` (on top of the run's other talents — the pick hasn't been committed
+ *  yet) would complete `fusion`: every other requirement is already met, and this is the last missing piece. This is
+ *  what lights a Select Attribute combo thumbnail's border white, the same "requirements met" signal
+ *  `getAvailableFusions` uses, just evaluated against a simulated run instead of the real one. */
+export function wouldCompleteFusion(fusion: FusionDefinition, run: CurrentRunState, magicId: string, level: number, talentName: string): boolean {
+  const simulated: CurrentRunState = { ...run, magicTalents: withMagicTalent(run.magicTalents, magicId, level, talentName) };
+  return getFusionRequirements(fusion, simulated).every((requirement) => requirement.met);
 }

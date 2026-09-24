@@ -117,8 +117,8 @@ export function detectSynergies(option: RecommenderOption, run: CurrentRunState)
       const ingredientIndex = fusion.requiredMagicIds.findIndex((id) => id === option.magicId);
       if (ingredientIndex === -1) continue;
       const requiredTalent = fusion.requiredTalents?.[ingredientIndex]?.talentName ?? null;
-      const recordedTalent = run.magicTalents[option.magicId] ?? null;
-      if (requiredTalent && recordedTalent === requiredTalent) {
+      const recordedTalents = run.magicTalents[option.magicId] ?? [];
+      if (requiredTalent && recordedTalents.includes(requiredTalent)) {
         signals.push({ tier: 1, label: `Exact talent match for the "${fusion.name}" fusion (${requiredTalent})` });
       } else {
         signals.push({ tier: 2, label: `Ingredient for the "${fusion.name}" fusion` });

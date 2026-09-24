@@ -68,3 +68,24 @@ export function getMagicTalentGroups(magicId: string): { level: number; talents:
   }
   return [...byLevel.entries()].sort(([a], [b]) => a - b).map(([level, talents]) => ({ level, talents }));
 }
+
+/** The talent group (if any) a magic offers exactly at `level` — Level Up uses this to tell whether reaching a given
+ *  level is a plain level-up or one of its talent picks (Magic Bolt: level 4 and level 7 each have one). */
+export function getTalentGroupForLevel(magicId: string, level: number): { level: number; talents: MagicTalentDefinition[] } | undefined {
+  return getMagicTalentGroups(magicId).find((group) => group.level === level);
+}
+
+/** Replaces whichever talent (if any) was previously recorded for `magicId`'s `level`-group with `talentName` (`null`
+ *  clears it) inside a `magicTalents` record — the other groups' recorded talents are left alone. Shared by the store
+ *  (`setMagicTalent`) and anywhere that needs to simulate "what if this talent were picked" (`engine/magicCombination.ts`'s
+ *  `wouldCompleteFusion`) without duplicating the group-lookup logic. */
+export function withMagicTalent(magicTalents: Record<string, string[]>, magicId: string, level: number, talentName: string | null): Record<string, string[]> {
+  const groupNames = new Set((MAGIC_TALENTS_BY_MAGIC_ID[magicId] ?? []).filter((t) => t.level === level).map((t) => t.name));
+  const kept = (magicTalents[magicId] ?? []).filter((name) => !groupNames.has(name));
+  const next = talentName ? [...kept, talentName] : kept;
+  if (next.length === 0) {
+    const { [magicId]: _removed, ...rest } = magicTalents;
+    return rest;
+  }
+  return { ...magicTalents, [magicId]: next };
+}

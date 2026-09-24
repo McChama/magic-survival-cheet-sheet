@@ -1,46 +1,41 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { uiImage } from "../../config/assets";
-import { LoadoutSheet } from "../shared/LoadoutSheet";
-import type { QuickAddKind } from "../../data/quickAddOptions";
 
 interface LoadoutFabProps {
   onOpenRecommender: () => void;
+  onOpenArtifact: () => void;
+  onOpenMagic: () => void;
 }
 
 /**
  * The "Add" circle under the Dashboard's nav row — inline, not a floating
  * corner FAB, so its popup opens *upward* from the button (`bottom-full`) instead of
  * being pinned to a screen corner. Its glyph is the game's X sprite turned 45° so it reads as a "+"
- * (and back to an X while the menu is open). The dismiss backdrop stays `fixed inset-0` (not
+ * (and back to an X while its menu is open). The dismiss backdrop stays `fixed inset-0` (not
  * `absolute`) specifically because this button no longer sits in a full-screen-positioned
  * wrapper — an `absolute` backdrop would only cover this footer row, not the whole screen.
+ * Purely presentational: which sheet is open lives in `RunDashboardScreen` (the "+1 Current Level"
+ * button opens Select Magic the same way this menu's "Magic" item does, so both share one instance).
  */
-export function LoadoutFab({ onOpenRecommender }: LoadoutFabProps) {
+export function LoadoutFab({ onOpenRecommender, onOpenArtifact, onOpenMagic }: LoadoutFabProps) {
   const { t } = useTranslation("translation");
   const [fabOpen, setFabOpen] = useState(false);
-  const [activeKind, setActiveKind] = useState<Exclude<QuickAddKind, "passive"> | null>(null);
 
-  function openSheet(kind: Exclude<QuickAddKind, "passive">) {
-    setActiveKind(kind);
+  function pick(action: () => void) {
     setFabOpen(false);
+    action();
   }
 
   return (
-    <>
-      <div className="relative">
-        {fabOpen && (
-        <div className="fixed inset-0 bg-[#040405]/[.68]" onClick={() => setFabOpen(false)} />
-      )}
+    <div className="relative">
+      {fabOpen && <div className="fixed inset-0 bg-[#040405]/[.68]" onClick={() => setFabOpen(false)} />}
 
       {fabOpen && (
         <div className="animate-ms-pop absolute bottom-full right-0 mb-3 flex flex-col items-end gap-3">
           <button
             type="button"
-            onClick={() => {
-              setFabOpen(false);
-              onOpenRecommender();
-            }}
+            onClick={() => pick(onOpenRecommender)}
             className="flex items-center gap-3 bg-transparent border-none cursor-pointer font-[inherit] p-0"
           >
             <span className="text-[1.1rem] text-[#e8e8e2] [text-shadow:0_1px_4px_#000]">{t("loadoutFab.recommender")}</span>
@@ -50,7 +45,7 @@ export function LoadoutFab({ onOpenRecommender }: LoadoutFabProps) {
           </button>
           <button
             type="button"
-            onClick={() => openSheet("artifact")}
+            onClick={() => pick(onOpenArtifact)}
             className="flex items-center gap-3 bg-transparent border-none cursor-pointer font-[inherit] p-0"
           >
             <span className="text-[1.1rem] text-[#e8e8e2] [text-shadow:0_1px_4px_#000]">{t("loadoutFab.artifact")}</span>
@@ -60,7 +55,7 @@ export function LoadoutFab({ onOpenRecommender }: LoadoutFabProps) {
           </button>
           <button
             type="button"
-            onClick={() => openSheet("magic")}
+            onClick={() => pick(onOpenMagic)}
             className="flex items-center gap-3 bg-transparent border-none cursor-pointer font-[inherit] p-0"
           >
             <span className="text-[1.1rem] text-[#e8e8e2] [text-shadow:0_1px_4px_#000]">{t("loadoutFab.magic")}</span>
@@ -84,8 +79,5 @@ export function LoadoutFab({ onOpenRecommender }: LoadoutFabProps) {
         />
       </button>
     </div>
-
-      {activeKind && <LoadoutSheet kind={activeKind} onClose={() => setActiveKind(null)} />}
-    </>
   );
 }

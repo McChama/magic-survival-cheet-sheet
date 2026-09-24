@@ -14,3 +14,19 @@ export const MAGIC_KIND_COLOR = {
   passive: PASSIVE_FRAME,
   special: SPECIAL_FRAME,
 } as const;
+
+/** A Magic Combination card's border: plain white once its requirements are met, dark gray otherwise. Shared by
+ *  `MagicCombinationScreen`'s grid and `AttributeSelect`'s "compatible combos" thumbnail row (a talent pick can make
+ *  one newly satisfiable, highlighted the same way). */
+export const COMBINATION_FRAME_READY = "#fff";
+export const COMBINATION_FRAME_IDLE = "#4a4646";
+
+/**
+ * A Select Magic row's level marker + border, by what leveling into it would do (sampled off a real level-up
+ * screenshot, 2026-09-24): a fresh, not-yet-owned pickup reads in the app's plain base text color; a normal level-up
+ * in gold; a level that unlocks a talent in a distinct teal — border, level number and the "You can obtain an
+ * attribute." line all share that same teal, exactly like the real screen's one-color treatment for that state.
+ */
+export const LEVEL_PICK_FRESH_COLOR = "#e8e8e2";
+export const LEVEL_PICK_NORMAL_COLOR = "#efc84f";
+export const LEVEL_PICK_TALENT_COLOR = "#32ffe1";
