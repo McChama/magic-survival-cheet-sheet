@@ -4,9 +4,7 @@
     "cheatSheet": "Cheat Sheet",
     "startGame": "Start Game",
     "researchAria": "Research",
-    "subjectAria": "Subject",
-    "dropProbabilityAria": "Drop Probability",
-    "recommenderAria": "Recommender"
+    "subjectAria": "Subject"
   },
   "classSelect": {
     "closeAria": "Close",
@@ -36,7 +34,9 @@
     "ownedMagicAria": "Owned Magic",
     "ownedArtifactAria": "Owned Artifact",
     "synergyAria": "Synergy",
-    "addAria": "Add to loadout"
+    "magicCombinationAria": "Magic Combination",
+    "addAria": "Add to loadout",
+    "levelUpAria": "Level up"
   },
   "loadoutFab": {
     "artifact": "Artifact",
@@ -49,8 +49,11 @@
     "title": "Owned Magic",
     "closeAria": "Close",
     "empty": "Select a class first.",
-    "levelBadge": "Lv {{level}}",
+    "removeBtn": "Remove",
+    "chooseTalent": "Choose",
+    "clearTalent": "Clear",
     "talentUnlockLevel": "Attribute Unlock Level : {{level}}",
+    "levelUpHint": "Level it up from Select Magic (the Dashboard's Level Up button).",
     "statUnknown": "—"
   },
   "ownedArtifact": {
@@ -67,25 +70,52 @@
     "closeAria": "Close",
     "ownedOf": "{{owned}}/{{required}} owned"
   },
+  "offer": {
+    "title": "Treasure Chest",
+    "obtainBtn": "Obtain",
+    "closeAria": "Close"
+  },
+  "magicCombination": {
+    "title": "Magic Combination",
+    "closeAria": "Close",
+    "returnBtn": "Return",
+    "hint": "Learn the magic that meets the requirements @ to obtain Magic Combination chances at levels 〈25, 50, 75〉.",
+    "unusable": "{{magic}} Unusable",
+    "requirements": "Requirements",
+    "anyPassive": "Any passive",
+    "prevAria": "Previous combination",
+    "nextAria": "Next combination"
+  },
+  "pager": {
+    "prevAria": "Previous page",
+    "nextAria": "Next page"
+  },
+  "levelUp": {
+    "title": "Select Attribute",
+    "hint": "Attributes make magic even stronger. @ Select an attribute.",
+    "obtainAttribute": "You can obtain an attribute.",
+    "selectAttributeBtn": "Select Attribute",
+    "learnBtn": "Learn",
+    "backAria": "Back to Select Magic"
+  },
   "boostSignal": {
     "listLabel": "Boost signals",
-    "noSignal": "No confirmed boost yet."
+    "noSignal": "No magic boosted."
   },
   "loadoutSheet": {
     "titleByKind": {
-      "artifact": "Artifact obtained",
-      "passive": "Passive obtained",
-      "magic": "Magic obtained"
+      "artifact": "Select Artifact",
+      "magic": "Select Magic"
     },
     "closeAria": "Close",
     "noResults": "No results.",
-    "selectItemPlaceholder": "Select an item",
-    "tapHint": "Tap an icon to add or remove it from your loadout.",
     "noAdditionalEffect": "No additional effect data.",
-    "baseMagicPickup": "Base magic pickup — tracked for fusion dependencies.",
-    "magicLevelLabel": "Level",
-    "magicLevelDownAria": "Decrease magic level",
-    "magicLevelUpAria": "Increase magic level",
+    "offerHint": "Pick the {{count}} artifacts the game offered you.",
+    "showOfferBtn": "Show offer ({{count}})",
+    "obtainBtn": "Obtain",
+    "levelUpBtn": "+1 Level",
+    "levelBadge": "Lv {{level}}",
+    "levelBlockedHint": "Reach Current Level {{level}} to level this up.",
     "categories": {
       "all": "All",
       "normal": "Normal",
@@ -93,7 +123,7 @@
       "epic": "Epic",
       "special": "Special",
       "legendary": "Legendary",
-      "offensive": "Offensive",
+      "offensive": "Active",
       "utility": "Utility",
       "passive": "Passive"
     }
@@ -119,7 +149,7 @@
     "exceptionsHeading": "Known exceptions",
     "noExceptions": "No known per-item exceptions for this context.",
     "noTierData": "Tier breakdown not researched yet for this context.",
-    "footerNote": "Estimates from a documented approximation, not the game's exact odds — see reference/game-data-sources.md.",
+    "footerNote": "Estimates from a documented approximation, not the game's exact odds.",
     "slotsNote": {
       "normalChest": "3 items per chest.",
       "merchant": "8 items per merchant visit.",

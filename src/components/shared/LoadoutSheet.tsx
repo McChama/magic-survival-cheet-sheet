@@ -1,43 +1,40 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FilterChip } from "./FilterChip";
-import type { TFunction } from "i18next";
-import { MAGIC_CATEGORY } from "../../data/magicCategories";
-import { getMagicLevel, TALENT_OPTIONS_BY_MAGIC_ID } from "../../data/fusions";
+import { magicKindOf } from "../../data/magicCategories";
 import { optionsByKind, type QuickAddKind } from "../../data/quickAddOptions";
-import { STAT_DEFINITIONS } from "../../data/statDefinitions";
 import { useRunStore } from "../../store/useRunStore";
+import { useUiStore } from "../../store/useUiStore";
 import { useGameDataText } from "../../i18n/useGameDataText";
-import { uiImage } from "../../config/assets";
+import { getMagicLevelPick, getPassiveLevelPick } from "../../engine/magicLeveling";
+import { getEquippedItems } from "../../engine/tierAdaptive";
 import { ScreenHeader } from "./ScreenHeader";
+import { ScreenTitle } from "./ScreenTitle";
+import { ScreenFooter } from "./ScreenFooter";
+import { ArtifactOfferModal } from "./ArtifactOfferModal";
+import { AttributeSelect } from "./AttributeSelect";
+import { CARD_ASPECT, CardArt, GridIcon, GridTile } from "./GridCard";
+import { GridPanel } from "./GridPanel";
+import { MagicPickList, type AttributeSelectRequest } from "./MagicPickList";
+import { MAGIC_KIND_COLOR } from "../../config/frameColors";
 import { RARITY_RING } from "../../config/rarityColors";
 import type { RecommenderOption } from "../../engine/scoring";
-import type { StatKey } from "../../types/game";
 
 /** The gameData translation key for an option's display name — items use their own id, base magics use the bare magic id (option.id is prefixed "magic:"). */
 function optionNameKey(option: RecommenderOption): string {
   return option.item ? `item.${option.item.id}.name` : `magic.${option.magicId}.name`;
 }
 
-/** The category's own identity color, used as the "owned" ring for items with no per-item accent (magics). */
-const RING_BY_KIND: Record<QuickAddKind, string> = {
-  artifact: "#efc84f",
-  passive: "#1f8f6e",
-  magic: "#5fe3c4",
-};
-
 interface CategoryChip {
   /** Stable id used for selection state; translated for display via CATEGORY_LABEL_KEY. */
   key: string;
   color: string;
-  /** Omitted on the "All" chip. */
-  match?: (option: RecommenderOption) => boolean;
+  /** The label color once the chip is filled with `color` (dark on the white "Active" chip). */
+  activeText?: string;
+  match: (option: RecommenderOption) => boolean;
 }
 
-const ALL_CHIP_COLOR = "rgba(232,232,226,.6)";
-
 const CATEGORY_LABEL_KEY: Record<string, string> = {
-  all: "loadoutSheet.categories.all",
   normal: "loadoutSheet.categories.normal",
   rare: "loadoutSheet.categories.rare",
   epic: "loadoutSheet.categories.epic",
@@ -48,9 +45,8 @@ const CATEGORY_LABEL_KEY: Record<string, string> = {
   passive: "loadoutSheet.categories.passive",
 };
 
-/** Rarity is the only real grouping the wiki uses for Artifacts. */
+/** Rarity is the only real grouping the wiki uses for Artifacts. No "All" chip: the sheet opens on Normal. */
 const RARITY_CATEGORIES: CategoryChip[] = [
-  { key: "all", color: ALL_CHIP_COLOR },
   { key: "normal", color: RARITY_RING.common, match: (o) => o.item?.rarity === "common" },
   { key: "rare", color: RARITY_RING.rare, match: (o) => o.item?.rarity === "rare" },
   { key: "epic", color: RARITY_RING.epic, match: (o) => o.item?.rarity === "epic" },
@@ -59,224 +55,203 @@ const RARITY_CATEGORIES: CategoryChip[] = [
 ];
 
 /**
- * The wiki's own 4-way split of the Magic tab: Offensive/Utility come from BASE_MAGICS
- * (see magicCategories.ts). Passive/Special Passive Magics aren't in BASE_MAGICS at all
- * — they're the `kind: "passive"` entries in src/data/passives.ts, which already encodes
- * the wiki's own regular-vs-special split via rarity (regular Passive Magics are
- * "common", Special Passive Magics are "special"). So the Magic sheet's option list
- * merges BASE_MAGICS + PASSIVES (see `options` below) to make all 4 chips real.
+ * The wiki's own 4-way split of the Magic tab (Active / Utility from BASE_MAGICS, see magicCategories.ts; regular / special
+ * passives from PASSIVES, split by rarity), colored white / blue / green / red like the rows' borders. No "All" chip: it opens on Active.
  */
-const MAGIC_CATEGORIES: CategoryChip[] = [
-  { key: "all", color: ALL_CHIP_COLOR },
-  { key: "offensive", color: "#5fe3c4", match: (o) => !!o.magicId && MAGIC_CATEGORY[o.magicId] === "offensive" },
-  { key: "utility", color: "#6fb4ff", match: (o) => !!o.magicId && MAGIC_CATEGORY[o.magicId] === "utility" },
-  { key: "passive", color: "rgb(121,119,120)", match: (o) => o.item?.kind === "passive" && o.item.rarity === "common" },
-  { key: "special", color: "rgb(107,25,34)", match: (o) => o.item?.kind === "passive" && o.item.rarity === "special" },
-];
+const MAGIC_CATEGORIES: CategoryChip[] = (["offensive", "utility", "passive", "special"] as const).map((key) => ({
+  key,
+  color: MAGIC_KIND_COLOR[key],
+  activeText: key === "offensive" ? "#0d0d10" : "#fff",
+  match: (o: RecommenderOption) => magicKindOf(o) === key,
+}));
 
-/**
- * `option.image` is set (magicSpriteUrl always returns a URL, never undefined) even for
- * the 22 base magics, which have no real sprite in the extracted asset dump — the dev
- * server's SPA fallback returns a 200 (index.html) for that missing path instead of a
- * clean 404, so a plain truthiness check can't catch it; onError can.
- */
-function OptionIcon({ src, alt }: { src: string; alt: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <span className="text-[#e8e8e2]/30 text-2xl">?</span>;
-  return (
-    <img
-      src={src}
-      alt={alt}
-      loading="lazy"
-      className="w-full h-full object-cover"
-      onError={() => setFailed(true)}
-    />
-  );
-}
-
-function describeOption(option: RecommenderOption, t: TFunction, gt: (key: string, fallback: string) => string): string {
-  if (option.item) {
-    if (option.item.specialEffect) return gt(`item.${option.item.id}.specialEffect`, option.item.specialEffect);
-    const parts = (Object.entries(option.item.stats) as [StatKey, number][])
-      .filter(([, value]) => value)
-      .map(([key, value]) => `${value > 0 ? "+" : ""}${value}${STAT_DEFINITIONS[key].unit === "%" ? "%" : ""} ${gt(`stat.${key}.label`, STAT_DEFINITIONS[key].label)}`);
-    return parts.join(", ") || t("loadoutSheet.noAdditionalEffect");
-  }
-  return t("loadoutSheet.baseMagicPickup");
-}
-
-interface MagicLevelTalentTrackerProps {
-  magicId: string;
-  level: number;
-  talent: string | null;
-  onLevelChange: (level: number) => void;
-  onTalentChange: (talent: string | null) => void;
-}
-
-/**
- * Lets the player record a currently-acquired magic's level and (real, extracted) talent
- * branch, so the synergy engine can match fusion ingredients precisely instead of just
- * "you own this magic." Level has no upper bound — the real in-game max level isn't
- * datamined anywhere in this repo (unlike Class Level's known 1-5), so this is a plain
- * stepper, not a fixed pip row like `ClassSelectScreen.tsx`'s. Talent chips only render
- * for names `TALENT_OPTIONS_BY_MAGIC_ID` actually has real data for — a magic with 0 or 1
- * known talent name shows that many chips, never a padded-out fake 3-way choice.
- */
-function MagicLevelTalentTracker({ magicId, level, talent, onLevelChange, onTalentChange }: MagicLevelTalentTrackerProps) {
-  const { t } = useTranslation("translation");
-  const talentOptions = TALENT_OPTIONS_BY_MAGIC_ID[magicId] ?? [];
-
-  return (
-    <div className="flex flex-col items-center gap-1.5 pt-1">
-      <div className="flex items-center gap-3">
-        <span className="text-[0.7rem] text-[#e8e8e2]/55">{t("loadoutSheet.magicLevelLabel")}</span>
-        <button
-          type="button"
-          disabled={level <= 1}
-          onClick={() => onLevelChange(level - 1)}
-          aria-label={t("loadoutSheet.magicLevelDownAria")}
-          className="w-3 h-3 bg-transparent border-none p-0 cursor-pointer disabled:opacity-25 disabled:cursor-default"
-        >
-          <img src={uiImage("icons/UI_AreaMove_L.png")} alt="" className="w-full h-full object-contain" />
-        </button>
-        <span className="font-magic text-[0.95rem] text-[#e8e8e2] w-4 text-center">{level}</span>
-        <button
-          type="button"
-          onClick={() => onLevelChange(level + 1)}
-          aria-label={t("loadoutSheet.magicLevelUpAria")}
-          className="w-3 h-3 bg-transparent border-none p-0 cursor-pointer"
-        >
-          <img src={uiImage("icons/UI_AreaMove_R.png")} alt="" className="w-full h-full object-contain" />
-        </button>
-      </div>
-      {talentOptions.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap justify-center">
-          {talentOptions.map((name) => {
-            const active = talent === name;
-            return (
-              <FilterChip key={name} active={active} color="#5fe3c4" activeText="#0d0d10" onClick={() => onTalentChange(active ? null : name)} className="flex-none py-[3px] px-2.5 text-[0.68rem]">
-                {name}
-              </FilterChip>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
+/** Base magics the "+" menu doesn't list: Intelligence is offered as its passive (a passive with levels like any magic). */
+const HIDDEN_BASE_MAGICS = new Set(["intelligence"]);
 
 interface LoadoutSheetProps {
-  kind: QuickAddKind;
+  kind: Exclude<QuickAddKind, "passive">;
   onClose: () => void;
+  /** Select Magic reached from the Dashboard's level-up star, not the "+" menu's plain catalog — see `useLevelUpActions`. */
+  isLevelUp?: boolean;
 }
 
-/** Tapping an icon toggles it straight into/out of the loadout, since the player already knows the category. */
-const TITLE_KEY_BY_KIND: Record<QuickAddKind, string> = {
+const TITLE_KEY_BY_KIND = {
   artifact: "loadoutSheet.titleByKind.artifact",
-  passive: "loadoutSheet.titleByKind.passive",
   magic: "loadoutSheet.titleByKind.magic",
-};
+} as const;
 
-export function LoadoutSheet({ kind, onClose }: LoadoutSheetProps) {
+/** A treasure chest offers 3 artifacts (the Recommender's normal-chest slot count). */
+const OFFER_SIZE = 3;
+
+interface ArtifactPickGridProps {
+  options: RecommenderOption[];
+  picked: RecommenderOption[];
+  onToggle: (option: RecommenderOption) => void;
+}
+
+/**
+ * The artifacts on the same scrolling panel and rough-bordered 6-per-row cards as Owned Artifact. A picked card has the white
+ * border and the zoom. Give it a `key` per rarity so the scroll starts over when the chip changes.
+ */
+function ArtifactPickGrid({ options, picked, onToggle }: ArtifactPickGridProps) {
   const { t } = useTranslation("translation");
   const gt = useGameDataText();
+  return (
+    <GridPanel>
+      <div className="grid grid-cols-6 gap-x-[1%] gap-y-1.5">
+        {options.map((option) => {
+          const item = option.item;
+          if (!item) return null;
+          const isSelected = picked.some((o) => o.id === option.id);
+          const label = gt(optionNameKey(option), option.label);
+          return (
+            <GridTile
+              key={option.id}
+              onClick={() => onToggle(option)}
+              frame={isSelected ? "#fff" : RARITY_RING[item.rarity]}
+              label={label}
+              aspect={CARD_ASPECT}
+              className={`transition-transform duration-150 ${isSelected ? "scale-110 z-10" : "scale-100"}`}
+            >
+              <CardArt centered>
+                <GridIcon src={item.image} alt={label} />
+              </CardArt>
+            </GridTile>
+          );
+        })}
+      </div>
+      {options.length === 0 && <div className="py-[30px] text-center text-[0.8rem] text-[#e8e8e2]/35">{t("loadoutSheet.noResults")}</div>}
+    </GridPanel>
+  );
+}
+
+/**
+ * The full-screen sheet behind the Dashboard's "+" menu — reached either from there or, for **Select Magic**
+ * specifically, from the Dashboard's level-up star (`isLevelUp`). **Select Magic** lists everything not yet at its
+ * real max level (`MagicPickList`), no close button and no separate action button either — tapping a row anywhere
+ * obtains a fresh pickup, levels up an owned one, or, once the next level is a talent pick, opens `AttributeSelect`
+ * instead of committing directly. It's select-then-commit: pressing the star only opens this sheet with `isLevelUp`
+ * set, it does **not** touch `run.currentLevel` by itself — that only happens as part of the row's own commit (see
+ * `useLevelUpActions`), so a level-up can be abandoned (backed out via a reload) up until a row is actually tapped.
+ * Any commit closes the whole sheet — a level-up grants exactly one pick, in the real game and here, so there's
+ * nothing left to back out of once a row is tapped. **Select Artifact** keeps its own header/X and is never a
+ * level-up (`isLevelUp` only ever applies to `kind === "magic"`): pick the artifacts the game just offered (up to 3,
+ * like a chest) on the same rough-bordered cards as Owned Artifact, filtered by rarity (Normal first); the third
+ * opens the Treasure Chest window (`ArtifactOfferModal`) — or the button does, with fewer — where the one the
+ * player took is chosen and obtained (and the sheet stays open, ready for the next offer — a chest visit isn't a
+ * one-shot pick the way a level-up is). While it's open the floating Magic Circle bubble hides.
+ */
+export function LoadoutSheet({ kind, onClose, isLevelUp = false }: LoadoutSheetProps) {
+  const { t } = useTranslation("translation");
   const run = useRunStore((s) => s.run);
   const equipItem = useRunStore((s) => s.equipItem);
-  const unequipItem = useRunStore((s) => s.unequipItem);
-  const toggleAcquiredMagic = useRunStore((s) => s.toggleAcquiredMagic);
-  const setMagicLevel = useRunStore((s) => s.setMagicLevel);
-  const setMagicTalent = useRunStore((s) => s.setMagicTalent);
+  const setHideMagicCircleBubble = useUiStore((s) => s.setHideMagicCircleBubble);
+
+  useEffect(() => {
+    setHideMagicCircleBubble(true);
+    return () => setHideMagicCircleBubble(false);
+  }, [setHideMagicCircleBubble]);
 
   const categories = kind === "magic" ? MAGIC_CATEGORIES : RARITY_CATEGORIES;
-  const [activeKey, setActiveKey] = useState("all");
-  const [lastPicked, setLastPicked] = useState<RecommenderOption | null>(null);
-  // The Magic sheet covers all 4 wiki categories, so it pulls in Passives too (see MAGIC_CATEGORIES above).
-  const options = useMemo(() => (kind === "magic" ? [...optionsByKind("magic"), ...optionsByKind("passive")] : optionsByKind(kind)), [kind]);
+  const [activeKey, setActiveKey] = useState(kind === "artifact" ? "normal" : "offensive");
+  const [picked, setPicked] = useState<RecommenderOption[]>([]);
+  const [offerOpen, setOfferOpen] = useState(false);
+  const [attributeSelect, setAttributeSelect] = useState<AttributeSelectRequest | null>(null);
+  // Select Magic is everything not yet at its real max level — a fresh pickup (Obtain) and an owned-but-not-maxed
+  // magic/passive (a level-up) both stay in the list; only "fully done" drops out ("no aparece" once at max). Select
+  // Artifact is still the plain not-yet-owned catalog. The Magic sheet covers all 4 wiki categories, so it pulls in
+  // Passives too (see MAGIC_CATEGORIES above).
+  const ownedItemIds = getEquippedItems(run).map((i) => i.id).join("|");
+  const magicLevels = JSON.stringify(run.magicLevels);
+  const acquiredMagicIds = run.acquiredMagicIds.join("|");
+  const options = useMemo(() => {
+    if (kind === "artifact") {
+      const owned = new Set(ownedItemIds.split("|"));
+      return optionsByKind("artifact").filter((o) => !owned.has(o.item!.id));
+    }
+    return [...optionsByKind("magic"), ...optionsByKind("passive")].filter((o) => {
+      if (o.magicId) return !HIDDEN_BASE_MAGICS.has(o.magicId) && !getMagicLevelPick(o.magicId, run).atMax;
+      return !getPassiveLevelPick(o.item!, run).atMax;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-derives off the same run fields the filter reads (magic/passive levels, class, acquired ids), not off `run` itself, so an unrelated run change doesn't rebuild this list.
+  }, [kind, ownedItemIds, magicLevels, acquiredMagicIds, run.meta.characterClass, run.meta.classLevels]);
 
   const filtered = useMemo(() => {
     const active = categories.find((c) => c.key === activeKey);
-    if (!active?.match) return options;
-    return options.filter(active.match);
+    return active ? options.filter(active.match) : options;
   }, [options, activeKey, categories]);
 
-  function isOwned(option: RecommenderOption): boolean {
-    if (option.magicId) return run.acquiredMagicIds.includes(option.magicId);
-    return run.equipped.some((e) => e.itemId === option.item!.id);
+  function togglePick(option: RecommenderOption) {
+    const has = picked.some((o) => o.id === option.id);
+    if (!has && picked.length >= OFFER_SIZE) return;
+    const next = has ? picked.filter((o) => o.id !== option.id) : [...picked, option];
+    setPicked(next);
+    if (!has && next.length === OFFER_SIZE) setOfferOpen(true);
   }
 
-  function toggle(option: RecommenderOption) {
-    if (option.magicId) {
-      toggleAcquiredMagic(option.magicId);
-    } else if (option.item) {
-      if (isOwned(option)) unequipItem(option.item.id);
-      else equipItem(option.item.id);
-    }
-    setLastPicked(option);
-  }
+  const offeredItems = picked.flatMap((option) => (option.item ? [option.item] : []));
 
   return (
-    <div className="animate-ms-slide-up absolute left-0 right-0 bottom-0 h-[74%] bg-[#111115] border-t border-white/10 rounded-t-[14px] flex flex-col shadow-[0_-12px_40px_rgba(0,0,0,.6)]">
-      <ScreenHeader
-        leftSlot={<div className="text-[0.85rem] tracking-wide text-[#e8e8e2] pl-2">{t(TITLE_KEY_BY_KIND[kind])}</div>}
-        onAction={onClose}
-        actionAria={t("loadoutSheet.closeAria")}
-      />
+    <div className="animate-ms-slide-up absolute inset-0 z-30 flex flex-col bg-[#050506]">
+      {/* Select Magic has no close button: like the real level-up offer, it can't be dismissed without picking
+          something — every row now commits on tap, so there's nothing left to "cancel out of". Select Artifact
+          keeps it (browsing there doesn't commit anything by itself). */}
+      {kind === "artifact" && <ScreenHeader onAction={onClose} actionAria={t("loadoutSheet.closeAria")} />}
+      <ScreenTitle>{t(TITLE_KEY_BY_KIND[kind])}</ScreenTitle>
 
-      <div className="px-4 pb-2.5 flex-none flex gap-2 overflow-x-auto">
+      <div className="px-4 pb-2.5 flex-none flex flex-wrap justify-center gap-1.5">
         {categories.map((c) => {
           const active = c.key === activeKey;
           return (
-            <FilterChip key={c.key} active={active} color={c.color} activeText="#fff" onClick={() => setActiveKey(c.key)} className="flex-none py-[7px] px-3.5 text-[0.8rem]">
+            <FilterChip key={c.key} active={active} color={c.color} activeText={c.activeText ?? "#fff"} onClick={() => setActiveKey(c.key)} className="flex-none py-[6px] px-3 text-[0.75rem]">
               {t(CATEGORY_LABEL_KEY[c.key])}
             </FilterChip>
           );
         })}
       </div>
 
-      <div className="flex-1 overflow-y-auto py-1.5 px-4 pb-[26px]">
-        <div className="grid grid-cols-5 gap-2.5">
-          {filtered.map((option) => {
-            const owned = isOwned(option);
-            const isSelected = lastPicked?.id === option.id;
-            const ring = owned ? (option.item ? RARITY_RING[option.item.rarity] : RING_BY_KIND[kind]) : "rgba(255,255,255,.10)";
-            const label = gt(optionNameKey(option), option.label);
-            return (
-              <button
-                key={option.id}
-                type="button"
-                title={label}
-                onClick={() => toggle(option)}
-                className={`relative aspect-square rounded-[7px] bg-[#0d0d10] cursor-pointer flex items-center justify-center p-0 overflow-hidden transition-transform duration-150 ${isSelected ? "scale-110 border-2 border-white" : "scale-100 border"}`}
-                style={isSelected ? undefined : { borderColor: ring }}
-              >
-                {option.image ? <OptionIcon src={option.image} alt={label} /> : <span className="text-[#e8e8e2]/30 text-2xl">?</span>}
-                {owned && (
-                  <span className="absolute top-[3px] right-1 w-[7px] h-[7px] rounded-full bg-[#63d16b]" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-        {filtered.length === 0 && (
-          <div className="py-[30px] text-center text-[0.8rem] text-[#e8e8e2]/35">{t("loadoutSheet.noResults")}</div>
-        )}
-      </div>
+      {kind === "magic" ? (
+        <MagicPickList key={activeKey} options={filtered} onPicked={onClose} onOpenAttributeSelect={setAttributeSelect} isLevelUp={isLevelUp} />
+      ) : (
+        <>
+          <ArtifactPickGrid key={activeKey} options={filtered} picked={picked} onToggle={togglePick} />
+          <ScreenFooter className="gap-1">
+            <div className="text-[0.75rem] text-[#e8e8e2]/55">{t("loadoutSheet.offerHint", { count: OFFER_SIZE })}</div>
+            <button
+              type="button"
+              disabled={picked.length === 0}
+              onClick={() => setOfferOpen(true)}
+              className={`bg-transparent border-none font-magic text-[1.5rem] cursor-pointer ${picked.length > 0 ? "text-[#e8e8e2]" : "text-[#e8e8e2]/30"}`}
+            >
+              {t("loadoutSheet.showOfferBtn", { count: picked.length })}
+            </button>
+          </ScreenFooter>
+        </>
+      )}
 
-      <div className="flex-none py-2.5 px-4 pb-[18px] border-t border-white/[.07] bg-[#0d0d10]">
-        <div className="text-[0.85rem] text-[#efc84f]">{lastPicked ? gt(optionNameKey(lastPicked), lastPicked.label) : t("loadoutSheet.selectItemPlaceholder")}</div>
-        <div className="text-[0.75rem] text-[#e8e8e2]/55">
-          {lastPicked ? describeOption(lastPicked, t, gt) : t("loadoutSheet.tapHint")}
-        </div>
-        {lastPicked?.magicId && isOwned(lastPicked) && (
-          <MagicLevelTalentTracker
-            magicId={lastPicked.magicId}
-            level={getMagicLevel(run.magicLevels, lastPicked.magicId)}
-            talent={run.magicTalents[lastPicked.magicId] ?? null}
-            onLevelChange={(level) => setMagicLevel(lastPicked.magicId!, level)}
-            onTalentChange={(talent) => setMagicTalent(lastPicked.magicId!, talent)}
-          />
-        )}
-      </div>
+      {offerOpen && offeredItems.length > 0 && (
+        <ArtifactOfferModal
+          items={offeredItems}
+          onClose={() => setOfferOpen(false)}
+          onObtain={(item) => {
+            // Stay on Select Artifact: the obtained one leaves the catalog, the sheet is ready for the next offer.
+            equipItem(item.id);
+            setPicked([]);
+            setOfferOpen(false);
+          }}
+        />
+      )}
+
+      {attributeSelect && (
+        <AttributeSelect
+          magicId={attributeSelect.magicId}
+          group={attributeSelect.group}
+          targetLevel={attributeSelect.targetLevel}
+          onBack={() => setAttributeSelect(null)}
+          onLearned={onClose}
+          isLevelUp={isLevelUp}
+        />
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 // (artifactImages/{id}.png, passiveImages/{id}.png, magicImages/{appId}.png), using the
 // `// source id N` comments already present in artifacts.ts/passives.ts and the ordered
 // position in fusions.ts's RAW array (both confirmed 1:1 against the sprite dump by hand
-// before running this at scale — see reference/game-data-sources.md).
+// before running this at scale — see research/game-data-sources.md).
 import fs from "node:fs";
 import path from "node:path";
 
@@ -67,7 +67,7 @@ for (const { id, sourceId } of passivePairs) {
 
 // Research nodes: same Ability{sourceId}Portrait.png convention as artifacts/passives,
 // just in their own id range (261-282, matching eng_Dictionary_Ability.txt's "연구" rows —
-// see reference/game-data-sources.md and the header comment in research.ts). Confirmed by
+// see research/game-data-sources.md and the header comment in research.ts). Confirmed by
 // eye, not just by file existing, before this section was added.
 const missingResearch = [];
 for (const { id, sourceId } of researchPairs) {
@@ -103,6 +103,18 @@ fusionAppIds.forEach((appId, index) => {
 });
 
 console.log(`Fusion sprites copied: ${fusionAppIds.length - missingFusions.length}/${fusionAppIds.length}`);
+
+// A larger copy of each combination's portrait for the Magic Combination detail (shown at ~340px wide; the 160px
+// `magicImages/` copy the grids use would blur). Palette PNG keeps each around 70KB.
+{
+  const { default: sharp } = await import("sharp");
+  const largeDir = path.join(magicDir, "large");
+  fs.mkdirSync(largeDir, { recursive: true });
+  for (const [index, appId] of fusionAppIds.entries()) {
+    const src = path.join(SPRITES_DIR, `MagicCom${index + 1}Portrait.png`);
+    if (fs.existsSync(src)) await sharp(src).resize({ width: 340 }).png({ palette: true, quality: 85, compressionLevel: 9 }).toFile(path.join(largeDir, `${appId}.png`));
+  }
+}
 if (missingFusions.length) console.log("Missing fusion sprites:", missingFusions);
 
 // ---- Bonus: Ultimate portraits, same position convention, only for fusions that have one ----
@@ -210,6 +222,8 @@ const UI_ICONS = [
   "UI_Icon011", "UI_Icon011_Gold",
   "UI_Exit", "UI_Exit_Black",
   "UI_AreaMove_L", "UI_AreaMove_R",
+  // Magic Combination button on the Dashboard: A = no combination available, B = one is (heptagram in a circle).
+  "UI_MagicCom_IconA", "UI_MagicCom_IconB",
 ];
 for (const name of UI_ICONS) copyIfExists(`${name}.png`, path.join(uiDir, "icons"), `${name}.png`);
 
@@ -253,6 +267,29 @@ console.log(`UI chrome assets copied: ${UI_ICONS.length} icons, 1 divider, ${UI_
 // and bottom edges, B = left and right edges (rotated 90deg in CSS). White-on-transparent masks.
 for (const name of ["AreaProgressBarA", "AreaProgressBarB", "ArtifactBackGroundA"]) {
   copyIfExists(`${name}.png`, path.join(uiDir, "frames"), `${name}.png`);
+}
+// The Magic Combination icons with their black disc turned into transparency (a glyph-only heptagram that sits on a chip
+// background like the Dashboard's other buttons): the lines keep their colors, the black fades out.
+{
+  const { default: sharp } = await import("sharp");
+  for (const [icon, glyph] of [["UI_MagicCom_IconA", "UI_MagicCom_GlyphA"], ["UI_MagicCom_IconB", "UI_MagicCom_GlyphB"]]) {
+    const src = path.join(SPRITES_DIR, `${icon}.png`);
+    if (!fs.existsSync(src)) continue;
+    const { data, info } = await sharp(src).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const px = Buffer.from(data);
+    for (let i = 0; i < info.width * info.height; i++) {
+      const brightest = Math.max(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]);
+      px[i * 4 + 3] = Math.min(px[i * 4 + 3], Math.max(0, Math.min(255, (brightest - 10) * 8)));
+    }
+    await sharp(px, { raw: { width: info.width, height: info.height, channels: 4 } }).png().toFile(path.join(uiDir, "icons", `${glyph}.png`));
+  }
+}
+// A vertical copy of the side strip (B turned 90deg) so StripFrame can frame a box whose height isn't known up front
+// (`fit="auto"`: the Select Magic rows, whose height follows their content) without measuring it.
+{
+  const { default: sharp } = await import("sharp");
+  const strip = path.join(SPRITES_DIR, "AreaProgressBarB.png");
+  if (fs.existsSync(strip)) await sharp(strip).rotate(90).toFile(path.join(uiDir, "frames", "AreaProgressBarB_V.png"));
 }
 
 // Synergy completion-ring frames — curated list (no id convention, same pattern as UI_ICONS

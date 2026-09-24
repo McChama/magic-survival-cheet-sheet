@@ -6,6 +6,7 @@ import { baseMagicSpriteUrl } from "../../data/magics";
 import { getMagicCircleLevel, isOvermindChosen, magicCircleEffect } from "../../engine/magicCircle";
 import { playMagicCircleSound } from "../../engine/uiSound";
 import { useRunStore } from "../../store/useRunStore";
+import { useUiStore } from "../../store/useUiStore";
 import { MaskedSprite } from "../shared/MaskedSprite";
 
 type Side = "left" | "right";
@@ -98,6 +99,7 @@ export function MagicCircleBubble({ screen }: { screen: string }) {
   const run = useRunStore((s) => s.run);
   const setMagicCircleActive = useRunStore((s) => s.setMagicCircleActive);
   const level = getMagicCircleLevel(run);
+  const hiddenBySheet = useUiStore((s) => s.hideMagicCircleBubble);
   const [dock, setDock] = useState<Dock>(() => loadDock() ?? DEFAULT_DOCK);
   /** Until the player has dragged it somewhere (or it has been lined up once), the resting height follows the Current Level label. */
   const placed = useRef(loadDock() !== null);
@@ -141,7 +143,7 @@ export function MagicCircleBubble({ screen }: { screen: string }) {
   /** Bumped each time the buff is switched ON, restarting the cast animation. */
   const [castCount, setCastCount] = useState(0);
 
-  if (level === null) return null;
+  if (level === null || hiddenBySheet) return null;
   const active = run.magicCircleActive;
   const effect = magicCircleEffect(level);
   const label = active ? t("dashboard.magicCircleOn", { effect }) : t("dashboard.magicCircleOff");

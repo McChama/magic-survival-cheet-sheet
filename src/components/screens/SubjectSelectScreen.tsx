@@ -35,7 +35,7 @@ const SUBJECT_ROWS = chunkSubjects(SUBJECTS, SUBJECT_ROW_SIZES);
 
 /**
  * User-picked subset of the 21-frame animation set that reads as a calm idle sway rather
- * than the full set's dramatic swings (see reference/game-data-sources.md — the frames
+ * than the full set's dramatic swings (see research/game-data-sources.md — the frames
  * are individually cropped with no shared pivot, so this subset is a deliberate choice of
  * which frames jump the least, not just "the idle portion" of a longer sequence).
  */

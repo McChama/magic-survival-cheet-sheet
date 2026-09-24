@@ -4,14 +4,15 @@ interface ScreenTitleProps {
   children: ReactNode;
   /** Named color of the title: the default off-white, the gold the real game uses on its
    *  Owned Magic / Owned Artifact / Synergy screens, or the dark teal + soft light shadow Subject Select
-   *  needs over its light background. */
-  tone?: "default" | "gold" | "dark";
+   *  needs over its light background, or the hot pink of the Magic Combination screen. */
+  tone?: "default" | "gold" | "dark" | "pink";
 }
 
 const TONE_CLASS = {
   default: "text-[#e8e8e2]",
   gold: "text-[#efc84f]",
   dark: "text-[#16333a] [text-shadow:0_1px_0_rgba(255,255,255,.25)]",
+  pink: "text-[#f85888]",
 } as const;
 
 /**

@@ -25,20 +25,20 @@ const MODAL_BG = "#0b0b0b"; // keep in sync with the `bg-[#0b0b0b]` fill below
  * `ScreenFooter`'s inline preview — a Class's full bonus breakdown, a magic's stats, or an
  * Artifact's icon/name/description. A `fixed inset-0` backdrop (not `absolute`) so it always
  * covers the full screen regardless of where in the tree it's mounted — same reasoning as
- * `LoadoutFab`'s dismiss backdrop. The card is 93% wide and 68% tall like the game's (a fixed height,
- * because the border strips size themselves off a size container); its content scrolls inside if
- * it's longer. The backdrop is a light veil (white at ~18%), so the screen behind reads as gray.
+ * `LoadoutFab`'s dismiss backdrop. The card is 93% wide and 72% tall (the game's is ~68%; a little more so content fits without scrolling) (a fixed height,
+ * because the border strips size themselves off a size container); its content never scrolls — a modal's
+ * content is laid out to fit it. The backdrop is a light veil (white at ~18%), so the screen behind reads as gray.
  */
 export function DetailModal({ onClose, closeAria, onBackdropClick, align = "center", children }: DetailModalProps) {
   return (
     <div className="fixed inset-0 z-50 bg-white/[.18] flex items-center justify-center" onClick={onBackdropClick ?? onClose}>
       <div
-        className="relative w-[93%] max-w-[400px] h-[68dvh] [container-type:size]"
+        className="relative w-[93%] max-w-[400px] h-[72dvh] [container-type:size]"
         onClick={(e) => e.stopPropagation()}
       >
         <span aria-hidden className="absolute inset-[3px] bg-[#0b0b0b]" />
         <StripFrame tint={MODAL_BG} size="modal" />
-        <div className="relative h-full overflow-y-auto p-4">
+        <div className="relative h-full overflow-hidden p-4">
           <button
             type="button"
             onClick={onClose}

@@ -2,7 +2,7 @@
 
 Decisions made across design/dev sessions so they don't have to be
 re-litigated (or re-invented slightly differently) next time. This is about
-*visual/UX conventions*; for game-content accuracy see `game-data-sources.md`.
+*visual/UX conventions*; for game-content accuracy see the private `research/game-data-sources.md`.
 
 ## Language
 

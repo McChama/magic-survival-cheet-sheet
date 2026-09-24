@@ -5,7 +5,7 @@ import type { CurrentRunState, SynergyDefinition } from "../types/game";
 /**
  * Real in-game "Synergy" data — own all of a Synergy's `requiredItemIds` (artifacts/
  * passives) at once to unlock its named bonus. Extracted from `eng_Dictionary_Synergy.txt`
- * (English, this project's source-priority #1 — see reference/game-data-sources.md), the
+ * (English, this project's source-priority #1 — see research/game-data-sources.md), the
  * same dictionary family as `eng_Dictionary_Class.txt`/`eng_Dictionary_Ability.txt`. A
  * genuine mechanic never modeled in this app before this pass — distinct from
  * `data/fusions.ts` (base magic + base magic).
@@ -16,7 +16,7 @@ import type { CurrentRunState, SynergyDefinition } from "../types/game";
  * intentional content gap (empty `` ` `` sentinel rows, not a bug or extraction failure).
  * Each row's `ID_01..0N` columns are artifact/passive **source ids** (`// source id N`
  * comments in `artifacts.ts`/`passives.ts` — the same shared "Ability" id space documented
- * in reference/game-data-sources.md), resolved to this app's internal string ids at
+ * in research/game-data-sources.md), resolved to this app's internal string ids at
  * extraction time — all 63 rows' ids resolved cleanly, 0 unresolved. Description text
  * keeps the game's own bracket markup verbatim (`GameText` already renders `〔〕[]〈〉『』
  * {}【】《》`) with one addition: the source text's `##N##` tokens (a reference to another
@@ -118,6 +118,11 @@ export const SYNERGY_BY_ID: Record<number, SynergyDefinition> = Object.fromEntri
 export function getOwnedCount(synergy: SynergyDefinition, run: CurrentRunState): number {
   const equippedIds = new Set(getEquippedItems(run).map((i) => i.id));
   return synergy.requiredItemIds.filter((id) => equippedIds.has(id)).length;
+}
+
+/** Every Synergy the item is one of the requirements of (Salamander: Mastery: Lava Zone and another). */
+export function getSynergiesForItem(itemId: string): SynergyDefinition[] {
+  return SYNERGIES.filter((s) => s.requiredItemIds.includes(itemId));
 }
 
 /** For each required item, in order, whether the run owns it — what lights the matching segment of the Synergy's ring. */

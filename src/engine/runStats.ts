@@ -4,6 +4,8 @@ import { RESEARCH } from "../data/research";
 import { emptyStatBlock } from "../data/statDefinitions";
 import type { CurrentRunState, StatBlock, StatKey } from "../types/game";
 import { getMagicCircleLevel, magicCircleEffect } from "./magicCircle";
+import { passiveStatsAtLevel } from "../data/passiveLevels";
+import { getPassiveLevel } from "./ownedPassives";
 import { getEquippedItems } from "./tierAdaptive";
 
 /**
@@ -119,9 +121,10 @@ export function computeStartingStats(run: CurrentRunState): StatBlock {
   }
 
   // Every artifact/passive the run owns: the Subject's starting artifact plus the ones the player added
-  // (each counts once — an artifact can't be owned twice, and a leveled passive's later levels aren't modelled).
+  // (each counts once — an artifact can't be owned twice; a leveled passive counts at the level recorded for it).
   for (const item of getEquippedItems(run)) {
-    for (const [key, value] of Object.entries(item.stats) as [StatKey, number][]) add(key, value);
+    const stats = item.kind === "passive" ? passiveStatsAtLevel(item, getPassiveLevel(run, item)) : item.stats;
+    for (const [key, value] of Object.entries(stats) as [StatKey, number][]) add(key, value);
   }
 
   // The Magic Circle's buff, while it is on: its Amplification Effect counts as Amplify ATK (added, checked with 0% Amplify).

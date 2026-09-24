@@ -28,6 +28,6 @@ dist-ssr
 raw-assets/
 magic-survival-local-assets.zip
 
-# Local scratch / private research notes (not for the public repo)
+# Private research notes and reverse-engineering scratch (Ghidra scripts/outputs, extraction notes) — not for the public repo
+research/
 scratchpad_*
-reference/game-data-sources.md

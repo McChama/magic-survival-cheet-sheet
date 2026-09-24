@@ -5,6 +5,7 @@ import { optionsByKind } from "../../data/quickAddOptions";
 import { DROP_CONTEXT_BY_ID } from "../../data/dropProbability";
 import { compareOptions, type RecommenderOption } from "../../engine/scoring";
 import { estimateItemOdds } from "../../engine/dropProbability";
+import { getEquippedItems } from "../../engine/tierAdaptive";
 import { compareSynergies, type SynergyResult, type SynergyTier } from "../../engine/synergy";
 import { useRunStore } from "../../store/useRunStore";
 import { useGameDataText } from "../../i18n/useGameDataText";
@@ -15,6 +16,7 @@ import { ScreenTitle } from "../shared/ScreenTitle";
 import { ScreenFooter } from "../shared/ScreenFooter";
 import { DropContextPicker } from "../shared/DropContextPicker";
 import { FilterChip } from "../shared/FilterChip";
+import { PagedGrid, PagedList } from "../shared/PagedGrid";
 import { RarityFilterChips, type RarityFilterKey } from "../shared/RarityFilterChips";
 import type { DropContext, ScoreResult } from "../../types/game";
 
@@ -88,10 +90,13 @@ export function RecommenderScreen({ onClose }: RecommenderScreenProps) {
   const [results, setResults] = useState<{ score: ScoreResult; synergy: SynergyResult }[] | null>(null);
 
   const pool = mode === "artifact" ? ARTIFACT_OPTIONS : MAGIC_OPTIONS;
-  const visibleOptions = useMemo(
-    () => (mode === "artifact" && rarityFilter !== "all" ? pool.filter((o) => o.item!.rarity === rarityFilter) : pool),
-    [pool, mode, rarityFilter]
-  );
+  // An artifact the run already owns can't be offered again: it's out of the pool (like in the "+" menu).
+  const ownedItemIds = getEquippedItems(run).map((i) => i.id).join("|");
+  const visibleOptions = useMemo(() => {
+    if (mode !== "artifact") return pool;
+    const owned = new Set(ownedItemIds.split("|"));
+    return pool.filter((o) => !owned.has(o.item!.id) && (rarityFilter === "all" || o.item!.rarity === rarityFilter));
+  }, [pool, mode, rarityFilter, ownedItemIds]);
 
   const { min: minSelected, max: maxSelected } = selectionBoundsFor(mode, context);
 
@@ -183,31 +188,32 @@ export function RecommenderScreen({ onClose }: RecommenderScreenProps) {
               ? t("recommender.offerPickerHintExact", { count: maxSelected })
               : t("recommender.offerPickerHint", { min: minSelected, max: maxSelected })}
           </div>
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-2">
-            <div className="grid grid-cols-5 gap-2.5">
-              {visibleOptions.map((option) => {
-                const isSelected = selected.some((o) => o.id === option.id);
-                const ring = option.item ? RARITY_RING[option.item.rarity] : MAGIC_TILE_COLOR;
-                const label = option.item ? gt(`item.${option.item.id}.name`, option.label) : gt(`magic.${option.magicId}.name`, option.label);
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    title={label}
-                    onClick={() => toggleSelect(option)}
-                    className={`relative aspect-square rounded-[7px] bg-[#0d0d10] cursor-pointer flex items-center justify-center p-0 overflow-hidden transition-transform duration-150 ${isSelected ? "scale-110 border-2 border-white" : "scale-100 border"}`}
-                    style={isSelected ? undefined : { borderColor: ring }}
-                  >
-                    <OfferIcon src={option.image} alt={label} />
-                    {isSelected && <span className="absolute top-[3px] right-1 w-[7px] h-[7px] rounded-full bg-[#63d16b]" />}
-                  </button>
-                );
-              })}
-            </div>
-            {visibleOptions.length === 0 && (
-              <div className="py-[30px] text-center text-[0.8rem] text-[#e8e8e2]/35">{t("loadoutSheet.noResults")}</div>
-            )}
-          </div>
+          <PagedGrid
+            key={`${mode}-${rarityFilter}`}
+            items={visibleOptions}
+            columns={5}
+            gap={10}
+            aspect={1}
+            getKey={(option) => option.id}
+            empty={<div className="py-[30px] text-center text-[0.8rem] text-[#e8e8e2]/35">{t("loadoutSheet.noResults")}</div>}
+            renderItem={(option) => {
+              const isSelected = selected.some((o) => o.id === option.id);
+              const ring = option.item ? RARITY_RING[option.item.rarity] : MAGIC_TILE_COLOR;
+              const label = option.item ? gt(`item.${option.item.id}.name`, option.label) : gt(`magic.${option.magicId}.name`, option.label);
+              return (
+                <button
+                  type="button"
+                  title={label}
+                  onClick={() => toggleSelect(option)}
+                  className={`relative aspect-square rounded-[7px] bg-[#0d0d10] cursor-pointer flex items-center justify-center p-0 overflow-hidden transition-transform duration-150 ${isSelected ? "scale-110 border-2 border-white" : "scale-100 border"}`}
+                  style={isSelected ? undefined : { borderColor: ring }}
+                >
+                  <OfferIcon src={option.image} alt={label} />
+                  {isSelected && <span className="absolute top-[3px] right-1 w-[7px] h-[7px] rounded-full bg-[#63d16b]" />}
+                </button>
+              );
+            }}
+          />
           <ScreenFooter>
             <button
               type="button"
@@ -226,14 +232,17 @@ export function RecommenderScreen({ onClose }: RecommenderScreenProps) {
               {t("recommender.noSynergyNote")}
             </div>
           )}
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-3 flex flex-col gap-2.5">
-            {resultRows.map(({ score, synergy, option, isRecommended }) => {
+          <PagedList
+            items={resultRows}
+            rowHeight={140}
+            gap={10}
+            getKey={(row) => row.option.id}
+            renderItem={({ score, synergy, option, isRecommended }) => {
               const item = option.item;
               const label = item ? gt(`item.${item.id}.name`, item.name) : gt(`magic.${option.magicId}.name`, option.label);
               const odds = mode === "artifact" && item ? estimateItemOdds(item.id, context) : null;
               return (
                 <div
-                  key={option.id}
                   className={`flex gap-3 items-center p-2.5 rounded-[9px] bg-[#111115] ${isRecommended ? "border-2 border-[#efc84f]" : "border border-white/[.08]"}`}
                 >
                   <span
@@ -278,8 +287,8 @@ export function RecommenderScreen({ onClose }: RecommenderScreenProps) {
                   )}
                 </div>
               );
-            })}
-          </div>
+            }}
+          />
           <ScreenFooter>
             <button
               type="button"

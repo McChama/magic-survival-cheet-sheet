@@ -12,7 +12,7 @@ import type { CurrentRunState } from "../types/game";
  * or an item's own extracted `specialEffect` text) — never a fabricated number. An item
  * with no real signal returns `[]`, which the UI must show honestly as "no confirmed
  * synergy," not hide or paper over with a guessed one. See
- * `reference/game-data-sources.md` and this session's plan for the full derivation.
+ * `research/game-data-sources.md` and this session's plan for the full derivation.
  */
 
 export type SynergyTier = 1 | 2 | 3 | 4 | 5 | 6;
@@ -117,8 +117,8 @@ export function detectSynergies(option: RecommenderOption, run: CurrentRunState)
       const ingredientIndex = fusion.requiredMagicIds.findIndex((id) => id === option.magicId);
       if (ingredientIndex === -1) continue;
       const requiredTalent = fusion.requiredTalents?.[ingredientIndex]?.talentName ?? null;
-      const recordedTalent = run.magicTalents[option.magicId] ?? null;
-      if (requiredTalent && recordedTalent === requiredTalent) {
+      const recordedTalents = run.magicTalents[option.magicId] ?? [];
+      if (requiredTalent && recordedTalents.includes(requiredTalent)) {
         signals.push({ tier: 1, label: `Exact talent match for the "${fusion.name}" fusion (${requiredTalent})` });
       } else {
         signals.push({ tier: 2, label: `Ingredient for the "${fusion.name}" fusion` });

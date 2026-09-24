@@ -17,7 +17,7 @@ import type { EquippableItem } from "../types/game";
  * were tagged `legendary`, disagreeing with real drop data — a community chart of
  * 600 real relic-chest pulls (300 games) buckets all three under the game's own
  * "special artifact" pool, and this project's own cross-check of a real playthrough's
- * chest log (`run_for_discord.json`, see `reference/game-data-sources.md`) found zero
+ * chest log (`run_for_discord.json`, see `research/game-data-sources.md`) found zero
  * appearances of any of the three across 53 real legendary-chest pulls, but several
  * appearances in normal-chest/merchant pulls (which never draw from the legendary
  * pool) — two independent sources agreeing the dictionary's extracted grade was wrong

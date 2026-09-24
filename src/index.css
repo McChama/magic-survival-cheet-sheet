@@ -53,14 +53,6 @@ button, [role="button"] {
   border-radius: 3px;
 }
 
-@keyframes pulse-green {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
-}
-.animate-pulse-green {
-  animation: pulse-green 1.4s ease-in-out infinite;
-}
-
 @keyframes msFadeUp {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
@@ -100,11 +92,18 @@ button, [role="button"] {
 }
 @keyframes spin-cw { to { rotate: 360deg; } }
 @keyframes spin-ccw { to { rotate: -360deg; } }
+/* The Dashboard's Level Up button, idle: a heartbeat-style scale throb, its tint sweeping from its
+   resting gold to the same max-level green a magic's pips turn (LevelMarks.tsx's `#3fdc5a`) and back. */
+@keyframes pulse-green {
+  0%, 100% { background-color: #efc84f; scale: 1; }
+  50% { background-color: #3fdc5a; scale: 1.18; }
+}
 @layer utilities {
   .animate-spin-cw { animation: spin-cw 6s linear infinite; }
   .animate-spin-ccw { animation: spin-ccw 6s linear infinite; }
   .animate-magic-circle-cast { animation: magic-circle-cast 1300ms ease-out forwards; }
   .animate-bubble-pop { animation: bubble-pop 320ms ease-out; }
+  .animate-pulse-green { animation: pulse-green 1.6s ease-in-out infinite; }
   .animate-bubble-ripple { animation: bubble-ripple 480ms ease-out forwards; }
 }
 

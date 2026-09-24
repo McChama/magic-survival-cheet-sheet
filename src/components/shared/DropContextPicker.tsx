@@ -22,11 +22,11 @@ interface DropContextPickerProps {
 export function DropContextPicker({ value, onChange }: DropContextPickerProps) {
   const { t } = useTranslation("translation");
   return (
-    <div className="px-4 pb-2.5 flex-none flex gap-2 overflow-x-auto">
+    <div className="px-4 pb-2.5 flex-none flex flex-wrap justify-center gap-1.5">
       {DROP_CONTEXTS.map((c) => {
         const active = c.id === value;
         return (
-          <FilterChip key={c.id} active={active} color="#efc84f" activeText="#0d0d10" onClick={() => onChange(c.id)} className="flex-none py-[7px] px-3.5 text-[0.8rem]">
+          <FilterChip key={c.id} active={active} color="#efc84f" activeText="#0d0d10" onClick={() => onChange(c.id)} className="flex-none py-[5px] px-2.5 text-[0.72rem]">
             {t(CONTEXT_LABEL_KEY[c.id])}
           </FilterChip>
         );
