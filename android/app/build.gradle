@@ -1,0 +1,65 @@
+plugins {
+    id "com.android.application"
+}
+
+// The web app is the repo's own Vite build (`npm run build` -> ../../dist), copied in as
+// assets/web at build time rather than committed, so the APK always ships whatever the web
+// app currently is. OverlayService serves it from there (see WebAssetClient).
+def webDist = rootProject.file("../dist")
+def webAssetsDir = new File(layout.buildDirectory.get().asFile, "generated/webAssets")
+
+tasks.register("copyWebApp", Copy) {
+    doFirst {
+        if (!new File(webDist, "index.html").exists()) {
+            throw new GradleException("No web build at ${webDist}. Run `npm run build` in the repo root first.")
+        }
+    }
+    from webDist
+    into new File(webAssetsDir, "web")
+}
+
+// A stable signing key is what lets a new APK install *over* the old one — a changed key forces
+// an uninstall, which wipes the WebView's localStorage (the saved run). CI passes one through
+// these env vars (repo secrets); without them it falls back to the machine's own debug key.
+def keystorePath = System.getenv("MSC_KEYSTORE_FILE")
+
+android {
+    namespace "com.mcchama.mscompanion"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.mcchama.mscompanion"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "0.1.0"
+    }
+
+    signingConfigs {
+        if (keystorePath) {
+            stable {
+                storeFile file(keystorePath)
+                storePassword System.getenv("MSC_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("MSC_KEY_ALIAS")
+                keyPassword System.getenv("MSC_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            if (keystorePath) signingConfig signingConfigs.stable
+        }
+    }
+
+    sourceSets {
+        main.assets.srcDir webAssetsDir
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+tasks.named("preBuild") { dependsOn "copyWebApp" }

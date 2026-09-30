@@ -488,6 +488,18 @@ for the pattern. Screen titles and section headings are unaffected by this —
 they keep `ScreenTitle`'s `1.75rem` — this rule is specifically for body-style
 flavor text, not the four zones themselves.
 
+## Android companion (`android/`)
+
+The same web app also ships inside a small Android app (plain Java, no AndroidX) that shows it as a floating bubble
+over the real, unmodified game (`com.vkslrzm.Zombie`) — no root, no APK patching. `MainActivity` asks once for
+"Display over other apps", then "Play with companion" starts `OverlayService` (foreground, `specialUse`) and launches
+the game. Tapping the bubble opens a full-screen overlay panel with a `WebView`; `WebAssetClient` serves the bundled
+`dist/` from `https://appassets.androidplatform.net/magic-survival-cheet-sheet/` so the Vite build runs unchanged —
+**that path is Vite's `base`**; change both together. The APK is built by `.github/workflows/android.yml`
+(`npm run build`, then Gradle copies `dist/` in as `assets/web`); a stable signing key comes from the
+`ANDROID_KEYSTORE_*`/`ANDROID_KEY_*` repo secrets — without it each build needs an uninstall first, which wipes the
+saved run (localStorage). Anything web-only (external links, `window.open`, file downloads) won't work in the panel.
+
 ## Source of truth
 
 See `reference/README.md` for the canonical spreadsheet(s) and how they relate

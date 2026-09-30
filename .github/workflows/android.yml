@@ -1,0 +1,65 @@
+name: Build Android companion APK
+
+# Builds the web app, wraps it in the Android overlay app (android/) and uploads the APK as a
+# workflow artifact — no local Android SDK needed. Download it from the run's "Artifacts" box.
+on:
+  push:
+    paths:
+      - "android/**"
+      - "src/**"
+      - "public/**"
+      - "index.html"
+      - "package*.json"
+      - "vite.config.ts"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      # Optional stable signing key (repo secrets). Without it every run signs with a fresh
+      # debug key, and installing a new build over an old one fails until the old one is
+      # uninstalled — which also wipes the saved run.
+      - name: Decode signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        if: env.KEYSTORE_BASE64 != ''
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/companion.jks"
+          echo "MSC_KEYSTORE_FILE=$RUNNER_TEMP/companion.jks" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        working-directory: android
+        env:
+          MSC_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          MSC_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          MSC_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: gradle assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ms-companion-apk
+          path: android/app/build/outputs/apk/debug/*.apk

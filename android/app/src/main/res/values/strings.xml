@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MS Companion</string>
+    <string name="launcher_title">Magic Survival Companion</string>
+    <string name="launcher_blurb">Plays the game with the Run Companion as a floating bubble on top. Tap the bubble to open it, tap × to go back to the game.</string>
+    <string name="permission_missing">Step 1: allow \"Display over other apps\" for MS Companion.</string>
+    <string name="permission_ok">\"Display over other apps\" is allowed.</string>
+    <string name="grant_permission">Allow overlay</string>
+    <string name="play">Play with companion</string>
+    <string name="stop">Stop bubble</string>
+    <string name="game_not_installed">Magic Survival is not installed. The bubble is running anyway.</string>
+    <string name="notification_channel">Companion bubble</string>
+    <string name="notification_title">Run Companion is running</string>
+    <string name="notification_text">Tap the bubble over the game to open it.</string>
+    <string name="notification_stop">Stop</string>
+    <string name="close_panel">Back to game</string>
+</resources>
