@@ -45,6 +45,8 @@ export const CHEST = {
   scanLeft: 100,
   scanRight: 980,
   obtainLabel: { x: 450, y: 2000, w: 180, h: 70 } as Rect,
+  /** Where the "Obtain" label is looked for (generous, like a title band). */
+  obtainBand: { x: 380, y: 1985, w: 320, h: 100 } as Rect,
 };
 
 /** Select Attribute: the three talent icons (top, bottom-left, bottom-right — the order the data lists them) and "Learn". */

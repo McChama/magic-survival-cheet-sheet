@@ -6,7 +6,7 @@
 import { writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { titleSignature } from "../src/capture/recognize.ts";
+import { obtainSignature, titleSignature } from "../src/capture/recognize.ts";
 import { loadFixture } from "./capture-node.mjs";
 
 const SOURCES = {
@@ -26,6 +26,9 @@ for (const [screen, fixture] of Object.entries(SOURCES)) {
   lines.push(`  ${screen}: { aspect: ${signature.aspect.toFixed(3)}, bits: "${signature.bits}" },`);
 }
 
+const obtain = obtainSignature(await loadFixture("treasure-chest"));
+if (!obtain) throw new Error("No Obtain label found in treasure-chest.jpg");
+
 const out = resolve(dirname(fileURLToPath(import.meta.url)), "../src/capture/titleSignatures.ts");
 writeFileSync(
   out,
@@ -37,6 +40,10 @@ import type { TitleSignature } from "./recognize";
 export const TITLE_SIGNATURES: Record<ScreenId, TitleSignature> = {
 ${lines.join("\n")}
 };
+
+/** The "Obtain" label of the artifact-offer panel (Treasure Chest, Obelisk, ...). */
+// prettier-ignore
+export const OBTAIN_SIGNATURE: TitleSignature = { aspect: ${obtain.aspect.toFixed(3)}, bits: "${obtain.bits}" };
 `
 );
 console.log(`Wrote ${lines.length} title signatures.`);

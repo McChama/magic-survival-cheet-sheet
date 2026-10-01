@@ -2,7 +2,7 @@ import { getMagicTalentGroups, TALENT_TYPE_COLOR } from "../data/magicTalents";
 import { inkBounds, luma, maxPeak, peak, rgb, runs, scaleRect, scaleX, scaleY, type Frame, type Rect } from "./frame";
 import { ATTRIBUTE, CHEST, OWNED_GRID, PAUSE_BARS, SELECT_MAGIC, TITLE_BAND, type ScreenId } from "./geometry";
 import { bestMatch, extractPatch, type Library, type Match } from "./library";
-import { TITLE_SIGNATURES } from "./titleSignatures";
+import { OBTAIN_SIGNATURE, TITLE_SIGNATURES } from "./titleSignatures";
 
 /** Which of the game's screens a frame shows. `gameplay` = the run itself, `unknown` = anything else (a transition, another app, our own panel). */
 export type Screen = ScreenId | "gameplay" | "unknown";
@@ -13,6 +13,9 @@ const SIGNATURE_COLUMNS = 48;
 const SIGNATURE_ROWS = 12;
 /** Two titles are the same when this share of their cells agree. */
 const SIGNATURE_MATCH = 0.86;
+
+/** The "Obtain" label reads a little fatter once it lights up white; nothing else on any screen comes near (0.6 at most). */
+const OBTAIN_MATCH = 0.8;
 
 /** A title reduced to a coarse bitmap of its own bounding box, so it compares regardless of exact position and size. */
 export interface TitleSignature {
@@ -28,8 +31,19 @@ function isTitleInk(screen: ScreenId, frame: Frame, x: number, y: number): boole
 }
 
 export function titleSignature(frame: Frame, screen: ScreenId): TitleSignature | null {
-  const band = scaleRect(frame, TITLE_BAND[screen]);
-  const isInk = (x: number, y: number) => isTitleInk(screen, frame, x, y);
+  return textSignature(scaleRect(frame, TITLE_BAND[screen]), (x, y) => isTitleInk(screen, frame, x, y));
+}
+
+/**
+ * The "Obtain" label at the bottom of the artifact-offer panel. The game uses that one panel
+ * under five titles (Treasure Chest, Relic Chest, Black Chest, Obelisk, Broken Obelisk), so
+ * the button is what identifies it, not the title. Gray while nothing is selected, white after.
+ */
+export function obtainSignature(frame: Frame): TitleSignature | null {
+  return textSignature(scaleRect(frame, CHEST.obtainBand), (x, y) => peak(frame, x, y) > 60);
+}
+
+function textSignature(band: Rect, isInk: (x: number, y: number) => boolean): TitleSignature | null {
   const box = inkBounds(band, isInk, 40);
   if (!box || box.h < 6 || box.w < box.h * 2) return null;
 
@@ -82,6 +96,10 @@ export function classifyScreen(frame: Frame): Screen {
       bestScore = score;
       best = screen;
     }
+  }
+  if (best === "unknown") {
+    const obtain = obtainSignature(frame);
+    if (obtain && signatureScore(obtain, OBTAIN_SIGNATURE) > OBTAIN_MATCH) return "treasureChest";
   }
   return best;
 }
@@ -218,7 +236,8 @@ export function readTreasureChest(frame: Frame, library: Library): TreasureChest
     const left = lines[i];
     const right = lines[i + 1];
     const width = right[0] - left[1];
-    if (Math.abs(width - cardWidth) > cardWidth * 0.1) continue;
+    // Treasure Chest's three cards are the measured width; a fuller panel (a Broken Obelisk's four) may draw them narrower.
+    if (width > cardWidth * 1.1 || width < cardWidth * 0.6) continue;
     // White (selected) vs a rarity color: the dimmest channel of the border's brightest pixel, typical over its height.
     const mins: number[] = [];
     for (let s = 0; s < samples; s++) {

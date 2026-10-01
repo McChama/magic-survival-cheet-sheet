@@ -77,6 +77,18 @@ for (const width of WIDTHS) {
     expect(`${fixture} selected`, chest.selected, selected);
   }
 
+  // The same panel under another title (Obelisk, Relic Chest, ...): only the "Obtain" label identifies it.
+  for (const [fixture, selected] of [["treasure-chest", null], ["treasure-chest-picked", 0]]) {
+    const untitled = await frame(fixture);
+    const data = Uint8Array.from(untitled.data);
+    const top = Math.round((untitled.height * 360) / 2460);
+    const bottom = Math.round((untitled.height * 470) / 2460);
+    data.fill(0, top * untitled.width * 4, bottom * untitled.width * 4);
+    const other = { ...untitled, data };
+    expect(`${fixture} under another title: screen`, classifyScreen(other), "treasureChest");
+    expect(`${fixture} under another title: selected`, readTreasureChest(other, library).selected, selected);
+  }
+
   for (const [fixture, selected] of [["select-attribute", null], ["select-attribute-picked", 2]]) {
     const attribute = readSelectAttribute(await frame(fixture), library);
     expect(fixture, attribute, { magicId: "shield", groupLevel: 5, talents: ["Barrier", "Reconstruct", "Destruction Field"], selected });
@@ -96,14 +108,14 @@ for (const width of WIDTHS) {
   const OFFER = [{ kind: "magic", id: "flashShock" }, { kind: "magic", id: "shield" }, { kind: "magic", id: "meteor" }];
 
   expect("sequence: talent pick", await play("select-magic", "select-attribute", "select-attribute-picked", "gameplay-2"), [
-    [{ type: "levelUp" }],
+    [],
     [],
     [],
     [{ type: "talentLearned", magicId: "shield", groupLevel: 5, talent: "Destruction Field" }],
   ]);
   expect("sequence: plain level-up", await play("gameplay-1", "select-magic", "select-magic", "gameplay-2"), [
     [],
-    [{ type: "levelUp" }],
+    [],
     [],
     [{ type: "pickNeeded", options: OFFER }],
   ]);

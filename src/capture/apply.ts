@@ -23,6 +23,14 @@ export function refName(ref: OwnedRef): string {
   return ref.kind === "magic" ? (BASE_MAGIC_BY_ID[ref.id]?.name ?? ref.id) : (ITEM_BY_ID[ref.id]?.name ?? ref.id);
 }
 
+/**
+ * The character's level goes up with a pick, never with the level-up screen itself: "Mana Retrieve" closes that
+ * screen without taking anything and leaves the level where it was.
+ */
+function gainLevel() {
+  store().setCurrentLevel(store().run.currentLevel + 1);
+}
+
 function ensureMagic(magicId: string) {
   if (!store().run.acquiredMagicIds.includes(magicId)) store().toggleAcquiredMagic(magicId);
 }
@@ -50,11 +58,8 @@ function setOwnedLevel(ref: OwnedRef, level: number, special: boolean) {
 
 export function applyCaptureEvent(event: CaptureEvent): string | null {
   switch (event.type) {
-    case "levelUp":
-      store().setCurrentLevel(store().run.currentLevel + 1);
-      return null;
-
     case "talentLearned":
+      gainLevel();
       ensureMagic(event.magicId);
       store().setMagicLevel(event.magicId, event.groupLevel);
       store().setMagicTalent(event.magicId, event.groupLevel, event.talent);
@@ -84,6 +89,7 @@ export function applyPick(ref: OwnedRef): string | null {
     if (!BASE_MAGIC_BY_ID[ref.id]) return null;
     const pick = getMagicLevelPick(ref.id, run);
     if (pick.atMax) return null;
+    gainLevel();
     setOwnedLevel(ref, pick.targetLevel, false);
     return i18n.t("capture.picked", { name: refName(ref), level: pick.targetLevel });
   }
@@ -91,6 +97,7 @@ export function applyPick(ref: OwnedRef): string | null {
   if (!item) return null;
   const pick = getPassiveLevelPick(item, run);
   if (pick.atMax) return null;
+  gainLevel();
   setOwnedLevel(ref, pick.targetLevel, !isLeveledPassive(item));
   return i18n.t("capture.picked", { name: refName(ref), level: pick.targetLevel });
 }

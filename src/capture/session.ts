@@ -29,11 +29,12 @@ export type Observation =
   | { screen: "ownedArtifact"; ids: string[] };
 
 export type CaptureEvent =
-  /** A level-up screen opened: the character gained a level. */
-  | { type: "levelUp" }
   /** "Learn" was pressed with this talent selected (the magic reached that talent's level). */
   | { type: "talentLearned"; magicId: string; groupLevel: number; talent: string }
-  /** A level-up closed on a plain row. The game shows no selection there, so which of these was taken is unknown. */
+  /**
+   * A level-up closed without a talent pick: a plain row was tapped, or "Mana Retrieve" (which declines the
+   * level-up — the character stays at its level). The game shows no selection there, so which it was is unknown.
+   */
   | { type: "pickNeeded"; options: OwnedRef[] }
   | { type: "artifactObtained"; id: string }
   /** The game's own Owned Magic list was on screen: the run's real magics and levels. */
@@ -118,16 +119,15 @@ export class CaptureSession {
           return [];
         }
         // A new level-up — possibly right behind another choice, with no frame of the run in between.
-        const events: CaptureEvent[] = [...outcome(this.pending), { type: "levelUp" }];
+        const events = outcome(this.pending);
         this.pending = { kind: "offer", options: observation.options };
         return events;
       }
 
       case "selectAttribute": {
         const previous = this.pending?.kind === "attribute" ? this.pending : null;
-        // Reached by tapping a Select Magic row, which already counted the level-up and now turns out to be this
-        // talent pick — unless reading started (or another choice ended) right on this screen.
-        const events: CaptureEvent[] = previous || this.pending?.kind === "offer" ? [] : [...outcome(this.pending), { type: "levelUp" }];
+        // Reached by tapping a Select Magic row: that offer turns out to be this talent pick, not an unknown one.
+        const events = previous || this.pending?.kind === "offer" ? [] : outcome(this.pending);
         this.pending = {
           kind: "attribute",
           magicId: observation.magicId ?? previous?.magicId ?? null,

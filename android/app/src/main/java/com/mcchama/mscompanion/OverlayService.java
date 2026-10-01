@@ -16,8 +16,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
+import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.GradientDrawable;
+import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -28,6 +30,7 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.ContextThemeWrapper;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -99,6 +102,10 @@ public class OverlayService extends Service {
     private long readerStatusAt;
     private View pickStrip;
     private View notice;
+    /** A game menu is on screen: the bubble waits in the bottom corner, {@code home} is where it goes back to. */
+    private boolean menuMode;
+    private int homeX;
+    private int homeY;
     private final Runnable dismissPick = this::removePickStrip;
     private final Runnable dismissNotice = this::removeNotice;
     private final Runnable tick = new Runnable() {
@@ -194,6 +201,7 @@ public class OverlayService extends Service {
             startInForeground(true);
             capture.start(this, intent.getIntExtra(EXTRA_RESULT_CODE, 0), data, main, () -> {
                 startInForeground(false);
+                setMenuMode(false);
                 refreshSyncStatus();
             });
             if (!capture.isRunning()) captureFailure = "no projection";
@@ -239,6 +247,11 @@ public class OverlayService extends Service {
         @JavascriptInterface
         public void askPick(String prompt, String optionsJson) {
             main.post(() -> showPickStrip(prompt, optionsJson));
+        }
+
+        @JavascriptInterface
+        public void menu(boolean open) {
+            main.post(() -> setMenuMode(open));
         }
 
         @JavascriptInterface
@@ -418,15 +431,59 @@ public class OverlayService extends Service {
 
         bubbleParams = new WindowManager.LayoutParams(size, size,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
         bubbleParams.gravity = Gravity.TOP | Gravity.START;
+        if (Build.VERSION.SDK_INT >= 28) {
+            // Coordinates count from the screen's real top-left, notch or not, so "bottom corner" is exact.
+            bubbleParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        }
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         bubbleParams.x = prefs.getInt("x", 0);
         bubbleParams.y = prefs.getInt("y", dp(160));
 
         bubble.setOnTouchListener(new BubbleTouch());
         windowManager.addView(bubble, bubbleParams);
+    }
+
+    /**
+     * While a game menu is up the bubble steps aside to the bottom corner on its own side — the
+     * one strip no menu draws anything in — so it can't cover a card the reader needs (it used to
+     * hide whatever magic sat under it in the Owned lists). It returns when the run resumes.
+     */
+    private void setMenuMode(boolean on) {
+        if (on == menuMode || bubble == null) return;
+        menuMode = on;
+        if (on) {
+            homeX = bubbleParams.x;
+            homeY = bubbleParams.y;
+            slideBubble(homeX, screenSize().y - bubbleParams.height - dp(4));
+        } else {
+            slideBubble(homeX, homeY);
+        }
+    }
+
+    private void slideBubble(int toX, int toY) {
+        int fromX = bubbleParams.x;
+        int fromY = bubbleParams.y;
+        ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+        animator.setDuration(180);
+        animator.addUpdateListener(a -> {
+            if (bubble == null || !bubble.isAttachedToWindow()) return;
+            float t = (float) a.getAnimatedValue();
+            bubbleParams.x = Math.round(fromX + (toX - fromX) * t);
+            bubbleParams.y = Math.round(fromY + (toY - fromY) * t);
+            windowManager.updateViewLayout(bubble, bubbleParams);
+        });
+        animator.start();
+    }
+
+    /** The whole screen, cutout and system bars included — the space the bubble's coordinates live in. */
+    private Point screenSize() {
+        Point size = new Point();
+        getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY).getRealSize(size);
+        return size;
     }
 
     /** Drag to move, tap to open, hold to save what live sync sees; on release it snaps to the
@@ -487,10 +544,10 @@ public class OverlayService extends Service {
     }
 
     private void snapToEdge() {
-        DisplayMetrics screen = getResources().getDisplayMetrics();
-        int maxX = screen.widthPixels - bubbleParams.width;
-        int maxY = screen.heightPixels - bubbleParams.height;
-        int targetX = bubbleParams.x + bubbleParams.width / 2 < screen.widthPixels / 2 ? 0 : maxX;
+        Point screen = screenSize();
+        int maxX = screen.x - bubbleParams.width;
+        int maxY = screen.y - bubbleParams.height;
+        int targetX = bubbleParams.x + bubbleParams.width / 2 < screen.x / 2 ? 0 : maxX;
         bubbleParams.y = Math.max(0, Math.min(bubbleParams.y, maxY));
 
         ValueAnimator animator = ValueAnimator.ofInt(bubbleParams.x, targetX);
@@ -502,6 +559,8 @@ public class OverlayService extends Service {
         });
         animator.start();
 
+        // Moved while stepped aside for a menu: a one-off, the resting place it returns to is unchanged.
+        if (menuMode) return;
         getSharedPreferences(PREFS, MODE_PRIVATE).edit()
                 .putInt("x", targetX).putInt("y", bubbleParams.y).apply();
     }

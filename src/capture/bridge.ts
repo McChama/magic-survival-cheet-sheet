@@ -19,6 +19,8 @@ interface CompanionHost {
   toast(text: string): void;
   /** Asks which of these level-up rows was taken; the answer comes back through `resolvePick`. */
   askPick(prompt: string, optionsJson: string): void;
+  /** A game menu is up (or the run is back): the host moves its bubble out of the menus' way and back. */
+  menu(open: boolean): void;
   /** What the reader is seeing right now — every tick, so the host can tell a working reader from a silent one. */
   status(text: string): void;
 }
@@ -95,6 +97,7 @@ export function initCaptureBridge() {
   let lastObservation: Observation | null = null;
   let askedOptions: OwnedRef[] = [];
   let busy = false;
+  let menuOpen = false;
 
   async function tick() {
     if (busy) return;
@@ -118,6 +121,11 @@ export function initCaptureBridge() {
       }
       lastObservation = observation;
       host!.status(describe(observation));
+      // "unknown" is a transition frame as often as not: it changes nothing.
+      if (observation.screen !== "unknown" && (observation.screen !== "gameplay") !== menuOpen) {
+        menuOpen = !menuOpen;
+        host!.menu(menuOpen);
+      }
       for (const event of session.push(observation)) {
         const message = applyCaptureEvent(event);
         if (message) host!.toast(message);
