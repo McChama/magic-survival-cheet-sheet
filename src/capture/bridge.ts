@@ -19,6 +19,8 @@ interface CompanionHost {
   toast(text: string): void;
   /** Asks which of these level-up rows was taken; the answer comes back through `resolvePick`. */
   askPick(prompt: string, optionsJson: string): void;
+  /** What the reader is seeing right now — every tick, so the host can tell a working reader from a silent one. */
+  status(text: string): void;
 }
 
 declare global {
@@ -60,6 +62,26 @@ async function loadSprite(url: string): Promise<Frame | null> {
   }
 }
 
+/** One short line for the host's status display: which screen, and how much of it was read. */
+function describe(observation: Observation): string {
+  switch (observation.screen) {
+    case "selectMagic":
+      return i18n.t("capture.status.selectMagic", { count: observation.options.length });
+    case "selectAttribute":
+      return i18n.t("capture.status.selectAttribute", { magic: observation.magicId ? refName({ kind: "magic", id: observation.magicId }) : "?" });
+    case "treasureChest":
+      return i18n.t("capture.status.treasureChest", {
+        selected: observation.selectedId ? (ITEM_BY_ID[observation.selectedId]?.name ?? observation.selectedId) : i18n.t("capture.status.nothingSelected"),
+      });
+    case "ownedMagic":
+      return i18n.t("capture.status.ownedMagic", { count: observation.entries.length });
+    case "ownedArtifact":
+      return i18n.t("capture.status.ownedArtifact", { count: observation.ids.length });
+    default:
+      return i18n.t(`capture.status.${observation.screen}`);
+  }
+}
+
 function iconUrl(ref: OwnedRef): string {
   return ref.kind === "magic" ? baseMagicSpriteUrl(ref.id) : (ITEM_BY_ID[ref.id]?.image ?? "");
 }
@@ -79,10 +101,23 @@ export function initCaptureBridge() {
     busy = true;
     try {
       const frame = await fetchFrame();
+      if (frame && !library) {
+        host!.status(i18n.t("capture.status.loading"));
+        library = buildLibrary(loadSprite);
+      }
+      const sprites = library ? await library : null;
+      if (sprites && sprites.icons.length + sprites.artifacts.length === 0) {
+        host!.status(i18n.t("capture.status.noSprites"));
+        return;
+      }
       // An unchanged screen is the previous reading again — that repeat is what confirms a list as stable.
-      const observation = frame ? observe(frame, await (library ??= buildLibrary(loadSprite))) : lastObservation;
-      if (!observation) return;
+      const observation = frame && sprites ? observe(frame, sprites) : lastObservation;
+      if (!observation) {
+        host!.status(i18n.t("capture.status.waiting"));
+        return;
+      }
       lastObservation = observation;
+      host!.status(describe(observation));
       for (const event of session.push(observation)) {
         const message = applyCaptureEvent(event);
         if (message) host!.toast(message);
@@ -91,8 +126,9 @@ export function initCaptureBridge() {
           host!.askPick(i18n.t("capture.pickPrompt"), JSON.stringify(event.options.map((ref) => ({ label: refName(ref), icon: iconUrl(ref) }))));
         }
       }
-    } catch {
-      // A dropped frame is not worth surfacing: the next tick reads the screen again.
+    } catch (error) {
+      // The next tick reads the screen again; the host's status line is where a persistent failure shows.
+      host!.status(i18n.t("capture.status.error", { message: error instanceof Error ? error.message : String(error) }));
     } finally {
       busy = false;
     }

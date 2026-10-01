@@ -493,7 +493,9 @@ flavor text, not the four zones themselves.
 The same web app also ships inside a small Android app (plain Java, no AndroidX) that shows it as a floating bubble
 over the real, unmodified game (`com.vkslrzm.Zombie`) — no root, no APK patching. `MainActivity` asks once for
 "Display over other apps", then "Play with companion" starts `OverlayService` (foreground, `specialUse`) and launches
-the game. Tapping the bubble opens a full-screen overlay panel with a `WebView`; `WebAssetClient` serves the bundled
+the game. Tapping the bubble opens a full-screen overlay panel with a `WebView` — never removed: "closed" it is parked
+just off the screen edge, invisible and untouchable, so the web app keeps running (and `.parked` in `index.css` pauses
+its animations there); `WebAssetClient` serves the bundled
 `dist/` from `https://appassets.androidplatform.net/magic-survival-cheet-sheet/` so the Vite build runs unchanged —
 **that path is Vite's `base`**; change both together. The APK is built by `.github/workflows/android.yml`
 (`npm run build`, then Gradle copies `dist/` in as `assets/web`); a stable signing key comes from the
@@ -522,6 +524,12 @@ permission). Everything that interprets a frame is pure TypeScript in `src/captu
 `npm run check:capture` replays the real screenshots in `scripts/capture-fixtures/` (screens, icons, levels,
 selections and whole sequences, at 1080 and at the 720 the capture uses). Run it after touching `src/capture/` or
 replacing a sprite, and add the screenshot whenever the player reports a misread screen.
+
+None of the Android side can be run from this repo's machine (no SDK; CI builds it), so it reports on itself: the
+bubble's ring is gold with live sync off, green while the reader answers, red when it was asked for but isn't working,
+and the panel's header says what the reader last saw (`Host.status`, sent every tick) or why capture failed.
+**Holding the bubble saves the frame the reader gets** to Pictures/MSCompanion — ask for that file, not a normal
+screenshot, when a screen is misread on the phone.
 
 ## Source of truth
 

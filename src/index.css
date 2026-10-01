@@ -124,3 +124,11 @@ button, [role="button"] {
     mask-size: 100% 100%;
   }
 }
+
+/* The Android companion parks its panel off-screen while the game is up (android/, OverlayService):
+   nothing should keep animating — and costing battery — where nobody can see it. */
+.parked *,
+.parked *::before,
+.parked *::after {
+  animation-play-state: paused !important;
+}

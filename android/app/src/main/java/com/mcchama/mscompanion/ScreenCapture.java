@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.view.Display;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.Image;
@@ -12,7 +13,6 @@ import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.view.WindowManager;
 
 import java.nio.ByteBuffer;
 
@@ -38,6 +38,12 @@ final class ScreenCapture implements WebAssetClient.FrameSource {
     private boolean unread;
     private int width;
     private int height;
+    private int framesServed;
+
+    /** How many frames the web app has been handed — 0 while "running" means the mirror delivers nothing. */
+    int framesServed() {
+        return framesServed;
+    }
 
     boolean isRunning() {
         return projection != null;
@@ -63,7 +69,7 @@ final class ScreenCapture implements WebAssetClient.FrameSource {
         }, main);
 
         Point size = new Point();
-        context.getSystemService(WindowManager.class).getDefaultDisplay().getRealSize(size);
+        context.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY).getRealSize(size);
         // The game is portrait: mirror in portrait whatever way the phone is held right now.
         int shortSide = Math.min(size.x, size.y);
         int longSide = Math.max(size.x, size.y);
@@ -105,6 +111,7 @@ final class ScreenCapture implements WebAssetClient.FrameSource {
             if (newest != null) newest.close();
             newest = null;
             unread = false;
+            framesServed = 0;
         }
         if (thread != null) thread.quitSafely();
         thread = null;
@@ -116,19 +123,32 @@ final class ScreenCapture implements WebAssetClient.FrameSource {
         synchronized (lock) {
             if (newest == null || !unread) return null;
             unread = false;
-            Image.Plane plane = newest.getPlanes()[0];
-            ByteBuffer pixels = plane.getBuffer().duplicate();
-            int rowStride = plane.getRowStride();
-            int rowBytes = width * 4;
-            byte[] out = new byte[8 + rowBytes * height];
-            writeInt(out, 0, width);
-            writeInt(out, 4, height);
-            for (int row = 0; row < height; row++) {
-                pixels.position(row * rowStride);
-                pixels.get(out, 8 + row * rowBytes, rowBytes);
-            }
-            return out;
+            framesServed++;
+            return copyNewest();
         }
+    }
+
+    /** The current frame whether or not it was already read (the "save what live sync sees" debug export). */
+    byte[] peekFrame() {
+        synchronized (lock) {
+            return newest == null ? null : copyNewest();
+        }
+    }
+
+    /** Caller holds {@link #lock} and has checked {@code newest}. */
+    private byte[] copyNewest() {
+        Image.Plane plane = newest.getPlanes()[0];
+        ByteBuffer pixels = plane.getBuffer().duplicate();
+        int rowStride = plane.getRowStride();
+        int rowBytes = width * 4;
+        byte[] out = new byte[8 + rowBytes * height];
+        writeInt(out, 0, width);
+        writeInt(out, 4, height);
+        for (int row = 0; row < height; row++) {
+            pixels.position(row * rowStride);
+            pixels.get(out, 8 + row * rowBytes, rowBytes);
+        }
+        return out;
     }
 
     private static void writeInt(byte[] out, int offset, int value) {

@@ -20,7 +20,7 @@ import java.util.Map;
  * absolute `/magic-survival-cheet-sheet/...` URLs resolve exactly as on GitHub Pages.
  * `appassets.androidplatform.net` is the host Android reserves for this, never a real network call.
  */
-final class WebAssetClient extends WebViewClient {
+class WebAssetClient extends WebViewClient {
     static final String HOST = "appassets.androidplatform.net";
     /** Vite's `base` (vite.config.ts); change both together. */
     static final String BASE_PATH = "/magic-survival-cheet-sheet/";
