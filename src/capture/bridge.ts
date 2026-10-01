@@ -3,6 +3,7 @@ import { baseMagicSpriteUrl } from "../data/magics";
 import { ITEM_BY_ID } from "../engine/tierAdaptive";
 import { applyCaptureEvent, applyPick, refName } from "./apply";
 import type { Frame } from "./frame";
+import { readKeepOut, type ScreenRect } from "./keepOut";
 import { buildLibrary, type Library } from "./library";
 import { CaptureSession, observe, RETRIEVE_RECT, type Observation, type OwnedRef } from "./session";
 
@@ -26,8 +27,11 @@ interface CompanionHost {
    */
   guard(rectsJson: string): void;
   unguard(): void;
-  /** A game menu is up (or the run is back): the host moves its bubble out of the menus' way and back. */
-  menu(open: boolean): void;
+  /**
+   * The areas of the current screen the reader looks at (fractions of the screen; "[]" when there are none). The
+   * host's bubble is in the captured picture too, so it steps aside while it would cover one — and only then.
+   */
+  avoid(rectsJson: string): void;
   /** What the reader is seeing right now — every tick, so the host can tell a working reader from a silent one. */
   status(text: string): void;
 }
@@ -104,7 +108,8 @@ export function initCaptureBridge() {
   let lastObservation: Observation | null = null;
   let askedOptions: OwnedRef[] = [];
   let busy = false;
-  let menuOpen = false;
+  let keepOut: ScreenRect[] = [];
+  let avoidSent = "[]";
   /** Select Magic's tap guards: what each guarded row offers (the Retrieve button is one past the last), and the one the player marked. */
   let guarding = false;
   let guardRefs: (OwnedRef | null)[] = [];
@@ -157,9 +162,13 @@ export function initCaptureBridge() {
       lastObservation = observation;
       host!.status(describe(observation));
       // "unknown" is a transition frame as often as not: it changes nothing.
-      if (observation.screen !== "unknown" && (observation.screen !== "gameplay") !== menuOpen) {
-        menuOpen = !menuOpen;
-        host!.menu(menuOpen);
+      if (observation.screen !== "unknown") {
+        if (frame) keepOut = readKeepOut(frame, observation.screen);
+        const avoid = JSON.stringify(keepOut);
+        if (avoid !== avoidSent) {
+          avoidSent = avoid;
+          host!.avoid(avoid);
+        }
       }
       for (const event of session.push(observation)) {
         const message = applyCaptureEvent(event);

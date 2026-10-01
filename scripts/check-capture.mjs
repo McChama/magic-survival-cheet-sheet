@@ -7,6 +7,7 @@
 
 import { buildLibrary } from "../src/capture/library.ts";
 import { classifyScreen, readOwnedArtifacts, readOwnedMagic, readSelectAttribute, readSelectMagic, readTreasureChest } from "../src/capture/recognize.ts";
+import { intersects, readKeepOut } from "../src/capture/keepOut.ts";
 import { CaptureSession, observe } from "../src/capture/session.ts";
 import { loadFixture, loadSprite } from "./capture-node.mjs";
 
@@ -104,6 +105,19 @@ for (const width of WIDTHS) {
     offer.map((row) => [Math.round((row.top / (offerFrame.height)) * 100), Math.round((row.bottom / (offerFrame.height)) * 100)]),
     [[28, 43], [45, 61], [63, 78]]
   );
+
+  // Where the companion's bubble may not sit: it should only have to move when it covers something that is read.
+  // The two bubbles below are the size of the real one, docked right (where the player keeps it) and left.
+  const bubbleRight = { x: 0.844, y: 0.24, w: 0.156, h: 0.068 };
+  const bubbleLeft = { x: 0, y: 0.24, w: 0.156, h: 0.068 };
+  const covered = async (fixture, screen, bubble) => readKeepOut(await frame(fixture), screen).some((zone) => intersects(zone, bubble));
+  expect("bubble on a Select Magic row's level label stays", await covered("select-magic", "selectMagic", bubbleRight), false);
+  expect("bubble on a Select Magic row's icon moves", await covered("select-magic", "selectMagic", bubbleLeft), true);
+  expect("bubble on the Owned Magic cards moves", await covered("owned-magic", "ownedMagic", bubbleRight), true);
+  expect("bubble below the Owned Magic cards stays", await covered("owned-magic", "ownedMagic", { ...bubbleRight, y: 0.6 }), false);
+  expect("bubble on the chest's cards moves", await covered("treasure-chest", "treasureChest", { ...bubbleRight, y: 0.3 }), true);
+  expect("bubble on Pause stays", await covered("pause", "pause", bubbleRight), false);
+  expect("bubble on Select Attribute stays", await covered("select-attribute", "selectAttribute", bubbleRight), false);
 
   // What a sequence of screens amounts to: the events of each frame, in order.
   const play = async (...fixtures) => {

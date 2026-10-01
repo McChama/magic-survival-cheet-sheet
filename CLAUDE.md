@@ -533,9 +533,13 @@ permission). Everything that interprets a frame is pure TypeScript in `src/captu
   chip), never with the level-up screen appearing**: "Mana Retrieve" closes Select Magic without taking anything and
   the character keeps its level (confirmed by the player) — the same select-then-commit rule as "Leveling" above.
 
-The companion's own bubble is part of what gets captured, so while a game menu is up it **steps aside** to the bottom
-corner on its side (`Host.menu`, the one strip no menu draws in) and returns when the run resumes — left in place it
-hid whatever card sat under it in the Owned lists.
+The companion's own bubble is part of what gets captured — left in place it hid whatever card sat under it in the
+Owned lists — so it **steps aside** to the bottom corner on its side (the one strip no menu draws in), but **only while
+its resting place overlaps something that is actually read**: `keepOut.ts` lists those areas per screen (the Owned
+grids through one row past the last card, the chest's card row, the left end of Select Magic's rows) and `Host.avoid`
+hands them to `OverlayService`. Anywhere else it stays put — over a Select Magic row's "Lv N" label (never read: the
+level comes from the run), on Pause, Synergy or Select Attribute. It can't be dropped on the game's top bar either:
+there it would hide the pause button the run is recognised by.
 
 `npm run check:capture` replays the real screenshots in `scripts/capture-fixtures/` (screens, icons, levels,
 selections and whole sequences, at 1080 and at the 720 the capture uses). Run it after touching `src/capture/` or

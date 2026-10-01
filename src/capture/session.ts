@@ -1,5 +1,6 @@
 import { REF_HEIGHT, REF_WIDTH, type Frame } from "./frame";
 import { SELECT_MAGIC } from "./geometry";
+import type { ScreenRect } from "./keepOut";
 import type { Library, Match } from "./library";
 import { classifyScreen, readOwnedArtifacts, readOwnedMagic, readSelectAttribute, readSelectMagic, readTreasureChest, type Screen } from "./recognize";
 
@@ -18,14 +19,6 @@ export interface OwnedRef {
 export interface OwnedLevel extends OwnedRef {
   level: number;
   special: boolean;
-}
-
-/** A rectangle as fractions of the screen (0-1), so it means the same on the capture and on the real display. */
-export interface ScreenRect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
 }
 
 /** One row of a level-up offer: where it is, and what it offers (null when the icon wasn't recognized). */

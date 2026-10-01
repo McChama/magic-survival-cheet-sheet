@@ -109,8 +109,12 @@ public class OverlayService extends Service {
     private long readerStatusAt;
     private View pickStrip;
     private View notice;
-    /** A game menu is on screen: the bubble waits in the bottom corner, {@code home} is where it goes back to. */
-    private boolean menuMode;
+    /**
+     * The areas of the screen the reader is looking at right now (JSON, fractions of the screen).
+     * While the bubble's resting place — {@code home} — overlaps one, it waits in the bottom corner.
+     */
+    private String avoidRects = "[]";
+    private boolean steppedAside;
     private int homeX;
     private int homeY;
     /** Select Magic's tap guards, in the order the web app listed them; {@code markedGuard} is the one let through. */
@@ -214,7 +218,7 @@ public class OverlayService extends Service {
             startInForeground(true);
             capture.start(this, intent.getIntExtra(EXTRA_RESULT_CODE, 0), data, main, () -> {
                 startInForeground(false);
-                setMenuMode(false);
+                setAvoid("[]");
                 refreshSyncStatus();
             });
             if (!capture.isRunning()) captureFailure = "no projection";
@@ -273,8 +277,8 @@ public class OverlayService extends Service {
         }
 
         @JavascriptInterface
-        public void menu(boolean open) {
-            main.post(() -> setMenuMode(open));
+        public void avoid(String rectsJson) {
+            main.post(() -> setAvoid(rectsJson));
         }
 
         @JavascriptInterface
@@ -332,6 +336,10 @@ public class OverlayService extends Service {
             return;
         }
         guardLayout = rectsJson;
+        // Windows stack in the order they were added: put the bubble back on top, so it can still be
+        // tapped (to consult the companion before picking) where it overlaps a guarded row.
+        windowManager.removeViewImmediate(bubble);
+        windowManager.addView(bubble, bubbleParams);
     }
 
     private void markGuard(int index) {
@@ -544,27 +552,59 @@ public class OverlayService extends Service {
         }
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         bubbleParams.x = prefs.getInt("x", 0);
-        bubbleParams.y = prefs.getInt("y", dp(160));
+        bubbleParams.y = Math.max(minBubbleY(), prefs.getInt("y", dp(160)));
 
         bubble.setOnTouchListener(new BubbleTouch());
         windowManager.addView(bubble, bubbleParams);
     }
 
     /**
-     * While a game menu is up the bubble steps aside to the bottom corner on its own side — the
-     * one strip no menu draws anything in — so it can't cover a card the reader needs (it used to
-     * hide whatever magic sat under it in the Owned lists). It returns when the run resumes.
+     * The bubble is in the captured picture like everything else, so it must not sit on what the
+     * reader looks at (it used to hide whatever magic was under it in the Owned lists). It only
+     * moves when it actually would: resting on one of the areas the web app just listed, it
+     * steps aside to the bottom corner on its own side — the one strip no menu draws anything
+     * in — and comes back as soon as its resting place is clear again.
      */
-    private void setMenuMode(boolean on) {
-        if (on == menuMode || bubble == null) return;
-        menuMode = on;
-        if (on) {
+    private void setAvoid(String rectsJson) {
+        avoidRects = rectsJson;
+        if (bubble == null) return;
+        if (!steppedAside) {
             homeX = bubbleParams.x;
             homeY = bubbleParams.y;
-            slideBubble(homeX, screenSize().y - bubbleParams.height - dp(4));
-        } else {
-            slideBubble(homeX, homeY);
         }
+        boolean covering = coversAvoided(homeX, homeY);
+        if (covering == steppedAside) return;
+        steppedAside = covering;
+        if (covering) slideBubble(homeX, cornerY());
+        else slideBubble(homeX, homeY);
+    }
+
+    /** Whether the bubble, resting at this position, overlaps an area the reader is looking at. */
+    private boolean coversAvoided(int x, int y) {
+        Point screen = screenSize();
+        try {
+            JSONArray rects = new JSONArray(avoidRects);
+            for (int i = 0; i < rects.length(); i++) {
+                JSONObject rect = rects.getJSONObject(i);
+                double left = rect.getDouble("x") * screen.x;
+                double top = rect.getDouble("y") * screen.y;
+                double right = left + rect.getDouble("w") * screen.x;
+                double bottom = top + rect.getDouble("h") * screen.y;
+                if (x < right && left < x + bubbleParams.width && y < bottom && top < y + bubbleParams.height) return true;
+            }
+        } catch (JSONException malformed) {
+            return false;
+        }
+        return false;
+    }
+
+    private int cornerY() {
+        return screenSize().y - bubbleParams.height - dp(4);
+    }
+
+    /** Just under the game's top bar: on it, the bubble would hide the pause button the reader knows the run by. */
+    private int minBubbleY() {
+        return Math.round(screenSize().y * 0.05f);
     }
 
     private void slideBubble(int toX, int toY) {
@@ -651,21 +691,15 @@ public class OverlayService extends Service {
         int maxX = screen.x - bubbleParams.width;
         int maxY = screen.y - bubbleParams.height;
         int targetX = bubbleParams.x + bubbleParams.width / 2 < screen.x / 2 ? 0 : maxX;
-        bubbleParams.y = Math.max(0, Math.min(bubbleParams.y, maxY));
+        int targetY = Math.max(minBubbleY(), Math.min(bubbleParams.y, maxY));
 
-        ValueAnimator animator = ValueAnimator.ofInt(bubbleParams.x, targetX);
-        animator.setDuration(180);
-        animator.addUpdateListener(a -> {
-            if (bubble == null || !bubble.isAttachedToWindow()) return;
-            bubbleParams.x = (int) a.getAnimatedValue();
-            windowManager.updateViewLayout(bubble, bubbleParams);
-        });
-        animator.start();
-
-        // Moved while stepped aside for a menu: a one-off, the resting place it returns to is unchanged.
-        if (menuMode) return;
-        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
-                .putInt("x", targetX).putInt("y", bubbleParams.y).apply();
+        // Wherever it was dropped is its resting place from now on — even if, right now, that spot is
+        // one the reader needs and it has to wait in the corner until the screen changes.
+        homeX = targetX;
+        homeY = targetY;
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt("x", targetX).putInt("y", targetY).apply();
+        steppedAside = coversAvoided(targetX, targetY);
+        slideBubble(targetX, steppedAside ? cornerY() : targetY);
     }
 
     // --- Panel ---

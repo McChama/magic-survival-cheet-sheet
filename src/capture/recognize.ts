@@ -123,7 +123,7 @@ function inset(rect: Rect, left: number, top: number, right: number, bottom: num
 // --- Owned Magic / Owned Artifact -------------------------------------------------------------
 
 /** The card rectangles of an owned grid that actually hold a card, in reading order. */
-function ownedCards(frame: Frame): Rect[] {
+export function findOwnedCards(frame: Frame): Rect[] {
   const g = OWNED_GRID;
   const slots = Array.from({ length: g.columns }, (_, c) => ({
     x: scaleX(frame, g.firstCardX + c * g.cardPitchX),
@@ -193,7 +193,7 @@ export interface OwnedMagicEntry {
 export function readOwnedMagic(frame: Frame, library: Library): OwnedMagicEntry[] {
   const classes = library.icons.filter((t) => t.kind === "class");
   const others = library.icons.filter((t) => t.kind !== "class");
-  return ownedCards(frame).map((card) => {
+  return findOwnedCards(frame).map((card) => {
     const patch = extractPatch(frame, inset(card, 0.07, 0.06, 0.07, 0.27), false);
     const marks = readLevelMarks(frame, inset(card, 0.05, 0.75, 0.05, 0.09));
     // The class tile is the one card without a level row — which is also what tells a class icon from a
@@ -204,7 +204,7 @@ export function readOwnedMagic(frame: Frame, library: Library): OwnedMagicEntry[
 }
 
 export function readOwnedArtifacts(frame: Frame, library: Library): (Match | null)[] {
-  return ownedCards(frame).map((card) => {
+  return findOwnedCards(frame).map((card) => {
     const patch = extractPatch(frame, inset(card, 0.07, 0.05, 0.07, 0.05), true);
     return patch ? confident(bestMatch(patch, library.artifacts)) : null;
   });
