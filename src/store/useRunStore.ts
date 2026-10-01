@@ -98,6 +98,12 @@ interface RunStore {
   resetResearch: () => void;
   /** Swaps in a whole run: another saved one, or a new one (`store/runs.ts` is what decides which). */
   loadRun: (run: CurrentRunState) => void;
+  /**
+   * Sets the account-wide part as the game itself shows it (live sync reads it off the game's menus): only the
+   * fields given change, a class level is set for its own class without touching the others', and the research
+   * points left follow from the levels.
+   */
+  applyProfile: (profile: Partial<RunProfile>) => void;
 }
 
 export const useRunStore = create<RunStore>()(
@@ -245,6 +251,25 @@ export const useRunStore = create<RunStore>()(
         })),
 
       loadRun: (run) => set({ run }),
+
+      applyProfile: (profile) =>
+        set((state) => {
+          const researchLevels = profile.researchLevels ?? state.run.researchLevels;
+          return {
+            run: {
+              ...state.run,
+              researchLevels,
+              meta: {
+                ...state.run.meta,
+                characterClass: profile.characterClass ?? state.run.meta.characterClass,
+                subject: profile.subject ?? state.run.meta.subject,
+                unlockedSubjects: profile.unlockedSubjects ?? state.run.meta.unlockedSubjects,
+                classLevels: { ...state.run.meta.classLevels, ...profile.classLevels },
+                researchPoints: TOTAL_RESEARCH_POINTS - Object.values(researchLevels).reduce((sum, level) => sum + level, 0),
+              },
+            },
+          };
+        }),
     }),
     {
       name: "magic-survival-current-run",

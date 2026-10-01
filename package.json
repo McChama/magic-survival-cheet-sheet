@@ -14,7 +14,8 @@
     "check:formulas": "vite-node scripts/check-formulas.mjs",
     "check:capture": "vite-node scripts/check-capture.mjs",
     "capture:signatures": "vite-node scripts/gen-title-signatures.mjs",
-    "capture:templates": "vite-node scripts/gen-capture-templates.mjs"
+    "capture:templates": "vite-node scripts/gen-capture-templates.mjs",
+    "capture:names": "vite-node scripts/gen-name-signatures.mjs"
   },
   "dependencies": {
     "i18next": "^26.4.2",

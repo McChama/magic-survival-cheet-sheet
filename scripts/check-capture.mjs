@@ -7,7 +7,19 @@
 
 import { readFileSync } from "node:fs";
 import { buildLibrary, decodeLibrary, encodeLibrary } from "../src/capture/library.ts";
-import { classifyScreen, readOwnedArtifacts, readOwnedMagic, readSelectAttribute, readSelectMagic, readTreasureChest } from "../src/capture/recognize.ts";
+import {
+  classifyScreen,
+  readClassLevel,
+  readClassSelect,
+  readOwnedArtifacts,
+  readOwnedMagic,
+  readSelectAttribute,
+  readSelectMagic,
+  readResearch,
+  readTestSubject,
+  readTreasureChest,
+  readUnlockedSubjects,
+} from "../src/capture/recognize.ts";
 import { intersects, readKeepOut } from "../src/capture/keepOut.ts";
 import { CaptureSession, observe } from "../src/capture/session.ts";
 import { loadFixture, loadSprite } from "./capture-node.mjs";
@@ -29,10 +41,10 @@ const SCREENS = {
   synergy: "synergy",
   "enter-area": "enterArea",
   "life-or-death": "lifeOrDeath",
-  // The menus before a run that aren't read yet must at least not be mistaken for anything else.
-  research: "unknown",
-  "test-subject": "unknown",
-  class: "unknown",
+  // The menus a run is set up in.
+  research: "research",
+  "test-subject": "testSubject",
+  class: "classSelect",
   "gameplay-1": "gameplay",
   "gameplay-2": "gameplay",
   "gameplay-3": "gameplay",
@@ -124,6 +136,17 @@ for (const width of WIDTHS) {
     expect(fixture, attribute, { magicId: "shield", groupLevel: 5, talents: ["Barrier", "Reconstruct", "Destruction Field"], selected });
   }
 
+  // The names of the Class and the Subject in use, read off their menus against names drawn with the game font.
+  expect("class menu", readClassSelect(await frame("class")), "Scholar");
+  expect("test subject menu", readTestSubject(await frame("test-subject")), "Jack o' Lantern");
+  // Scholar's two reached bonus lines are lit and its last two gray: level 3 (its "7 / 12" is the way to level 4).
+  expect("class level", readClassLevel(await frame("class")), 3);
+  // Drawn in black on that screenshot, next to Wizard (always unlocked, never listed).
+  expect("unlocked subjects", readUnlockedSubjects(await frame("test-subject")), ["Archaeologist", "Jack o' Lantern"]);
+  // The lit dots under each node, as the screenshot shows them.
+  const RESEARCH_SEEN = { haste: 4, explorer: 4, recycle: 2, analysis: 5, awakening: 1, growth: 1, luck: 5, loot: 6, haggle: 5, startingFunds: 6 };
+  expect("research", readResearch(await frame("research")), RESEARCH_SEEN);
+
   // A level-up offers two (Arcanist), three or four rows, centered: what each row is, where it is (the share of
   // the screen height the tap guards are laid out with), and where the Retrieve button is — two rows come without one.
   const OFFERS = {
@@ -141,31 +164,54 @@ for (const width of WIDTHS) {
     const offer = readSelectMagic(offerFrame, library);
     if (VERBOSE) console.log(`  ${fixture}:`, offer.rows.map((row) => detail(row.match)).join(" | "));
     expect(fixture, offer.rows.map((row) => id(row.match)), expected.ids);
-    expect(`${fixture} rows`, offer.rows.map((row) => [share(row.top), share(row.bottom)]), expected.rows);
+    // Positions to the nearest percent of the screen height, give or take one: an edge lands a pixel apart
+    // depending on the capture's resolution and on which side of the row it was found from.
+    const at = (found) => found.flat().map((y, i) => (Math.abs(share(y) - expected.rows.flat()[i]) <= 1 ? expected.rows.flat()[i] : share(y)));
+    expect(`${fixture} rows`, at(offer.rows.map((row) => [row.top, row.bottom])), expected.rows.flat());
     expect(`${fixture} retrieve`, offer.retrieve && [share(offer.retrieve.top), share(offer.retrieve.bottom)], expected.retrieve);
   }
 
-  // Where the companion's bubble may not sit: it should only have to move when it covers something that is read.
-  // The two bubbles below are the size of the real one, docked right (where the player keeps it) and left.
+  // The companion's bubble only ever steps aside on the Owned lists, where a card under it is simply not read. On
+  // a choice screen (a level-up, a chest) it stays where the player put it, whatever it covers.
   const bubbleRight = { x: 0.844, y: 0.24, w: 0.156, h: 0.068 };
   const bubbleLeft = { x: 0, y: 0.24, w: 0.156, h: 0.068 };
   const covered = async (fixture, screen, bubble) => readKeepOut(await frame(fixture), screen).some((zone) => intersects(zone, bubble));
-  expect("bubble on a Select Magic row's level label stays", await covered("select-magic", "selectMagic", bubbleRight), false);
-  expect("bubble on a Select Magic row's icon moves", await covered("select-magic", "selectMagic", bubbleLeft), true);
   expect("bubble on the Owned Magic cards moves", await covered("owned-magic", "ownedMagic", bubbleRight), true);
   expect("bubble below the Owned Magic cards stays", await covered("owned-magic", "ownedMagic", { ...bubbleRight, y: 0.6 }), false);
-  expect("bubble on the chest's cards moves", await covered("treasure-chest", "treasureChest", { ...bubbleRight, y: 0.3 }), true);
-  expect("bubble above the four rows stays", await covered("select-magic-4", "selectMagic", { ...bubbleLeft, y: 0.12 }), false);
-  expect("bubble on the first of four rows moves", await covered("select-magic-4", "selectMagic", { ...bubbleLeft, y: 0.22 }), true);
-  expect("Select Magic still fading in (no row solid yet) moves nothing", readKeepOut(await frame("gameplay-1"), "selectMagic"), []);
-  expect("bubble on Pause stays", await covered("pause", "pause", bubbleRight), false);
-  expect("bubble on Select Attribute stays", await covered("select-attribute", "selectAttribute", bubbleRight), false);
+  for (const [fixture, screen] of [["select-magic", "selectMagic"], ["select-magic-4", "selectMagic"], ["treasure-chest", "treasureChest"], ["obelisk", "treasureChest"], ["pause", "pause"], ["select-attribute", "selectAttribute"]]) {
+    expect(`bubble never moves on ${fixture}`, readKeepOut(await frame(fixture), screen), []);
+  }
+
+  // ...so the reading has to cope with it. Here the real bubble (it is in this screenshot, top left, above the rows)
+  // is pasted again right on the first row's left end — its edge and part of its icon — where the player's sits
+  // on a four-row level-up. All four rows must still be found, from their other edge, and the rest read as before.
+  {
+    const base = await frame("select-magic-4");
+    const data = Uint8Array.from(base.data);
+    const px = (refX) => Math.round((refX * base.width) / 1080);
+    const py = (refY) => Math.round((refY * base.height) / 2460);
+    const [w, h, fromY, toY] = [px(160), py(150), py(295), py(547)];
+    for (let y = 0; y < h; y++) data.copyWithin((toY + y) * base.width * 4, (fromY + y) * base.width * 4, ((fromY + y) * base.width + w) * 4);
+    const coveredFrame = { ...base, data };
+    const bubble = { x: 0, y: toY, w, h };
+    const reading = readSelectMagic(coveredFrame, library, bubble);
+    expect("bubble on the first of four rows: rows still found", reading.rows.length, 4);
+    expect(
+      "bubble on the first of four rows: the others still read",
+      reading.rows.slice(1).map((row) => id(row.match)),
+      ["magic:electricShock", "magic:thunderstorm", "magic:fireball"]
+    );
+    // The covered one is either read right from what is left of its icon, or not at all — never as something else.
+    expect("bubble on the first of four rows: no wrong reading", [null, "magic:magicCircle"].includes(id(reading.rows[0].match)), true);
+  }
 
   // What a sequence of screens amounts to: the events of each frame, in order.
   const play = async (...fixtures) => {
     const session = new CaptureSession();
     const events = [];
-    for (const fixture of fixtures) events.push(session.push(observe(await frame(fixture), library)));
+    // A reading every quarter of a second, the pace the sequences below were written for.
+    let now = 0;
+    for (const fixture of fixtures) events.push(session.push(observe(await frame(fixture), library), (now += 250)));
     return events;
   };
   const OFFER = [{ kind: "magic", id: "flashShock" }, { kind: "magic", id: "shield" }, { kind: "magic", id: "meteor" }];
@@ -182,19 +228,35 @@ for (const width of WIDTHS) {
     [],
     [{ type: "pickNeeded", options: OFFER }],
   ]);
+  // The menus before a run say what it will be played with — once each, not on every reading.
+  expect("sequence: the menus before a run", await play("class", "class", "class", "test-subject", "test-subject", "research", "research", "class", "class"), [
+    [],
+    [{ type: "classChosen", className: "Scholar", level: 3 }],
+    [],
+    [],
+    [
+      { type: "subjectChosen", subject: "Jack o' Lantern" },
+      { type: "subjectsUnlocked", subjects: ["Archaeologist", "Jack o' Lantern"] },
+    ],
+    [],
+    [{ type: "researchRead", levels: RESEARCH_SEEN }],
+    [],
+    [],
+  ]);
+
   // Where one run ends and the next begins.
   const lifecycle = (events) => events.flat().map((event) => event.type);
-  expect("sequence: Enter Area starts a new run", lifecycle(await play("enter-area", "enter-area", "research", "gameplay-1", "gameplay-2")), ["runStarted"]);
+  expect("sequence: Enter Area starts a new run", lifecycle(await play("enter-area", "enter-area", "synergy", "gameplay-1", "gameplay-2")), ["runStarted"]);
   expect("sequence: the run coming back without Enter Area is the same run", lifecycle(await play("pause", "gameplay-1")), []);
-  expect("sequence: death, then revived", lifecycle(await play("gameplay-1", "life-or-death", "research", "gameplay-2")), []);
+  expect("sequence: death, then revived", lifecycle(await play("gameplay-1", "life-or-death", "synergy", "gameplay-2")), []);
   expect(
     "sequence: death, the run over, then back after all",
-    lifecycle(await play("gameplay-1", "life-or-death", ...Array(12).fill("research"), "research", "gameplay-2")),
+    lifecycle(await play("gameplay-1", "life-or-death", ...Array(12).fill("synergy"), "synergy", "gameplay-2")),
     ["runEnded", "runResumed"]
   );
   expect(
     "sequence: death, then a new run",
-    lifecycle(await play("life-or-death", ...Array(12).fill("research"), "enter-area", "gameplay-1")),
+    lifecycle(await play("life-or-death", ...Array(12).fill("synergy"), "enter-area", "gameplay-1")),
     ["runEnded", "runStarted"]
   );
 
@@ -215,6 +277,8 @@ for (const width of WIDTHS) {
           { kind: "passive", id: "guardianangel", level: 1, special: true },
           { kind: "magic", id: "magicCircle", level: 2, special: false },
         ],
+        // The list's first tile: the Class the run is played with.
+        className: "Bishop",
       },
     ],
     [],

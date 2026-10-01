@@ -2,7 +2,20 @@ import { REF_WIDTH, type Frame } from "./frame";
 import { SELECT_MAGIC } from "./geometry";
 import type { ScreenRect } from "./keepOut";
 import type { Library, Match } from "./library";
-import { classifyScreen, readOwnedArtifacts, readOwnedMagic, readSelectAttribute, readSelectMagic, readTreasureChest, type Screen } from "./recognize";
+import {
+  classifyScreen,
+  readClassLevel,
+  readClassSelect,
+  readOwnedArtifacts,
+  readOwnedMagic,
+  readSelectAttribute,
+  readSelectMagic,
+  readResearch,
+  readTestSubject,
+  readTreasureChest,
+  readUnlockedSubjects,
+  type Screen,
+} from "./recognize";
 
 /**
  * Turns a stream of screen readings into what actually happened in the run. A single frame
@@ -33,8 +46,14 @@ export type Observation =
   | { screen: "selectMagic"; options: OwnedRef[]; rows: OfferRow[]; retrieve: ScreenRect | null }
   | { screen: "selectAttribute"; magicId: string | null; groupLevel: number | null; talent: string | null }
   | { screen: "treasureChest"; selectedId: string | null; hasSelection: boolean; offers: (string | null)[] }
-  | { screen: "ownedMagic"; entries: OwnedLevel[] }
-  | { screen: "ownedArtifact"; ids: string[] };
+  | { screen: "ownedMagic"; entries: OwnedLevel[]; className: string | null }
+  | { screen: "ownedArtifact"; ids: string[] }
+  /** The Class menu, on the class marked "Selected" (null when its name wasn't read with confidence), and that class's level. */
+  | { screen: "classSelect"; className: string | null; level: number | null }
+  /** The Test Subject menu, on the subject marked "Applying", and every subject it draws as unlocked. */
+  | { screen: "testSubject"; subject: string | null; unlocked: string[] }
+  /** The Research menu: each bought node's level. */
+  | { screen: "research"; levels: Record<string, number> };
 
 export type CaptureEvent =
   /** "Learn" was pressed with this talent selected (the magic reached that talent's level). */
@@ -52,20 +71,36 @@ export type CaptureEvent =
   /** ...and then it did come back after all (a revive takes an ad's length): the same run goes on. */
   | { type: "runResumed" }
   /** The game's own Owned Magic list was on screen: the run's real magics and levels. */
-  | { type: "magicsSynced"; entries: OwnedLevel[] }
-  | { type: "artifactsSynced"; ids: string[] };
+  | { type: "magicsSynced"; entries: OwnedLevel[]; className: string | null }
+  | { type: "artifactsSynced"; ids: string[] }
+  /** The game's Class menu shows this class as the one selected, at this level: what the next run will be played with. */
+  | { type: "classChosen"; className: string; level: number | null }
+  /** The game's Test Subject menu shows this subject as the one applied. */
+  | { type: "subjectChosen"; subject: string }
+  /** ...and these as the unlocked ones (Wizard, always unlocked, isn't listed). */
+  | { type: "subjectsUnlocked"; subjects: string[] }
+  /** The game's Research menu: what is bought. */
+  | { type: "researchRead"; levels: Record<string, number> };
 
 /** A recognized icon as a magic/passive reference (a class icon or an unrecognized one is dropped). */
 function ownedRef(match: Match | null): OwnedRef[] {
   return match && (match.kind === "magic" || match.kind === "passive") ? [{ kind: match.kind, id: match.id }] : [];
 }
 
-/** Reads one frame. Anything not recognized with confidence is left out rather than guessed. */
-export function observe(frame: Frame, library: Library): Observation {
+/** A screen rectangle in this frame's pixels. */
+function toFrame(rect: ScreenRect | null | undefined, frame: Frame) {
+  return rect ? { x: Math.floor(rect.x * frame.width), y: Math.floor(rect.y * frame.height), w: Math.ceil(rect.w * frame.width), h: Math.ceil(rect.h * frame.height) } : null;
+}
+
+/**
+ * Reads one frame. Anything not recognized with confidence is left out rather than guessed.
+ * `bubble`: where the companion's own bubble is on the screen, so it isn't read as part of what it sits on.
+ */
+export function observe(frame: Frame, library: Library, bubble?: ScreenRect | null): Observation {
   const screen: Screen = classifyScreen(frame);
   switch (screen) {
     case "selectMagic": {
-      const reading = readSelectMagic(frame, library);
+      const reading = readSelectMagic(frame, library, toFrame(bubble, frame));
       const rows = reading.rows.map((row) => ({
         ref: ownedRef(row.match)[0] ?? null,
         rect: {
@@ -103,15 +138,23 @@ export function observe(frame: Frame, library: Library): Observation {
         offers: reading.offers.map((offer) => offer?.id ?? null),
       };
     }
-    case "ownedMagic":
+    case "ownedMagic": {
+      const cards = readOwnedMagic(frame, library);
       return {
         screen,
-        entries: readOwnedMagic(frame, library).flatMap((entry) =>
-          entry.level > 0 ? ownedRef(entry.match).map((ref) => ({ ...ref, level: entry.level, special: entry.special })) : []
-        ),
+        entries: cards.flatMap((entry) => (entry.level > 0 ? ownedRef(entry.match).map((ref) => ({ ...ref, level: entry.level, special: entry.special })) : [])),
+        // The first tile is the Class the run is being played with.
+        className: cards.find((entry) => entry.match?.kind === "class")?.match?.id ?? null,
       };
+    }
     case "ownedArtifact":
       return { screen, ids: readOwnedArtifacts(frame, library).flatMap((match) => (match ? [match.id] : [])) };
+    case "classSelect":
+      return { screen, className: readClassSelect(frame), level: readClassLevel(frame) };
+    case "testSubject":
+      return { screen, subject: readTestSubject(frame), unlocked: readUnlockedSubjects(frame, toFrame(bubble, frame)) };
+    case "research":
+      return { screen, levels: readResearch(frame) };
     default:
       return { screen };
   }
@@ -135,49 +178,82 @@ function outcome(pending: Pending | null): CaptureEvent[] {
   return [];
 }
 
-/** How many readings (four a second) "Enter Area" still counts for once it leaves the screen: the area takes a while to load. */
-const AREA_GRACE = 60;
-/** How many readings without the run coming back, after the death prompt, before the run is called over. */
-const DEATH_GRACE = 12;
+/** How long "Enter Area" still counts for once it leaves the screen: the area takes a while to load. */
+const AREA_GRACE_MS = 15000;
+/** How long without the run coming back, after the death prompt, before the run is called over. */
+const DEATH_GRACE_MS = 3000;
 
 export class CaptureSession {
-  /** Readings left during which the run appearing means "Enter Area was just pressed". */
-  private areaGrace = 0;
-  /** Readings since the death prompt that showed neither it nor the run; -1 when there was no prompt. */
-  private sinceDeath = -1;
+  /** Until when the run appearing means "Enter Area was just pressed". */
+  private areaUntil = 0;
+  /** When the death prompt was last on screen; null when there was none. */
+  private deathAt: number | null = null;
   private endReported = false;
+  /** The last reading of a setup menu: one is trusted once two in a row agree (the first may catch it fading in). */
+  private lastSetup = "";
+  /** What was last reported from each setup menu, so a fact is reported when it changes, not on every reading. */
+  private reported: Record<string, string> = {};
   /** The choice screen the player is in the middle of, until the run resumes (or the next choice starts). */
   private pending: Pending | null = null;
   /** The last owned-list reading, and whether it was already reported — a list is trusted once two frames in a row agree. */
   private lastList = "";
   private listReported = false;
 
-  push(observation: Observation): CaptureEvent[] {
-    const lifecycle = this.lifecycle(observation);
+  /** `now`: when this reading was taken (the readings come at an uneven pace: fast around a change, slow when idle). */
+  push(observation: Observation, now = Date.now()): CaptureEvent[] {
+    const lifecycle = this.lifecycle(observation, now);
     // A new run starts clean: no choice of the last one is still open.
     if (lifecycle.some((event) => event.type === "runStarted")) this.pending = null;
-    return [...lifecycle, ...this.choices(observation)];
+    return [...lifecycle, ...this.setup(observation), ...this.choices(observation)];
+  }
+
+  /** What the run will be played with, as the menus before it show it. */
+  private setup(observation: Observation): CaptureEvent[] {
+    if (observation.screen !== "classSelect" && observation.screen !== "testSubject" && observation.screen !== "research") {
+      this.lastSetup = "";
+      return [];
+    }
+    const reading = JSON.stringify(observation);
+    if (reading !== this.lastSetup) {
+      this.lastSetup = reading;
+      return [];
+    }
+    const events: CaptureEvent[] = [];
+    const report = (key: string, value: unknown, event: CaptureEvent) => {
+      const written = JSON.stringify(value);
+      if (this.reported[key] === written) return;
+      this.reported[key] = written;
+      events.push(event);
+    };
+    if (observation.screen === "classSelect" && observation.className) {
+      report("class", [observation.className, observation.level], { type: "classChosen", className: observation.className, level: observation.level });
+    }
+    if (observation.screen === "testSubject" && observation.subject) {
+      report("subject", observation.subject, { type: "subjectChosen", subject: observation.subject });
+      report("unlocked", observation.unlocked, { type: "subjectsUnlocked", subjects: observation.unlocked });
+    }
+    if (observation.screen === "research") report("research", observation.levels, { type: "researchRead", levels: observation.levels });
+    return events;
   }
 
   /** Where one run ends and the next begins. */
-  private lifecycle(observation: Observation): CaptureEvent[] {
+  private lifecycle(observation: Observation, now: number): CaptureEvent[] {
     switch (observation.screen) {
       case "enterArea":
-        this.areaGrace = AREA_GRACE;
+        this.areaUntil = now + AREA_GRACE_MS;
         return [];
       case "lifeOrDeath":
-        this.sinceDeath = 0;
+        this.deathAt = now;
         return [];
       case "gameplay": {
-        const events: CaptureEvent[] = this.areaGrace > 0 ? [{ type: "runStarted" }] : this.endReported ? [{ type: "runResumed" }] : [];
-        this.areaGrace = 0;
-        this.sinceDeath = -1;
+        const events: CaptureEvent[] = now <= this.areaUntil ? [{ type: "runStarted" }] : this.endReported ? [{ type: "runResumed" }] : [];
+        this.areaUntil = 0;
+        this.deathAt = null;
         this.endReported = false;
         return events;
       }
       default:
-        if (this.areaGrace > 0) this.areaGrace--;
-        if (this.sinceDeath >= 0 && !this.endReported && ++this.sinceDeath >= DEATH_GRACE) {
+        if (this.deathAt !== null && !this.endReported && now - this.deathAt >= DEATH_GRACE_MS) {
           this.endReported = true;
           return [{ type: "runEnded" }];
         }
@@ -246,7 +322,7 @@ export class CaptureSession {
         }
         if (this.listReported) return [];
         this.listReported = true;
-        return observation.screen === "ownedMagic" ? [{ type: "magicsSynced", entries: observation.entries }] : [{ type: "artifactsSynced", ids: observation.ids }];
+        return observation.screen === "ownedMagic" ? [{ type: "magicsSynced", entries: observation.entries, className: observation.className }] : [{ type: "artifactsSynced", ids: observation.ids }];
       }
 
       default:

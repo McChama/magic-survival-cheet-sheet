@@ -75,6 +75,17 @@ export function startNewRun(): string {
   return record.id;
 }
 
+/**
+ * The game is showing one of the menus a run is set up in (Research, Class, Test Subject) and live sync read
+ * `setup` off it. Those menus are only reachable with no run going, so whatever run was in progress is over: it
+ * becomes history and a fresh one — the run about to be played — takes what was read. The player sees it in the
+ * companion right away, and "Enter Area" then simply starts that same run.
+ */
+export function prepareNextRun(setup: Partial<RunProfile>) {
+  startNewRun();
+  useRunStore.getState().applyProfile(setup);
+}
+
 /** The run in progress is over (the character died, or the player quit): it stays, as history. */
 export function endActiveRun() {
   useRunsStore.setState(({ records }) => ({ records: records.map((r) => (r.ended ? r : { ...r, ended: true })) }));

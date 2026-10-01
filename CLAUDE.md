@@ -146,9 +146,19 @@ With live sync, everything that happens in the game is applied to the run in pro
 the run = a new run** (`runStarted`; the area takes a while to load, so the screen counts for 15 s after it is gone),
 and the **"Life or Death" prompt not followed by the run = the run is over** (`runEnded`, after 3 s) — unless the run
 then comes back after all (a revive plays an ad first), which reopens it (`runResumed`). A run that simply comes
-back without Enter Area (the game's own "Load") is the same run. Not read yet: the menus before a run (Research,
-Test Subject, Class, the area and what it gives) — their fixtures are in `scripts/capture-fixtures/` and for now
-must only not be mistaken for another screen.
+back without Enter Area is the same run.
+
+**The menus before a run are read too**, since a run recorded with the wrong class is worth little (every run came
+out as the class and subject of the one before it): **Class** (the class marked "Selected" — its name, and its level
+from how many of its bonus lines are still gray), **Test Subject** (the one marked "Applying", and every subject drawn
+in black = unlocked) and **Research** (the lit dots under each node). Names are told apart by comparing the text on
+screen with each name drawn in the game font (`npm run capture:names` → `nameSignatures.ts`; a drawn name and the
+real one agree at ~0.85-0.90, the next-best name at ~0.70), so no screenshot per class is needed. Those menus only
+exist with no run going, so reading one means the run in progress is over: `prepareNextRun` turns it into history
+and puts what was read on a fresh run — visible in the companion at once — which "Enter Area" then simply starts. The
+Class is also read mid-run, off the first tile of the game's Owned Magic list. Still not read: the area and what it
+gives (only Academy's "Starting Level +10" is in the game's text files), the other classes' levels (their icon tint
+— only level 3's color is known), and nothing has been checked beyond the one screenshot of each menu.
 
 ## Navigation persists across reloads
 
@@ -573,22 +583,29 @@ permission). Everything that interprets a frame is pure TypeScript in `src/captu
   and Retrieve is found by its label rather than assumed (a fourth row sits where three rows' Retrieve would be).
   A tap that lands before the guards are up (the screen is read a moment after it appears) leaves no mark: then the
   companion falls back to asking (`pickNeeded` → small chips on the game's top bar), and the next Owned Magic visit
-  corrects whatever wasn't answered. The guards drop on their own 1.5 s after the last keep-alive, and when the panel
-  opens — they must never outlive the screen they cover.
+  corrects whatever wasn't answered. **The guards must never outlive the screen they cover** — left up, they swallowed
+  the player's first second of movement after every pick. They come down the moment the confirming tap goes through:
+  the bubble's window watches for outside touches (`FLAG_WATCH_OUTSIDE_TOUCH`; Android tells it *that* a touch began
+  elsewhere, never where), and one that began on none of our guards while a row is marked can only have gone through
+  the marked row (`onOutsideTouch` → `__msCapture.passed()`; the pick is still only committed once the screen is seen
+  to close, and a tap that closed nothing within 0.7 s puts the mark back). Failing that, they drop on the second
+  reading that no longer shows Select Magic, 1.5 s after the last keep-alive, and when the panel opens. That untested-
+  on-device path is also what lets several level-ups in a row (Terra, the Owl, Tarot) be picked a second apart: each
+  offer's pick is settled when the next, different offer is read.
 - `apply.ts` — commits through the same store actions as the app's own sheets, and only ever adds or raises (a missed
   icon must not delete a recorded talent). **`run.currentLevel` goes up with a pick (a learned talent, an answered
   chip), never with the level-up screen appearing**: "Mana Retrieve" closes Select Magic without taking anything and
   the character keeps its level (confirmed by the player) — the same select-then-commit rule as "Leveling" above.
 
-The companion's own bubble is part of what gets captured — left in place it hid whatever card sat under it in the
-Owned lists — so it **steps aside** to the bottom corner on its side (the one strip no menu draws in), but **only while
-its resting place overlaps something that is actually read**: `keepOut.ts` lists those areas per screen (the Owned
-grids through one row past the last card, the chest's card row, the left end of Select Magic's rows — and nothing
-at all while Select Magic is still fading in and no row is solid yet: guessing "anywhere" there made the bubble drop
-to the corner and come straight back on every level-up) and `Host.avoid`
-hands them to `OverlayService`. Anywhere else it stays put — over a Select Magic row's "Lv N" label (never read: the
-level comes from the run), on Pause, Synergy or Select Attribute. It can't be dropped on the game's top bar either:
-there it would hide the pause button the run is recognised by.
+The companion's own bubble is part of what gets captured. **It stays where the player put it on every choice screen
+— a level-up, a chest, an obelisk — whatever it covers**: the player asked for exactly that twice (a bubble that moved
+each time a choice opened was worse than what it hides), so do not bring a keep-out back for those. The reading copes
+instead: a level-up's rows are found from *either* edge (the bubble docks to one side), and the bubble's own
+rectangle — `OverlayService` sends it with every tick — is left out of the icon it sits on (`readSelectMagic`'s
+`mask`), so that row is read from what is left of its icon or not at all, never as something else. The one place it
+still **steps aside** (to the bottom corner on its side) is the Owned lists, where a card under it is not read at all
+(`keepOut.ts`, `Host.avoid`). It can't be dropped on the game's top bar either: there it would hide the pause button
+the run is recognised by.
 
 `npm run check:capture` replays the real screenshots in `scripts/capture-fixtures/` (screens, icons, levels,
 selections and whole sequences, at 1080 and at the 720 the capture uses). Run it after touching `src/capture/` or
@@ -597,7 +614,10 @@ replacing a sprite, and add the screenshot whenever the player reports a misread
 **It has to run next to the game on a weak phone, so it is built to cost nothing while the player is just playing**
 (asked for by the player; keep it that way when adding to it):
 - The tick that runs all game long looks at **three pixels** in Java (`ScreenCapture.showsTheRun`, the same pause-bar
-  test as `isGameplay` in `recognize.ts` — keep the two in step). While the run stays on screen no frame is copied
+  test as `isGameplay` in `recognize.ts` — keep the two in step), which is cheap enough to do every 60 ms: that
+  pace, not the reading itself, is what decides how soon a level-up is noticed and its taps guarded. A menu is read
+  every 100 ms while it is up, and once nothing readable has been on screen for 2 s (the game's animated main menu,
+  which would otherwise hand over a frame per tick) only once a second. While the run stays on screen no frame is copied
   and the web app isn't called at all. A frame (4.7 MB) only crosses into the WebView when a menu is up, and a menu is
   a still picture: one frame, then "unchanged" until it closes. Before this, every tick copied a full frame just to
   learn the run was still on.
@@ -612,7 +632,9 @@ replacing a sprite, and add the screenshot whenever the player reports a misread
 - What is left is the mirror itself (the system draws each frame a second time, like a screen recording) and the
   WebView's memory. "Low-power capture" (launcher checkbox, off by default, **never tried on a device**) detaches the
   mirror's surface between readings so only a few frames a second are drawn twice.
-- The status line shows how long each reading took (`· N ms`) — the number to ask for from a slow phone.
+- The status line shows the installed version, how long the last reading took (`· N ms`) and the frames handed to the
+  reader in total and **over the last full minute** — the number that should sit near zero while simply playing (the
+  total alone misled: it also counts the minutes spent in the game's menus). Ask for that line from a slow phone.
 
 None of the Android side can be run from this repo's machine (no SDK; CI builds it), so it reports on itself: the
 bubble's ring is gold with live sync off, green while the reader answers, red when it was asked for but isn't working,

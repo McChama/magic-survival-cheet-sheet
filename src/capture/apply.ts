@@ -5,7 +5,7 @@ import { getMagicLevelPick, getPassiveLevelPick } from "../engine/magicLeveling"
 import { getObtainedPassiveIds } from "../engine/ownedPassives";
 import { getEquippedItems, ITEM_BY_ID } from "../engine/tierAdaptive";
 import { useRunStore } from "../store/useRunStore";
-import { endActiveRun, ensureActiveRunLoaded, startNewRun } from "../store/useRunsStore";
+import { endActiveRun, ensureActiveRunLoaded, prepareNextRun, startNewRun } from "../store/useRunsStore";
 import type { CaptureEvent, OwnedRef } from "./session";
 
 /**
@@ -63,6 +63,23 @@ export function applyCaptureEvent(event: CaptureEvent): string | null {
     startNewRun();
     return i18n.t("capture.runStarted");
   }
+  // What the menus before a run show is about the run to come, not the one still on record.
+  if (event.type === "classChosen") {
+    prepareNextRun({ characterClass: event.className, classLevels: event.level ? { [event.className]: event.level } : {} });
+    return event.level ? i18n.t("capture.classChosenAt", { name: event.className, level: event.level }) : i18n.t("capture.classChosen", { name: event.className });
+  }
+  if (event.type === "subjectChosen") {
+    prepareNextRun({ subject: event.subject });
+    return i18n.t("capture.subjectChosen", { name: event.subject });
+  }
+  if (event.type === "subjectsUnlocked") {
+    prepareNextRun({ unlockedSubjects: event.subjects });
+    return null;
+  }
+  if (event.type === "researchRead") {
+    prepareNextRun({ researchLevels: event.levels });
+    return i18n.t("capture.researchRead");
+  }
   // Everything else that happens in the game belongs to the run in progress, whichever run the player has open.
   ensureActiveRunLoaded();
   switch (event.type) {
@@ -77,6 +94,8 @@ export function applyCaptureEvent(event: CaptureEvent): string | null {
       return ensureArtifact(event.id) ? i18n.t("capture.artifactObtained", { name: ITEM_BY_ID[event.id].name }) : null;
 
     case "magicsSynced":
+      // The game's own list starts with the Class being played: the one fact about a run that can be read mid-run.
+      if (event.className && store().run.meta.characterClass !== event.className) store().setCharacterClass(event.className);
       for (const entry of event.entries) setOwnedLevel(entry, entry.level, entry.special);
       return i18n.t("capture.magicsSynced", { count: event.entries.length });
 

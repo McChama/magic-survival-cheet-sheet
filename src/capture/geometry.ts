@@ -15,7 +15,10 @@ export type ScreenId =
   | "ownedArtifact"
   | "synergy"
   | "enterArea"
-  | "lifeOrDeath";
+  | "lifeOrDeath"
+  | "classSelect"
+  | "testSubject"
+  | "research";
 
 /** The band each screen's title is looked for in (generous: the title's own box is found inside it). */
 export const TITLE_BAND: Record<ScreenId, Rect> = {
@@ -31,7 +34,55 @@ export const TITLE_BAND: Record<ScreenId, Rect> = {
   // button is what is looked for; the death prompt's "Life or Death" sits mid-screen, in red.
   enterArea: { x: 330, y: 2150, w: 420, h: 150 },
   lifeOrDeath: { x: 280, y: 1220, w: 520, h: 170 },
+  // The two menus a run's Class and Subject are picked in, each known by the label that says "this is the one
+  // in use": "Selected" under the Class (the same spot as "Enter Area"), "Applying" on the Subject's button.
+  // Looking at any other class or subject shows a different label, so only the one in use is ever read.
+  classSelect: { x: 330, y: 2150, w: 420, h: 150 },
+  testSubject: { x: 330, y: 2280, w: 420, h: 120 },
+  research: { x: 250, y: 190, w: 580, h: 140 },
 };
+
+/**
+ * Research: the 22 nodes sit in rows of 5, 5, 4, 4, 4 — the order of `RESEARCH` (`data/research.ts`), which the
+ * pip counts on the real screen confirm node for node. Under each node, one dot per level it can reach, the
+ * reached ones lit: `y` is that row of dots, `xs` the nodes' centers.
+ */
+export const RESEARCH_GRID = {
+  rows: [
+    { y: 795, xs: [172, 357, 541, 723, 908] },
+    { y: 1102, xs: [172, 357, 541, 723, 908] },
+    { y: 1410, xs: [237, 439, 640, 840] },
+    { y: 1717, xs: [237, 439, 640, 840] },
+    { y: 2025, xs: [237, 439, 640, 840] },
+  ],
+  halfWidth: 80,
+  halfHeight: 22,
+};
+
+/**
+ * Test Subject: the 25 subjects stand in rows of 4, 5, 4, 5, 4, 3 — the order of `SUBJECTS` (confirmed by the two
+ * the player has unlocked, Archaeologist and Jack o' Lantern, standing where that order puts them). An unlocked one
+ * is drawn in black, a locked one in gray: each entry is the center of a figure.
+ */
+export const SUBJECT_GRID = {
+  rows: [
+    { y: 406, xs: [234, 437, 642, 845] },
+    { y: 670, xs: [133, 335, 539, 742, 945] },
+    { y: 935, xs: [234, 437, 642, 845] },
+    { y: 1199, xs: [133, 335, 539, 742, 945] },
+    { y: 1470, xs: [234, 437, 642, 845] },
+    { y: 1734, xs: [336, 539, 742] },
+  ],
+  halfWidth: 49,
+  halfHeight: 74,
+};
+
+/** Class: the tooltip and the four bonus lines under the class's name, the ones not reached yet in gray. */
+export const CLASS_LINES: Rect = { x: 100, y: 445, w: 880, h: 395 };
+
+/** Where those two menus write the name of the Class / Subject being looked at. */
+export const CLASS_NAME_BAND: Rect = { x: 200, y: 200, w: 680, h: 130 };
+export const SUBJECT_NAME_BAND: Rect = { x: 150, y: 1930, w: 780, h: 120 };
 
 /** The two white bars of the in-run pause button (top right) — lit only while the run itself is on screen. */
 export const PAUSE_BARS: Rect[] = [
@@ -85,6 +136,8 @@ export const ATTRIBUTE = {
 export const SELECT_MAGIC = {
   /** Columns just inside a row's left edge, left of the icon — black only where a row is. */
   probeXs: [64, 80, 96],
+  /** The same at the right edge, right of the "Lv N" label: a row is found from either side, whichever the bubble isn't on. */
+  probeXsRight: [984, 996, 1008],
   scanTop: 440,
   scanBottom: 2400,
   rowHeight: 384,

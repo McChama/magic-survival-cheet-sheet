@@ -197,11 +197,18 @@
       "nothingSelected": "nothing selected",
       "enterArea": "Enter Area",
       "lifeOrDeath": "Life or Death",
-      "timed": "{{status}} · {{ms}} ms"
+      "timed": "{{status}} · {{ms}} ms",
+      "classSelect": "Class",
+      "testSubject": "Test Subject",
+      "research": "Research"
     },
     "retrieved": "Mana retrieved",
     "runStarted": "New run started",
-    "runEnded": "Run ended"
+    "runEnded": "Run ended",
+    "classChosen": "Class: {{name}}",
+    "subjectChosen": "Subject: {{name}}",
+    "classChosenAt": "Class: {{name}} Lv {{level}}",
+    "researchRead": "Research synced"
   },
   "runs": {
     "title": "Runs",

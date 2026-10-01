@@ -33,6 +33,10 @@ interface CompanionHost {
    */
   guard(rectsJson: string): void;
   unguard(): void;
+  /** Marks a guard again without the player tapping it (the guards were rebuilt while its mark still stood). */
+  remark(index: number): void;
+  /** Nothing readable has been on screen for a while (the game's main menu, another app): the host may read less often. */
+  idle(idle: boolean): void;
   /**
    * The areas of the current screen the reader looks at (fractions of the screen; "[]" when there are none). The
    * host's bubble is in the captured picture too, so it steps aside while it would cover one — and only then.
@@ -52,8 +56,13 @@ declare global {
   interface Window {
     MSCompanionHost?: CompanionHost;
     __msCapture?: {
-      /** `playing`: the host already saw the run itself on screen, so there is no frame to fetch. */
-      tick: (playing?: boolean) => void;
+      /**
+       * `playing`: the host already saw the run itself on screen, so there is no frame to fetch. The rest is where
+       * the host's bubble is right now, as fractions of the screen — it is in the captured picture too.
+       */
+      tick: (playing?: boolean, bubbleX?: number, bubbleY?: number, bubbleW?: number, bubbleH?: number) => void;
+      /** A tap just went through to the game while a row was marked: that was the confirming tap. */
+      passed: () => void;
       resolvePick: (index: number) => void;
       mark: (index: number) => void;
       /** The panel went off-screen (or came back): nobody is looking, so nothing should keep animating. */
@@ -124,6 +133,18 @@ export function initCaptureBridge() {
   let guarding = false;
   let guardRefs: (OwnedRef | null)[] = [];
   let marked: number | null = null;
+  /** The mark a tap just went through on (the host saw the tap reach the game), until the screen closing confirms it. */
+  let confirmed: { index: number; at: number } | null = null;
+  /** Readings in a row that did not show Select Magic while its guards were up. */
+  let offScreen = 0;
+  let bubble: ScreenRect | null = null;
+  let unknownSince: number | null = null;
+  let idleSent = false;
+
+  /** A confirming tap that closed nothing within this long was a stray one (on the gap between two rows, say). */
+  const STRAY_MS = 700;
+  /** With nothing readable on screen for this long, the host is told it can read less often. */
+  const IDLE_AFTER_MS = 2000;
 
   function ask(options: OwnedRef[]) {
     askedOptions = options;
@@ -135,7 +156,8 @@ export function initCaptureBridge() {
    * the player mark one first, and the game only ever received a tap on the marked one — so that is what was taken.
    */
   function resolveOffer(options: OwnedRef[]) {
-    const index = marked;
+    const index = confirmed?.index ?? marked;
+    confirmed = null;
     marked = null;
     if (guarding) host!.unguard();
     guarding = false;
@@ -153,6 +175,7 @@ export function initCaptureBridge() {
     if (busy) return;
     busy = true;
     try {
+      const now = Date.now();
       let observation: Observation | null = lastObservation;
       if (playing) {
         observation = { screen: "gameplay" };
@@ -164,7 +187,7 @@ export function initCaptureBridge() {
         if (frame) {
           const sprites = await (library ??= loadLibrary());
           const started = performance.now();
-          observation = observe(frame, sprites);
+          observation = observe(frame, sprites, bubble);
           if (observation.screen !== "unknown") keepOut = readKeepOut(frame, observation.screen);
           // How long one reading takes on this phone, shown in the host's status line: the number to watch on a slow one.
           statusLine = i18n.t("capture.status.timed", { status: describe(observation), ms: Math.round(performance.now() - started) });
@@ -189,21 +212,48 @@ export function initCaptureBridge() {
           host!.chest(chest);
         }
       }
-      for (const event of session.push(observation)) {
+      for (const event of session.push(observation, now)) {
         const message = applyCaptureEvent(event);
         if (message) host!.toast(message);
         if (event.type === "pickNeeded") resolveOffer(event.options);
       }
+
       if (observation.screen === "selectMagic") {
-        // Until a row is marked the reading may still be settling; after it, the mark's own border hides part of a row.
-        if (marked === null) guardRefs = observation.rows.map((row) => row.ref);
-        host!.guard(JSON.stringify([...observation.rows.map((row) => row.rect), ...(observation.retrieve ? [observation.retrieve] : [])]));
-        guarding = true;
-      } else if (observation.screen !== "unknown") {
+        offScreen = 0;
+        if (confirmed && now - confirmed.at > STRAY_MS) {
+          // The tap that went through closed nothing: it wasn't on the marked row. The mark stands.
+          marked = confirmed.index;
+          confirmed = null;
+        }
+        // While a confirming tap is settling the screen is on its way out: guards back up now would only block the
+        // player's controls for the first moment of the run.
+        if (!confirmed) {
+          // The rows are settled once one is marked; until then each reading may still find more of them.
+          if (marked === null) guardRefs = observation.rows.map((row) => row.ref);
+          host!.guard(JSON.stringify([...observation.rows.map((row) => row.rect), ...(observation.retrieve ? [observation.retrieve] : [])]));
+          if (!guarding && marked !== null) host!.remark(marked);
+          guarding = true;
+        }
+      } else {
+        // Select Magic is gone. The guards must not outlive it — they would swallow the player's first touches of
+        // the run — so they drop on the second reading without it even if what replaced it isn't recognized yet
+        // (a fade); one odd frame alone is not enough to drop a mark.
+        if (guarding && (observation.screen !== "unknown" || ++offScreen >= 2)) {
+          host!.unguard();
+          guarding = false;
+        }
         // Any other screen ends the offer (Select Attribute takes it from here on its own).
-        if (guarding) host!.unguard();
-        guarding = false;
-        marked = null;
+        if (observation.screen !== "unknown") {
+          marked = null;
+          confirmed = null;
+        }
+      }
+
+      unknownSince = observation.screen === "unknown" ? (unknownSince ?? now) : null;
+      const idle = unknownSince !== null && now - unknownSince >= IDLE_AFTER_MS;
+      if (idle !== idleSent) {
+        idleSent = idle;
+        host!.idle(idle);
       }
     } catch (error) {
       // The next tick reads the screen again; the host's status line is where a persistent failure shows.
@@ -214,7 +264,17 @@ export function initCaptureBridge() {
   }
 
   window.__msCapture = {
-    tick: (playing) => void tick(playing),
+    tick: (playing, x, y, w, h) => {
+      bubble = w && h ? { x: x ?? 0, y: y ?? 0, w, h } : null;
+      void tick(playing);
+    },
+    passed: () => {
+      if (marked === null) return;
+      confirmed = { index: marked, at: Date.now() };
+      marked = null;
+      // The host has already taken the guards down, so the game's controls are free at once.
+      guarding = false;
+    },
     parked: (parked) => {
       document.documentElement.classList.toggle("parked", parked);
       useUiStore.getState().setParked(parked);

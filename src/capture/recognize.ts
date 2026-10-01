@@ -1,6 +1,22 @@
 import { getMagicTalentGroups, TALENT_TYPE_COLOR } from "../data/magicTalents";
 import { inkBounds, luma, maxPeak, peak, rgb, runs, scaleRect, scaleX, scaleY, type Frame, type Rect } from "./frame";
-import { ATTRIBUTE, CHEST, OWNED_GRID, PAUSE_BARS, SELECT_MAGIC, TITLE_BAND, type ScreenId } from "./geometry";
+import { ALWAYS_UNLOCKED_SUBJECT, SUBJECTS } from "../data/classes";
+import { RESEARCH } from "../data/research";
+import {
+  ATTRIBUTE,
+  CHEST,
+  CLASS_LINES,
+  CLASS_NAME_BAND,
+  OWNED_GRID,
+  PAUSE_BARS,
+  RESEARCH_GRID,
+  SELECT_MAGIC,
+  SUBJECT_GRID,
+  SUBJECT_NAME_BAND,
+  TITLE_BAND,
+  type ScreenId,
+} from "./geometry";
+import { CLASS_NAME_SIGNATURES, SUBJECT_NAME_SIGNATURES } from "./nameSignatures";
 import { bestMatch, extractPatch, type Library, type Match } from "./library";
 import { OBTAIN_SIGNATURE, TITLE_SIGNATURES } from "./titleSignatures";
 
@@ -52,6 +68,111 @@ export function obtainSignature(frame: Frame): TitleSignature | null {
 /** The "Obtain" label wherever it sits in its band (see `CHEST.obtainBand`): what it looks like, and where it is. */
 function findObtain(frame: Frame): { signature: TitleSignature; box: Rect } | null {
   return readText(scaleRect(frame, CHEST.obtainBand), (x, y) => peak(frame, x, y) > 60);
+}
+
+/** The coarse bitmap of the text inside `band` (frame pixels) — also how `npm run capture:names` reduces a drawn name. */
+export function textSignature(band: Rect, isInk: (x: number, y: number) => boolean): TitleSignature | null {
+  return readText(band, isInk)?.signature ?? null;
+}
+
+/** A name drawn with the game font agrees with the same name on screen at ~0.85-0.90; the next-best name is ~0.70. */
+const NAME_MATCH = 0.78;
+const NAME_MARGIN = 0.05;
+
+/** Which of `names` is written in `band`, or null when none is clearly it. */
+function readName(frame: Frame, band: Rect, names: Record<string, TitleSignature>): string | null {
+  const written = textSignature(scaleRect(frame, band), (x, y) => peak(frame, x, y) > 150);
+  if (!written) return null;
+  let best: string | null = null;
+  let bestScore = 0;
+  let runnerUp = 0;
+  for (const [name, signature] of Object.entries(names)) {
+    const score = signatureScore(written, signature);
+    if (score > bestScore) {
+      runnerUp = bestScore;
+      bestScore = score;
+      best = name;
+    } else if (score > runnerUp) {
+      runnerUp = score;
+    }
+  }
+  return bestScore >= NAME_MATCH && bestScore - runnerUp >= NAME_MARGIN ? best : null;
+}
+
+/** The Class the Class menu shows as "Selected" (the caller has already seen that label: the screen is `classSelect`). */
+export function readClassSelect(frame: Frame): string | null {
+  return readName(frame, CLASS_NAME_BAND, CLASS_NAME_SIGNATURES);
+}
+
+/** The Subject the Test Subject menu shows as "Applying". */
+export function readTestSubject(frame: Frame): string | null {
+  return readName(frame, SUBJECT_NAME_BAND, SUBJECT_NAME_SIGNATURES);
+}
+
+/**
+ * The selected Class's level, from its bonus lines: the four gated ones come last and the ones not reached yet are
+ * gray, so the level is 5 minus the gray lines. Null when the block doesn't look like that (no line, or more gray
+ * ones than there are bonuses). A bonus that wrapped onto two lines would count twice — none has been seen to.
+ */
+export function readClassLevel(frame: Frame): number | null {
+  const area = scaleRect(frame, CLASS_LINES);
+  const rowPeak = (y: number) => {
+    let best = 0;
+    for (let x = area.x; x < area.x + area.w; x++) best = Math.max(best, peak(frame, x, y));
+    return best;
+  };
+  const lines = runs(area.y, area.y + area.h, (y) => rowPeak(y) > 60, 4);
+  if (lines.length === 0) return null;
+  const gray = lines.filter(([top, bottom]) => {
+    let best = 0;
+    for (let y = top; y <= bottom; y++) best = Math.max(best, rowPeak(y));
+    return best < 150;
+  }).length;
+  return gray <= 4 ? 5 - gray : null;
+}
+
+/** Which Subjects the Test Subject menu draws as unlocked (in black). `mask`: the companion's bubble, dark too. */
+export function readUnlockedSubjects(frame: Frame, mask?: Rect | null): string[] {
+  const unlocked: string[] = [];
+  let index = 0;
+  for (const row of SUBJECT_GRID.rows) {
+    for (const centerX of row.xs) {
+      const name = SUBJECTS[index++];
+      const box = scaleRect(frame, { x: centerX - SUBJECT_GRID.halfWidth, y: row.y - SUBJECT_GRID.halfHeight, w: SUBJECT_GRID.halfWidth * 2, h: SUBJECT_GRID.halfHeight * 2 });
+      let dark = 0;
+      let seen = 0;
+      for (let y = box.y; y < box.y + box.h; y += 2) {
+        for (let x = box.x; x < box.x + box.w; x += 2) {
+          if (mask && x >= mask.x && x < mask.x + mask.w && y >= mask.y && y < mask.y + mask.h) continue;
+          seen++;
+          if (luma(frame, x, y) < 40) dark++;
+        }
+      }
+      // A black figure fills about a fifth of its box; a gray one has no black at all.
+      if (name && name !== ALWAYS_UNLOCKED_SUBJECT && seen > 0 && dark / seen > 0.05) unlocked.push(name);
+    }
+  }
+  return unlocked;
+}
+
+/** Each Research node's level: the lit dots under it. */
+export function readResearch(frame: Frame): Record<string, number> {
+  const levels: Record<string, number> = {};
+  let index = 0;
+  for (const row of RESEARCH_GRID.rows) {
+    for (const centerX of row.xs) {
+      const node = RESEARCH[index++];
+      if (!node) continue;
+      const strip = scaleRect(frame, { x: centerX - RESEARCH_GRID.halfWidth, y: row.y - RESEARCH_GRID.halfHeight, w: RESEARCH_GRID.halfWidth * 2, h: RESEARCH_GRID.halfHeight * 2 });
+      const lit = (x: number) => {
+        for (let y = strip.y; y < strip.y + strip.h; y++) if (peak(frame, x, y) > 175) return true;
+        return false;
+      };
+      const level = Math.min(node.maxLevel, runs(strip.x, strip.x + strip.w, lit, 2).length);
+      if (level > 0) levels[node.id] = level;
+    }
+  }
+  return levels;
 }
 
 /** The text inside `band`: its coarse bitmap, and the box it occupies. */
@@ -398,11 +519,14 @@ const ROW_BLACK = 8;
 /** Where the offered rows are (top and bottom, in frame pixels), top to bottom — without looking at what they offer. */
 export function findSelectMagicRows(frame: Frame): [number, number][] {
   const g = SELECT_MAGIC;
-  const probes = g.probeXs.map((x) => scaleX(frame, x));
+  const left = g.probeXs.map((x) => scaleX(frame, x));
+  const right = g.probeXsRight.map((x) => scaleX(frame, x));
   const rowHeight = scaleY(frame, g.rowHeight);
   const rowGap = scaleY(frame, g.rowGap);
   const isBlack = (x: number, y: number) => luma(frame, x, y) < ROW_BLACK;
-  const bands = runs(scaleY(frame, g.scanTop), scaleY(frame, g.scanBottom), (y) => probes.every((x) => isBlack(x, y)), Math.round(rowHeight * 0.6));
+  // Either edge is enough: the companion's bubble docks to one side of the screen and can sit on a row's end there.
+  const inRow = (y: number) => left.every((x) => isBlack(x, y)) || right.every((x) => isBlack(x, y));
+  const bands = runs(scaleY(frame, g.scanTop), scaleY(frame, g.scanBottom), inRow, Math.round(rowHeight * 0.6));
 
   // A row's top margin is black from edge to edge (its "Lv N" label and its name start lower):
   // that is what tells a row from a black enemy that happens to sit on the probe columns.
@@ -426,7 +550,8 @@ export function findSelectMagicRows(frame: Frame): [number, number][] {
   return extents;
 }
 
-export function readSelectMagic(frame: Frame, library: Library): SelectMagicReading {
+/** `mask`: where the companion's own bubble is, in frame pixels — it is in the picture too, and must not be read as part of an icon. */
+export function readSelectMagic(frame: Frame, library: Library, mask?: Rect | null): SelectMagicReading {
   const g = SELECT_MAGIC;
   const extents = findSelectMagicRows(frame);
   const offered = library.icons.filter((t) => t.kind !== "class");
@@ -434,7 +559,7 @@ export function readSelectMagic(frame: Frame, library: Library): SelectMagicRead
   const right = scaleX(frame, g.iconRight);
   const rows = extents.map(([top, bottom]) => {
     const height = bottom - top + 1;
-    const patch = extractPatch(frame, { x: left, y: top + Math.round(height * 0.08), w: right - left, h: Math.round(height * 0.84) }, false);
+    const patch = extractPatch(frame, { x: left, y: top + Math.round(height * 0.08), w: right - left, h: Math.round(height * 0.84) }, false, mask);
     return { match: patch ? confident(bestMatch(patch, offered)) : null, top, bottom };
   });
   return { rows, retrieve: rows.length ? findRetrieve(frame, rows[rows.length - 1].bottom) : null };

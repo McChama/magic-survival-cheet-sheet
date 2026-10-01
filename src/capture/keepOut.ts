@@ -1,6 +1,6 @@
 import { REF_HEIGHT, REF_WIDTH, type Frame, type Rect } from "./frame";
-import { CHEST, OWNED_GRID, SELECT_MAGIC } from "./geometry";
-import { findOwnedCards, findSelectMagicRows, type Screen } from "./recognize";
+import { OWNED_GRID } from "./geometry";
+import { findOwnedCards, type Screen } from "./recognize";
 
 /** A rectangle as fractions of the screen (0-1), so it means the same on the capture and on the real display. */
 export interface ScreenRect {
@@ -17,42 +17,21 @@ function fromRef(rect: Rect): ScreenRect {
 }
 
 /**
- * The parts of this screen the reader actually looks at — where the companion's own bubble (it
- * is in the captured picture like everything else) must not sit. Everything outside is free:
- * a bubble over a Select Magic row's "Lv N" label, or anywhere on Pause, Synergy or Select
- * Attribute (its icons are in the middle, the bubble docks to an edge), hides nothing that is
- * read, so it has no reason to move.
+ * Where the companion's own bubble (it is in the captured picture like everything else) must not sit on this
+ * screen. **Only the Owned lists have such a place**: their cards are small, and a card under the bubble is not
+ * read at all. Everywhere else the bubble stays exactly where the player put it — that was the player's explicit
+ * call for the choice screens (a level-up, a chest): a bubble that moved every time one opened was worse than the
+ * rare option it hides. The reading works around it instead: a level-up's rows are found from either edge, and the
+ * bubble's own area is left out of the icon under it (`readSelectMagic`'s `mask`).
  */
 export function readKeepOut(frame: Frame, screen: Screen): ScreenRect[] {
-  switch (screen) {
-    case "ownedMagic":
-    case "ownedArtifact": {
-      const g = OWNED_GRID;
-      // Through one row past the last card found: a card the bubble covers isn't found at all.
-      const lastBottom = findOwnedCards(frame).reduce((bottom, card) => Math.max(bottom, card.y + card.h), 0);
-      const rowPitch = g.cardHeight * 1.03;
-      const bottom = Math.min(g.scanBottom, Math.max(g.scanTop, (lastBottom * REF_HEIGHT) / frame.height) + rowPitch);
-      return [fromRef({ x: g.firstCardX, y: g.scanTop, w: (g.columns - 1) * g.cardPitchX + g.cardWidth, h: bottom - g.scanTop })];
-    }
-    case "treasureChest":
-      return [fromRef({ x: CHEST.scanLeft, y: CHEST.cardTop, w: CHEST.scanRight - CHEST.scanLeft, h: CHEST.cardBottom - CHEST.cardTop })];
-    case "selectMagic": {
-      // A row's left end: the edge that marks it as a row, and its icon. The rows are centered, so if
-      // the ones found sit lopsided there is another the bubble is hiding: the span is mirrored to cover it.
-      const g = SELECT_MAGIC;
-      const rows = findSelectMagicRows(frame).map(([top, bottom]) => [(top * REF_HEIGHT) / frame.height, (bottom * REF_HEIGHT) / frame.height]);
-      // No row found yet: the screen is still fading in (its title shows before its rows turn solid). Guessing
-      // "anywhere" here sent the bubble to the corner and straight back on every level-up.
-      if (rows.length === 0) return [];
-      const first = rows[0][0];
-      const last = rows[rows.length - 1][1];
-      const top = Math.max(g.scanTop, Math.min(first, 2 * g.centerY - last));
-      const bottom = Math.min(g.scanBottom, Math.max(last, 2 * g.centerY - first));
-      return [fromRef({ x: g.rowLeft, y: top, w: g.iconRight - g.rowLeft, h: bottom - top })];
-    }
-    default:
-      return [];
-  }
+  if (screen !== "ownedMagic" && screen !== "ownedArtifact") return [];
+  const g = OWNED_GRID;
+  // Through one row past the last card found: a card the bubble covers isn't found at all.
+  const lastBottom = findOwnedCards(frame).reduce((bottom, card) => Math.max(bottom, card.y + card.h), 0);
+  const rowPitch = g.cardHeight * 1.03;
+  const bottom = Math.min(g.scanBottom, Math.max(g.scanTop, (lastBottom * REF_HEIGHT) / frame.height) + rowPitch);
+  return [fromRef({ x: g.firstCardX, y: g.scanTop, w: (g.columns - 1) * g.cardPitchX + g.cardWidth, h: bottom - g.scanTop })];
 }
 
 export function intersects(a: ScreenRect, b: ScreenRect): boolean {

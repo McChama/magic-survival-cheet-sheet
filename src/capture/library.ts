@@ -47,8 +47,10 @@ export interface Match {
 }
 
 /** The icon inside `rect`, or null when the area is empty. `color` keeps the three channels apart. */
-export function extractPatch(frame: Frame, rect: Rect, color: boolean): Patch | null {
-  const box = inkBounds(rect, (x, y) => peak(frame, x, y) > INK);
+export function extractPatch(frame: Frame, rect: Rect, color: boolean, skip?: Rect | null): Patch | null {
+  // `skip`: an area that is not part of the picture (the companion's own bubble sitting on it) — read as background.
+  const skipped = (x: number, y: number) => !!skip && x >= skip.x && x < skip.x + skip.w && y >= skip.y && y < skip.y + skip.h;
+  const box = inkBounds(rect, (x, y) => !skipped(x, y) && peak(frame, x, y) > INK);
   if (!box || box.w < 4 || box.h < 4) return null;
 
   const channels = color ? 3 : 1;
@@ -69,7 +71,7 @@ export function extractPatch(frame: Frame, rect: Rect, color: boolean): Patch | 
       for (let y = y0; y < y1; y++) {
         for (let x = x0; x < x1; x++) {
           count++;
-          if (x >= box.x + box.w || y >= box.y + box.h) continue;
+          if (x >= box.x + box.w || y >= box.y + box.h || skipped(x, y)) continue;
           if (color) {
             const i = (y * frame.width + x) * 4;
             sum[0] += frame.data[i];

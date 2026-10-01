@@ -11,6 +11,7 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -81,7 +82,18 @@ public class OverlayService extends Service {
     static final String EXTRA_ECONOMY = "economy";
     private static final String PREFS = "bubble";
     private static final int BUBBLE_DP = 56;
-    private static final long TICK_MS = 250;
+    /**
+     * How often the screen is looked at. Whether the run is still up costs three pixels, so that is checked
+     * all the time — it is what makes a level-up noticed (and its taps guarded) as it appears. A menu is read
+     * often while it is up, and when nothing readable is on screen (the game's main menu) hardly at all.
+     */
+    private static final long TICK_PLAYING_MS = 60;
+    private static final long TICK_MENU_MS = 100;
+    private static final long TICK_IDLE_MS = 1000;
+    /** Low-power capture mirrors one frame per tick, so there the tick itself is what is kept slow. */
+    private static final long TICK_ECONOMY_MS = 250;
+    /** While the run is up the header and ring are only brought up to date this often (in ticks). */
+    private static final int STEADY_REFRESH_EVERY = 16;
     /** Tap guards vanish on their own this long after the web app last asked for them — they must never outlive the screen they cover. */
     private static final long GUARD_KEEPALIVE_MS = 1500;
     private static final int GUARD_FLAGS = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
@@ -130,6 +142,16 @@ public class OverlayService extends Service {
     private String captureFailure;
     private String readerStatus;
     private long readerStatusAt;
+    /** The web app has had nothing readable on screen for a while. */
+    private boolean readerIdle;
+    private boolean economy;
+    private String versionName = "?";
+    /** Frames handed to the reader over the last full minute (-1 until one has passed). */
+    private int framesPerMinute = -1;
+    private long rateWindowStart;
+    private int rateWindowBase;
+    /** The time stamp of the last touch that began on one of our own guards (see {@link #onOutsideTouch}). */
+    private long ownTouchTime;
     private View pickStrip;
     private View notice;
     /**
@@ -156,22 +178,32 @@ public class OverlayService extends Service {
             // Our own panel on screen would be read as if it were the game (it looks like it on purpose).
             if (panelOpen) {
                 wasPlaying = false;
+                steady = false;
             } else {
                 boolean playing = capture.showsTheRun();
-                if (playing && wasPlaying && readerStatus != null) {
+                steady = playing && wasPlaying && readerStatus != null;
+                if (steady) {
                     // Still just the run — the tick that happens all game long. Nothing is copied and the web app
                     // isn't woken: three pixels were all there was to look at.
                     readerStatusAt = SystemClock.uptimeMillis();
                 } else {
-                    webView.evaluateJavascript("window.__msCapture&&window.__msCapture.tick(" + playing + ")", null);
+                    // Where the bubble is goes along: it is in the picture too, and must not be read as part of a row.
+                    Point screen = screenSize();
+                    webView.evaluateJavascript("window.__msCapture&&window.__msCapture.tick(" + playing
+                            + "," + (float) bubbleParams.x / screen.x + "," + (float) bubbleParams.y / screen.y
+                            + "," + (float) bubbleParams.width / screen.x + "," + (float) bubbleParams.height / screen.y + ")", null);
                 }
                 wasPlaying = playing;
             }
             capture.requestFrame();
-            refreshSyncStatus();
-            main.postDelayed(this, TICK_MS);
+            if (!steady || ++steadyTicks % STEADY_REFRESH_EVERY == 0) refreshSyncStatus();
+            // Nothing is read while the panel is open, so there is nothing to hurry for.
+            long delay = panelOpen ? TICK_ECONOMY_MS : steady || wasPlaying ? TICK_PLAYING_MS : readerIdle ? TICK_IDLE_MS : TICK_MENU_MS;
+            main.postDelayed(this, economy ? Math.max(delay, TICK_ECONOMY_MS) : delay);
         }
     };
+    private boolean steady;
+    private int steadyTicks;
     /** What the header and the bubble currently show, so a tick that changes nothing redraws nothing. */
     private String shownLine;
     private int shownRing;
@@ -188,6 +220,11 @@ public class OverlayService extends Service {
     public void onCreate() {
         super.onCreate();
         windowManager = getSystemService(WindowManager.class);
+        try {
+            versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException impossible) {
+            // Our own package is always found.
+        }
         startInForeground(false);
         panel = buildPanel();
         windowManager.addView(panel, panelParams(false));
@@ -259,7 +296,12 @@ public class OverlayService extends Service {
         captureFailure = null;
         readerStatus = null;
         wasPlaying = false;
-        capture.setEconomy(intent.getBooleanExtra(EXTRA_ECONOMY, false));
+        economy = intent.getBooleanExtra(EXTRA_ECONOMY, false);
+        capture.setEconomy(economy);
+        readerIdle = false;
+        framesPerMinute = -1;
+        rateWindowStart = SystemClock.uptimeMillis();
+        rateWindowBase = 0;
         try {
             startInForeground(true);
             capture.start(this, intent.getIntExtra(EXTRA_RESULT_CODE, 0), data, main, () -> {
@@ -278,7 +320,7 @@ public class OverlayService extends Service {
         refreshSyncStatus();
         if (!capture.isRunning()) return;
         main.removeCallbacks(tick);
-        main.postDelayed(tick, TICK_MS);
+        main.postDelayed(tick, TICK_MENU_MS);
     }
 
     /** The header line and the bubble's ring: off, broken (with the reason) or alive (with what the reader sees). */
@@ -286,13 +328,22 @@ public class OverlayService extends Service {
         String line;
         int ring;
         if (!capture.isRunning()) {
-            line = captureFailure != null ? getString(R.string.sync_failed, captureFailure) : getString(R.string.sync_off);
+            line = captureFailure != null ? getString(R.string.sync_failed, versionName, captureFailure) : getString(R.string.sync_off, versionName);
             ring = captureFailure != null ? RING_BROKEN : RING_OFF;
         } else if (readerStatus == null) {
-            line = getString(R.string.sync_silent, capture.framesServed());
+            line = getString(R.string.sync_silent, versionName, capture.framesServed());
             ring = RING_BROKEN;
         } else {
-            line = getString(R.string.sync_reading, readerStatus, capture.framesServed());
+            // A running total says little (it also counts the minutes spent in the game's menus); the last full
+            // minute is the number that should stay near zero while the player is simply playing.
+            long now = SystemClock.uptimeMillis();
+            if (now - rateWindowStart >= 60000) {
+                framesPerMinute = capture.framesServed() - rateWindowBase;
+                rateWindowBase = capture.framesServed();
+                rateWindowStart = now;
+            }
+            line = getString(R.string.sync_reading, versionName, readerStatus, capture.framesServed(),
+                    framesPerMinute < 0 ? "…" : String.valueOf(framesPerMinute));
             // The reader is only asked while the panel is parked, so its silence means nothing while it is open.
             boolean silent = !panelOpen && SystemClock.uptimeMillis() - readerStatusAt > SILENT_MS;
             ring = silent ? RING_BROKEN : RING_ALIVE;
@@ -352,6 +403,18 @@ public class OverlayService extends Service {
         }
 
         @JavascriptInterface
+        public void remark(int index) {
+            main.post(() -> {
+                if (index >= 0 && index < guards.size()) markGuard(index, false);
+            });
+        }
+
+        @JavascriptInterface
+        public void idle(boolean idle) {
+            main.post(() -> readerIdle = idle);
+        }
+
+        @JavascriptInterface
         public void avoid(String rectsJson) {
             main.post(() -> setAvoid(rectsJson));
         }
@@ -402,7 +465,8 @@ public class OverlayService extends Service {
                 final int index = i;
                 View guard = new View(this);
                 guard.setOnTouchListener((view, event) -> {
-                    if (event.getActionMasked() == MotionEvent.ACTION_UP) markGuard(index);
+                    if (event.getActionMasked() == MotionEvent.ACTION_DOWN) ownTouchTime = event.getEventTime();
+                    if (event.getActionMasked() == MotionEvent.ACTION_UP) markGuard(index, true);
                     return true;
                 });
                 WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -429,7 +493,28 @@ public class OverlayService extends Service {
         refreshSyncStatus();
     }
 
-    private void markGuard(int index) {
+    /**
+     * A touch began somewhere outside the bubble's window (the bubble watches for those). Android says no more
+     * than that — not where, when it landed on another app — but together with the guards it is enough: a touch
+     * that began on none of our guards while one is marked went through to the game, and with every other row
+     * guarded the only place it can have gone through is the marked one. So that was the confirming tap: the
+     * guards come down at once (they would otherwise swallow the player's first touches of the run until the
+     * reader notices the screen is gone) and the web app is told.
+     *
+     * The same touch reaches a guard as its ACTION_DOWN when it began on one, carrying the same time stamp;
+     * the two arrive in no fixed order, hence the short wait before comparing.
+     */
+    private void onOutsideTouch(long eventTime) {
+        if (guards.isEmpty() || markedGuard < 0) return;
+        main.postDelayed(() -> {
+            if (eventTime == ownTouchTime || guards.isEmpty() || markedGuard < 0) return;
+            removeGuards();
+            webView.evaluateJavascript("window.__msCapture&&window.__msCapture.passed()", null);
+        }, 40);
+    }
+
+    /** {@code byPlayer}: the player tapped it (the web app is told, the bubble beats) rather than the web app restoring a mark. */
+    private void markGuard(int index, boolean byPlayer) {
         markedGuard = index;
         for (int i = 0; i < guards.size(); i++) {
             View guard = guards.get(i);
@@ -441,8 +526,9 @@ public class OverlayService extends Service {
             params.alpha = marked ? 0f : 1f;
             windowManager.updateViewLayout(guard, params);
         }
-        webView.evaluateJavascript("window.__msCapture&&window.__msCapture.mark(" + index + ")", null);
         refreshSyncStatus();
+        if (!byPlayer) return;
+        webView.evaluateJavascript("window.__msCapture&&window.__msCapture.mark(" + index + ")", null);
         // A beat for every mark: moving the mark to another row changes no color, but it still registered.
         // (Inward: the bubble's window is exactly its size, so growing would be clipped.)
         bubble.animate().cancel();
@@ -493,8 +579,9 @@ public class OverlayService extends Service {
                 PixelFormat.TRANSLUCENT);
         params.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
         params.y = dp(10);
-        // Android 12+ only lets touches pass through an overlay this see-through or more.
-        params.alpha = 0.8f;
+        // Android 12+ only lets touches pass through an overlay this see-through or more (the limit is 0.8;
+        // 0.8f itself rounds to just above it).
+        params.alpha = 0.75f;
         windowManager.addView(view, params);
         notice = view;
         main.postDelayed(dismissNotice, NOTICE_MS);
@@ -633,7 +720,7 @@ public class OverlayService extends Service {
         bubbleParams = new WindowManager.LayoutParams(size, size,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 PixelFormat.TRANSLUCENT);
         bubbleParams.gravity = Gravity.TOP | Gravity.START;
         if (Build.VERSION.SDK_INT >= 28) {
@@ -770,6 +857,9 @@ public class OverlayService extends Service {
                 case MotionEvent.ACTION_CANCEL:
                     main.removeCallbacks(longPress);
                     return true;
+                case MotionEvent.ACTION_OUTSIDE:
+                    onOutsideTouch(event.getEventTime());
+                    return false;
                 default:
                     return false;
             }

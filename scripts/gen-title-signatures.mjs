@@ -19,6 +19,9 @@ const SOURCES = {
   synergy: "synergy",
   enterArea: "enter-area",
   lifeOrDeath: "life-or-death",
+  classSelect: "class",
+  testSubject: "test-subject",
+  research: "research",
 };
 
 const lines = [];
