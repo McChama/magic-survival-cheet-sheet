@@ -49,10 +49,21 @@ final class WebAssetClient extends WebViewClient {
         MIME.put("txt", "text/plain");
     }
 
-    private final AssetManager assets;
+    /** Where the web app fetches the captured screen from (src/capture/bridge.ts). */
+    static final String FRAME_PATH = BASE_PATH + "__capture/frame";
 
-    WebAssetClient(AssetManager assets) {
+    /** The latest captured screen: an 8-byte header (width, height as little-endian ints) then RGBA rows. */
+    interface FrameSource {
+        /** Null when there is no capture, or nothing new since the last call. */
+        byte[] takeFrame();
+    }
+
+    private final AssetManager assets;
+    private final FrameSource frames;
+
+    WebAssetClient(AssetManager assets, FrameSource frames) {
         this.assets = assets;
+        this.frames = frames;
     }
 
     @Override
@@ -61,6 +72,7 @@ final class WebAssetClient extends WebViewClient {
         if (!HOST.equals(url.getHost())) return null;
         String path = url.getPath();
         if (path == null || !path.startsWith(BASE_PATH)) return notFound();
+        if (path.equals(FRAME_PATH)) return frame();
 
         String relative = path.substring(BASE_PATH.length());
         if (relative.isEmpty() || relative.endsWith("/")) relative += "index.html";
@@ -84,6 +96,14 @@ final class WebAssetClient extends WebViewClient {
         int dot = path.lastIndexOf('.');
         String type = dot < 0 ? null : MIME.get(path.substring(dot + 1).toLowerCase());
         return type != null ? type : "application/octet-stream";
+    }
+
+    private WebResourceResponse frame() {
+        byte[] bytes = frames.takeFrame();
+        WebResourceResponse response = new WebResourceResponse(
+                "application/octet-stream", null, new ByteArrayInputStream(bytes != null ? bytes : new byte[0]));
+        if (bytes == null) response.setStatusCodeAndReasonPhrase(204, "No Content");
+        return response;
     }
 
     private static WebResourceResponse notFound() {

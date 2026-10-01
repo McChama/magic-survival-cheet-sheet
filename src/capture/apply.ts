@@ -1,0 +1,96 @@
+import i18n from "../i18n";
+import { BASE_MAGIC_BY_ID } from "../data/magics";
+import { isLeveledPassive } from "../data/passiveLevels";
+import { getMagicLevelPick, getPassiveLevelPick } from "../engine/magicLeveling";
+import { getObtainedPassiveIds } from "../engine/ownedPassives";
+import { getEquippedItems, ITEM_BY_ID } from "../engine/tierAdaptive";
+import { useRunStore } from "../store/useRunStore";
+import type { CaptureEvent, OwnedRef } from "./session";
+
+/**
+ * Applies what the screen reading saw to the run — the same store actions the app's own
+ * Select Magic / Select Artifact sheets commit through, so a pick made in the game lands
+ * exactly like one tapped in the companion. Reading only ever **adds or raises**: something
+ * the game's lists don't show is left alone rather than removed, since a missed icon must
+ * not cost the player a recorded talent.
+ *
+ * Returns the short line to show the player (null when nothing visible changed).
+ */
+
+const store = () => useRunStore.getState();
+
+export function refName(ref: OwnedRef): string {
+  return ref.kind === "magic" ? (BASE_MAGIC_BY_ID[ref.id]?.name ?? ref.id) : (ITEM_BY_ID[ref.id]?.name ?? ref.id);
+}
+
+function ensureMagic(magicId: string) {
+  if (!store().run.acquiredMagicIds.includes(magicId)) store().toggleAcquiredMagic(magicId);
+}
+
+function ensureArtifact(itemId: string): boolean {
+  if (!ITEM_BY_ID[itemId] || getEquippedItems(store().run).some((item) => item.id === itemId)) return false;
+  store().equipItem(itemId);
+  return true;
+}
+
+/** Brings a magic/passive to the level the game shows for it. */
+function setOwnedLevel(ref: OwnedRef, level: number, special: boolean) {
+  if (ref.kind === "magic") {
+    if (!BASE_MAGIC_BY_ID[ref.id]) return;
+    ensureMagic(ref.id);
+    store().setMagicLevel(ref.id, level);
+    return;
+  }
+  const item = ITEM_BY_ID[ref.id];
+  if (!item) return;
+  // A special the Class grants (Bishop's Guardian Angel) is already counted through the class.
+  if (!getObtainedPassiveIds(store().run).has(item.id)) store().equipItem(item.id);
+  if (!special && isLeveledPassive(item)) store().setMagicLevel(item.id, level);
+}
+
+export function applyCaptureEvent(event: CaptureEvent): string | null {
+  switch (event.type) {
+    case "levelUp":
+      store().setCurrentLevel(store().run.currentLevel + 1);
+      return null;
+
+    case "talentLearned":
+      ensureMagic(event.magicId);
+      store().setMagicLevel(event.magicId, event.groupLevel);
+      store().setMagicTalent(event.magicId, event.groupLevel, event.talent);
+      return i18n.t("capture.talentLearned", { magic: refName({ kind: "magic", id: event.magicId }), talent: event.talent });
+
+    case "artifactObtained":
+      return ensureArtifact(event.id) ? i18n.t("capture.artifactObtained", { name: ITEM_BY_ID[event.id].name }) : null;
+
+    case "magicsSynced":
+      for (const entry of event.entries) setOwnedLevel(entry, entry.level, entry.special);
+      return i18n.t("capture.magicsSynced", { count: event.entries.length });
+
+    case "artifactsSynced":
+      event.ids.forEach(ensureArtifact);
+      return i18n.t("capture.artifactsSynced", { count: event.ids.length });
+
+    case "pickNeeded":
+      // Resolved by the player's answer (`applyPick`), or by the next Owned Magic sync.
+      return null;
+  }
+}
+
+/** The player said which row of a level-up they took: obtain it, or raise it by one. */
+export function applyPick(ref: OwnedRef): string | null {
+  const { run } = store();
+  if (ref.kind === "magic") {
+    if (!BASE_MAGIC_BY_ID[ref.id]) return null;
+    const pick = getMagicLevelPick(ref.id, run);
+    if (pick.atMax) return null;
+    setOwnedLevel(ref, pick.targetLevel, false);
+    return i18n.t("capture.picked", { name: refName(ref), level: pick.targetLevel });
+  }
+  const item = ITEM_BY_ID[ref.id];
+  if (!item) return null;
+  const pick = getPassiveLevelPick(item, run);
+  if (pick.atMax) return null;
+  setOwnedLevel(ref, pick.targetLevel, !isLeveledPassive(item));
+  return i18n.t("capture.picked", { name: refName(ref), level: pick.targetLevel });
+}

@@ -173,5 +173,13 @@
     "estimatedPowerLabel": "Est. power",
     "dropOddsLabel": "≈{{percent}}% in this context",
     "dropOddsUnavailable": "Odds not available for this context"
+  },
+  "capture": {
+    "artifactObtained": "Obtained {{name}}",
+    "talentLearned": "{{magic}}: learned {{talent}}",
+    "magicsSynced": "Owned Magic synced ({{count}})",
+    "artifactsSynced": "Owned Artifact synced ({{count}})",
+    "picked": "{{name}} Lv {{level}}",
+    "pickPrompt": "Which one did you pick?"
   }
 }

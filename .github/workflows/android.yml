@@ -7,6 +7,7 @@ on:
     paths:
       - "android/**"
       - "src/**"
+      - "scripts/**"
       - "public/**"
       - "index.html"
       - "package*.json"
@@ -29,6 +30,8 @@ jobs:
           cache: npm
 
       - run: npm ci
+      # The screen reading must still match the real screenshots before it ships in an APK.
+      - run: npm run check:capture
       - run: npm run build
 
       - uses: actions/setup-java@v4

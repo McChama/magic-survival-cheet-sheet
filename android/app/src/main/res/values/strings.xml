@@ -14,4 +14,7 @@
     <string name="notification_text">Tap the bubble over the game to open it.</string>
     <string name="notification_stop">Stop</string>
     <string name="close_panel">Back to game</string>
+    <string name="live_sync">Live sync (reads the game screen)</string>
+    <string name="live_sync_blurb">Fills in artifacts, talents and the Owned lists as you play. Android asks to share the screen each time; nothing leaves the phone.</string>
+    <string name="pick_skip">None of these</string>
 </resources>

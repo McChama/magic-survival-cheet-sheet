@@ -5,12 +5,15 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.media.projection.MediaProjectionConfig;
+import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -27,6 +30,10 @@ public class MainActivity extends Activity {
     private TextView status;
     private Button grantButton;
     private Button playButton;
+    private CheckBox liveSync;
+
+    private static final int REQUEST_CAPTURE = 2;
+    private static final String PREFS = "launcher";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +65,15 @@ public class MainActivity extends Activity {
                 Uri.parse("package:" + getPackageName()))));
         root.addView(grantButton);
 
+        liveSync = new CheckBox(this);
+        liveSync.setText(R.string.live_sync);
+        liveSync.setTextColor(Color.WHITE);
+        liveSync.setChecked(getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("liveSync", true));
+        liveSync.setOnCheckedChangeListener((box, checked) ->
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean("liveSync", checked).apply());
+        root.addView(liveSync);
+        root.addView(text(getString(R.string.live_sync_blurb), 12, "#9a9aa2"));
+
         playButton = button(getString(R.string.play));
         playButton.setOnClickListener(v -> play());
         root.addView(playButton);
@@ -84,8 +100,36 @@ public class MainActivity extends Activity {
         playButton.setEnabled(allowed);
     }
 
+    /** Starts the bubble, then (with live sync on) asks Android for the screen before opening the game. */
     private void play() {
         startForegroundService(new Intent(this, OverlayService.class));
+        if (!liveSync.isChecked()) {
+            launchGame();
+            return;
+        }
+        MediaProjectionManager manager = getSystemService(MediaProjectionManager.class);
+        // Android 14+ can also offer "a single app"; the game isn't running yet, so ask for the whole screen.
+        Intent prompt = Build.VERSION.SDK_INT >= 34
+                ? manager.createScreenCaptureIntent(MediaProjectionConfig.createConfigForDefaultDisplay())
+                : manager.createScreenCaptureIntent();
+        startActivityForResult(prompt, REQUEST_CAPTURE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_CAPTURE) return;
+        // Declined: the companion still works, just without reading the screen.
+        if (resultCode == RESULT_OK && data != null) {
+            startForegroundService(new Intent(this, OverlayService.class)
+                    .setAction(OverlayService.ACTION_START_CAPTURE)
+                    .putExtra(OverlayService.EXTRA_RESULT_CODE, resultCode)
+                    .putExtra(OverlayService.EXTRA_RESULT_DATA, data));
+        }
+        launchGame();
+    }
+
+    private void launchGame() {
         Intent game = getPackageManager().getLaunchIntentForPackage(GAME_PACKAGE);
         if (game == null) {
             Toast.makeText(this, R.string.game_not_installed, Toast.LENGTH_LONG).show();
