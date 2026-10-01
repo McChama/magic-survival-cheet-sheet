@@ -4,7 +4,7 @@ import { MaskedSprite } from "./MaskedSprite";
 
 /**
  * The rough-edged dark-gray panel the real game's Owned Magic/Owned Artifact grids sit on
- * (`ArtifactBackGroundA.png`, a white-on-transparent mask stretched to fill). It's the
+ * (`ArtifactBackGroundA.webp`, a white-on-transparent mask stretched to fill). It's the
  * scroll container, so the panel stays put while its tiles scroll inside — `scroll={false}` for the paged lists that never
  * scroll (the "+" menu's artifacts). Margins and
  * padding are percentages measured off a real screenshot: 10% screen margins, and 12px
@@ -17,7 +17,7 @@ export function GridPanel({ children, scroll = true, scrollRef }: { children: Re
   return (
     <div className="flex-1 min-h-0 px-[10%] pb-[7%] mt-6">
       <div className="relative h-full">
-        <MaskedSprite src={uiImage("frames/ArtifactBackGroundA.png")} stretch className="absolute inset-0 pointer-events-none bg-[#242121]" />
+        <MaskedSprite src={uiImage("frames/ArtifactBackGroundA.webp")} stretch className="absolute inset-0 pointer-events-none bg-[#242121]" />
         <div ref={scrollRef} className={`relative h-full p-[1.7%] pt-[2.6%] ${scroll ? "overflow-y-auto" : "overflow-hidden"}`}>
           {children}
         </div>

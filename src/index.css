@@ -2,10 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* The @font-face for "MagicSurvival" is registered at runtime in src/main.tsx instead of
-   here as a static url(): a plain CSS url("/assets/...") is root-absolute and breaks once
-   the app is served from a sub-path (GitHub Pages project sites) — see src/config/assets.ts
-   for why IMAGE_BASE_URL/FONT_URL resolve against Vite's `base` instead of a hardcoded root. */
+/* The game's font. Declared here and preloaded from index.html, so the browser fetches it alongside this
+   stylesheet instead of learning about it only once the whole script bundle has run — registering it from
+   src/main.tsx made the first screen paint in the fallback font and then jump when the real one arrived.
+   Vite rewrites this root-absolute path of a `public/` file to sit under its `base` at build time (the sub-path
+   GitHub Pages serves the app from), the same as index.html's own links. */
+@font-face {
+  font-family: "MagicSurvival";
+  src: url("/assets/magicSurvival.ttf") format("truetype");
+  font-display: swap;
+}
 
 :root {
   color-scheme: dark;
@@ -92,17 +98,24 @@ button, [role="button"] {
 }
 @keyframes spin-cw { to { rotate: 360deg; } }
 @keyframes spin-ccw { to { rotate: -360deg; } }
-/* The Dashboard's Level Up button, idle: a heartbeat-style scale throb, its tint sweeping from its
-   resting gold to the same max-level green a magic's pips turn (LevelMarks.tsx's `#3fdc5a`) and back. */
+/* The Dashboard's Level Up button, idle: a heartbeat-style scale throb (`pulse-throb`, on the glyph), its tint
+   sweeping from its resting gold to the same max-level green a magic's pips turn (LevelMarks.tsx's `#3fdc5a`) and
+   back — `pulse-green` fades a green copy of the glyph in over the gold one. Animating the color itself repainted
+   the glyph on every frame for as long as the Dashboard was open; `scale` and `opacity` are left to the compositor. */
+@keyframes pulse-throb {
+  0%, 100% { scale: 1; }
+  50% { scale: 1.18; }
+}
 @keyframes pulse-green {
-  0%, 100% { background-color: #efc84f; scale: 1; }
-  50% { background-color: #3fdc5a; scale: 1.18; }
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
 }
 @layer utilities {
   .animate-spin-cw { animation: spin-cw 6s linear infinite; }
   .animate-spin-ccw { animation: spin-ccw 6s linear infinite; }
   .animate-magic-circle-cast { animation: magic-circle-cast 1300ms ease-out forwards; }
   .animate-bubble-pop { animation: bubble-pop 320ms ease-out; }
+  .animate-pulse-throb { animation: pulse-throb 1.6s ease-in-out infinite; }
   .animate-pulse-green { animation: pulse-green 1.6s ease-in-out infinite; }
   .animate-bubble-ripple { animation: bubble-ripple 480ms ease-out forwards; }
 }

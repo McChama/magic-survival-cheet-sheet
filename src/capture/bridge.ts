@@ -309,4 +309,8 @@ export function initCaptureBridge() {
       if (message) host.toast(message);
     },
   };
+
+  // This module loads a moment after the page (`main.tsx` imports it on demand), so the host may have parked the
+  // panel before `parked` existed: it then only set the class (OverlayService's `markParked`). Catch up with it.
+  if (document.documentElement.classList.contains("parked")) useUiStore.getState().setParked(true);
 }

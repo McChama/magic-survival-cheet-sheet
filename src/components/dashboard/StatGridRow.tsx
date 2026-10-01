@@ -1,23 +1,23 @@
 import { useState } from "react";
 import { STAT_DEFINITIONS, STAT_DISPLAY } from "../../data/statDefinitions";
 import { STAT_GLYPH } from "../../data/statGlyphs";
-import { STAT_BASE, getRunStats } from "../../engine/runStats";
+import { STAT_BASE } from "../../engine/runStats";
 import { useRunStore } from "../../store/useRunStore";
 import { useGameDataText } from "../../i18n/useGameDataText";
-import type { CurrentRunState, StatKey } from "../../types/game";
+import type { StatKey } from "../../types/game";
 
 interface StatGridRowProps {
   statKey: StatKey;
-  run: CurrentRunState;
+  /** This stat's value out of `getRunStats` — worked out once for the whole grid by the Dashboard, not once per row. */
+  value: number;
 }
 
-export function StatGridRow({ statKey, run }: StatGridRowProps) {
+export function StatGridRow({ statKey, value }: StatGridRowProps) {
   const setStat = useRunStore((s) => s.setStat);
   const gt = useGameDataText();
   const def = STAT_DEFINITIONS[statKey];
   const label = gt(`stat.${statKey}.label`, def.label);
   const { glyph, color, icon } = STAT_GLYPH[statKey];
-  const value = getRunStats(run)[statKey];
   const base = STAT_BASE[statKey] ?? 0;
   const { plus, percent, reduction } = STAT_DISPLAY[statKey];
   // White = at its non-zero starting value, green = raised above the base, gray = still zero.

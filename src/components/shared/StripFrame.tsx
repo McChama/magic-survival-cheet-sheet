@@ -26,8 +26,8 @@ const THICKNESS = {
  * only has to be `position: relative` and clip nothing it wants shown; its size can follow its content.
  */
 export function StripFrame({ tint, size = "card" }: { tint: string; size?: keyof typeof THICKNESS }) {
-  const horizontal = uiImage("frames/AreaProgressBarA.png");
-  const vertical = uiImage("frames/AreaProgressBarB_V.png");
+  const horizontal = uiImage("frames/AreaProgressBarA.webp");
+  const vertical = uiImage("frames/AreaProgressBarB_V.webp");
   const t = THICKNESS[size];
   return (
     <>

@@ -48,7 +48,7 @@ const clamp01 = (n: number): number => Math.min(1, Math.max(0, n));
 const CIRCLE_VARIANTS = 3;
 /** The game's circle art has 3 hand-drawn variants per layer, flipped through quickly so the lines shimmer. */
 const CIRCLE_VARIANT_MS = 140;
-const circleSprite = (n: number): string => uiImage(`magicCircle/MagicCircle${n}.png`);
+const circleSprite = (n: number): string => uiImage(`magicCircle/MagicCircle${n}.webp`);
 
 /**
  * The buff's icon while ON: the runic outer ring (MagicCircle4-6) turns one way, the inner hexagram circle (MagicCircle1-3)
@@ -210,7 +210,7 @@ export function MagicCircleBubble({ screen }: { screen: string }) {
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
       style={position}
-      className={`absolute z-[60] w-[56px] h-[56px] p-0 rounded-full flex flex-col items-center justify-center gap-0 touch-none select-none cursor-grab active:cursor-grabbing border-2 bg-black/75 backdrop-blur-sm shadow-[0_2px_10px_rgba(0,0,0,.6)] ${drag ? "" : "transition-[left,right,top,translate] duration-200 ease-out"} ${active ? "border-[#efc84f] shadow-[0_0_14px_rgba(239,200,79,.55)]" : "border-white/70"}`}
+      className={`absolute z-[60] w-[56px] h-[56px] p-0 rounded-full flex flex-col items-center justify-center gap-0 touch-none select-none cursor-grab active:cursor-grabbing border-2 bg-black/75 shadow-[0_2px_10px_rgba(0,0,0,.6)] ${drag ? "" : "transition-[left,right,top,translate] duration-200 ease-out"} ${active ? "border-[#efc84f] shadow-[0_0_14px_rgba(239,200,79,.55)]" : "border-white/70"}`}
     >
       {/* A ring that spreads out and fades on each tap, in the color of the new state. */}
       {tapCount > 0 && <span key={`ripple-${tapCount}`} aria-hidden className={`absolute inset-[-2px] rounded-full border-2 pointer-events-none motion-safe:animate-bubble-ripple ${active ? "border-[#efc84f]" : "border-white"}`} />}

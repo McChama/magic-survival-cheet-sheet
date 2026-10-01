@@ -88,9 +88,11 @@ mode (`isLevelUp`), but **does not** raise `run.currentLevel` by itself — it's
 below for where the increment actually happens. Its glyph is the game's own X sprite (`UI_Exit`) turned 45° to read
 "+" — the same technique `LoadoutFab`'s own "+" glyph uses, not the star sprite (`UI_Star01`, since removed) or the
 move-arrow triangle a first pass reused for it before that. Idle, it throbs like a heartbeat: a CSS `scale` pulse
-paired with its tint sweeping from resting gold to the same max-level green a magic's pips turn at max level
-(`LevelMarks.tsx`'s `#3fdc5a`) and back (`animate-pulse-green`, `index.css` — `motion-safe:` so it's skipped under
-reduced motion, same as the Magic Circle bubble's tap effects).
+(`animate-pulse-throb`) paired with its tint sweeping from resting gold to the same max-level green a magic's pips
+turn at max level (`LevelMarks.tsx`'s `#3fdc5a`) and back — a green copy of the glyph fading in over the gold one
+(`animate-pulse-green`, `index.css`), not an animated `background-color`: only `scale` and `opacity` move, so the
+Dashboard isn't repainted on every frame for as long as it is open. Both are `motion-safe:` so they're skipped under
+reduced motion, same as the Magic Circle bubble's tap effects.
 
 **`MagicCombinationScreen`** (`components/screens/`) is the game's own "Magic Combination" screen (the 63 fusions in
 `data/fusions.ts`). Opened from the Dashboard while some combination's requirements are met (`getAvailableFusions` in
@@ -168,6 +170,11 @@ showing) lives in `store/useNavigationStore.ts`, a small zustand `persist` store
 page resumes on whatever screen the player was looking at instead of always bouncing back to Home. Only the
 top-level screen persists this way; a screen's own in-progress UI state (an open `LoadoutSheet`, a selected filter
 chip, scroll position) stays local `useState` as before and resets on reload, same as it always has.
+
+`index.html` reads that same key in a small inline script, before the bundle loads: when the screen about to open is
+Home (nothing saved, or `home`) and this isn't the Android companion, it preloads Home's first title frame
+(`uiImages/title/TitleImgFront1.webp`, the screen's largest image), which the browser would otherwise only discover
+once React had rendered. Renaming the storage key, the `home` screen id or that file means changing it there too.
 
 ## Leveling: gated by Current Level, only through Select Magic, select-then-commit
 
@@ -336,7 +343,7 @@ vertically centered in the card (`align="center"`, the default).
 Every card in this view is measured off a real in-game screenshot, not this
 project's generic square `GridTile` look: 108x205px portrait cards
 (`aspect-[108/205]`), 6 per row, on a rough-edged dark-gray panel
-(`ArtifactBackGroundA.png`, 10% side margins), all sharing one black
+(`ArtifactBackGroundA.webp`, 10% side margins), all sharing one black
 background — **only the border color varies** (white for the class, blue for
 active magics, red for specials). Borders are the real `AreaProgressBarA`
 (top/bottom) and `AreaProgressBarB` (left/right, rotated) strip sprites, tinted
@@ -380,8 +387,8 @@ them:
   `boostSignal.*` keys, `config/tierColors.ts`'s `BOOST_SIGNAL_TIER_COLOR`) so
   it stops colliding in terminology with the actual Synergy screen.
 
-`SynergyScreen`'s completion ring is `uiImages/synergyRings/SynergyNum{n}.png`
-/`SynergyNumS{n}.png` (n = 3, 4, or 5) — pixel analysis confirmed
+`SynergyScreen`'s completion ring is `uiImages/synergyRings/SynergyNum{n}.webp`
+/`SynergyNumS{n}.webp` (n = 3, 4, or 5) — pixel analysis confirmed
 `SynergyNum{n}` is a segmented ring with exactly **n gaps**, i.e. the ring
 shape is **how many items this Synergy requires**, not a per-owned-item
 progress indicator. Both variants are white-on-transparent masks (tinted via

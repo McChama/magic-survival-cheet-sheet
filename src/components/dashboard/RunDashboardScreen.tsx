@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DASHBOARD_STAT_LAYOUT } from "../../data/statGlyphs";
 import { uiImage } from "../../config/assets";
 import { getAvailableFusions } from "../../engine/magicCombination";
+import { getRunStats } from "../../engine/runStats";
 import { useRunStore } from "../../store/useRunStore";
 import { slug as gameDataSlug } from "../../i18n/gameData";
 import { useGameDataText } from "../../i18n/useGameDataText";
@@ -45,6 +46,7 @@ export function RunDashboardScreen({ onLeave, leaveAria, onOpenRecommender, onOp
   const subjectLabel = gt(`subject.${gameDataSlug(run.meta.subject)}.name`, run.meta.subject);
   const classLabel = run.meta.characterClass ? gt(`class.${gameDataSlug(run.meta.characterClass)}.name`, run.meta.characterClass) : null;
   const combinationAvailable = getAvailableFusions(run).length > 0;
+  const stats = useMemo(() => getRunStats(run), [run]);
 
   /** The real level-up event is select-then-commit: this just opens Select Magic in level-up mode — Current Level
    *  itself only goes up once a row is actually picked there (`useLevelUpActions`), so pressing the star and
@@ -81,9 +83,13 @@ export function RunDashboardScreen({ onLeave, leaveAria, onOpenRecommender, onOp
                   uses) — not the star `UI_Star01` a prior pass used here. Sized a bit under "Current Level"'s own
                   fontSize (19 design-px / 0.95rem, `rem()`'s own conversion — see `CounterField`) instead of a
                   generic icon-button size, since it sits right beside that text, not on its own row. Idle, it
-                  throbs like a heartbeat, its tint sweeping from resting gold to the max-level green
-                  (`animate-pulse-green`, index.css). */}
-              <MaskedSprite src={uiImage("icons/UI_Exit.png")} tint="#efc84f" className="block w-full h-full rotate-45 motion-safe:animate-pulse-green" />
+                  throbs like a heartbeat, its tint sweeping from resting gold to the max-level green: the glyph
+                  scales (`animate-pulse-throb`) while a green copy fades in over the gold one and out again
+                  (`animate-pulse-green`) — two layers so that only `scale` and `opacity` animate (index.css). */}
+              <span className="relative block w-full h-full rotate-45 motion-safe:animate-pulse-throb">
+                <MaskedSprite src={uiImage("icons/UI_Exit.png")} className="absolute inset-0 bg-[#efc84f]" />
+                <MaskedSprite src={uiImage("icons/UI_Exit.png")} className="absolute inset-0 bg-[#3fdc5a] opacity-0 motion-safe:animate-pulse-green" />
+              </span>
             </button>
           </div>
           <CounterField text={t("dashboard.enemiesKilled", { count: run.enemiesKilled })} color="#f0975a" value={run.enemiesKilled} onChange={setEnemiesKilled} fontSize={17} />
@@ -91,7 +97,7 @@ export function RunDashboardScreen({ onLeave, leaveAria, onOpenRecommender, onOp
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-0 text-[0.9rem]">
           {DASHBOARD_STAT_LAYOUT.map((key, index) => {
-            if (key) return <StatGridRow key={key} statKey={key} run={run} />;
+            if (key) return <StatGridRow key={key} statKey={key} value={stats[key]} />;
             const rowPartnerIndex = index % 2 === 0 ? index + 1 : index - 1;
             const isSpacerRow = DASHBOARD_STAT_LAYOUT[rowPartnerIndex] === null;
             return <div key={`gap-${index}`} className={isSpacerRow ? "h-4" : undefined} />;

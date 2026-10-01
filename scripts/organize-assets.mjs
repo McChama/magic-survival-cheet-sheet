@@ -24,6 +24,21 @@ function copyIfExists(srcName, destDir, destName) {
   return true;
 }
 
+/**
+ * `copyIfExists`, written as lossless WebP instead of copied. The UI folders (title art, unit sprites, status icons,
+ * frames, synergy rings, dividers) and the Subject sprites ship that way: the same pixels at well under half the
+ * size. The game-sprite folders (artifacts, passives, magics, classes) and `uiImages/icons` stay PNG — live sync's
+ * templates are generated from the former, and the Android side loads the latter by file name.
+ */
+async function webpIfExists(srcName, destDir, destName) {
+  const src = path.join(SPRITES_DIR, srcName);
+  if (!fs.existsSync(src)) return false;
+  fs.mkdirSync(destDir, { recursive: true });
+  const { default: sharp } = await import("sharp");
+  await sharp(src).webp({ lossless: true, effort: 6 }).toFile(path.join(destDir, destName));
+  return true;
+}
+
 // ---- Artifacts + Passives: id -> source id, from the trailing comment ----
 function extractIdSourcePairs(fileText) {
   const pairs = [];
@@ -118,15 +133,20 @@ console.log(`Fusion sprites copied: ${fusionAppIds.length - missingFusions.lengt
 if (missingFusions.length) console.log("Missing fusion sprites:", missingFusions);
 
 // ---- Bonus: Ultimate portraits, same position convention, only for fusions that have one ----
+// Off: no screen shows a combination's Ultimate yet, and everything under public/ ships (the site, and the APK
+// whole) — 28 portraits, 2.4 MB, that nothing asked for. Turn it on together with the first screen that uses them.
+const COPY_ULTIMATE_PORTRAITS = false;
 const ultimateDir = path.join(ROOT, "public/assets/magicUltimateImages");
 fs.rmSync(ultimateDir, { recursive: true, force: true });
-let ultimateCount = 0;
-fusionAppIds.forEach((appId, index) => {
-  const position = index + 1;
-  const ok = copyIfExists(`Ultimate${position}Portrait.png`, ultimateDir, `${appId}.png`);
-  if (ok) ultimateCount++;
-});
-console.log(`Ultimate sprites copied: ${ultimateCount}`);
+if (COPY_ULTIMATE_PORTRAITS) {
+  let ultimateCount = 0;
+  fusionAppIds.forEach((appId, index) => {
+    const position = index + 1;
+    const ok = copyIfExists(`Ultimate${position}Portrait.png`, ultimateDir, `${appId}.png`);
+    if (ok) ultimateCount++;
+  });
+  console.log(`Ultimate sprites copied: ${ultimateCount}`);
+}
 
 // ---- Synergies: id -> Synergy{id}Portrait.png (the dictionary's own numeric id IS the
 // position — ids are 1-46 and 70-86, an intentional content gap, not renumbered) ----
@@ -179,31 +199,31 @@ console.log(`Subjects: ${subjectNames.length} entries`);
 const subjectDir = path.join(ROOT, "public/assets/subjectImages");
 fs.rmSync(subjectDir, { recursive: true, force: true });
 const missingSubjects = [];
-subjectNames.forEach((name, index) => {
+for (const [index, name] of subjectNames.entries()) {
   const position = index + 1;
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "");
-  const ok = copyIfExists(`AUnit${position}Motion1.png`, subjectDir, `${slug}.png`);
+  const ok = await webpIfExists(`AUnit${position}Motion1.png`, subjectDir, `${slug}.webp`);
   if (!ok) missingSubjects.push({ name, position });
-});
+}
 console.log(`Subject sprites copied: ${subjectNames.length - missingSubjects.length}/${subjectNames.length}`);
 if (missingSubjects.length) console.log("Missing subject sprites:", missingSubjects);
 
-// ---- Bonus: full per-subject idle-sway animation (all AUnit{position}Motion{frame}.png
-// frames, not just frame 1) — confirmed by eye that frames 1/10/21 are a robe-swaying idle
-// loop, not a walk cycle. ~2MB total across all 25 subjects, worth shipping in full. ----
+// ---- Bonus: per-subject idle-sway animation (AUnit{position}Motion{frame}.png — confirmed by eye
+// that frames 1/10/21 are a robe-swaying idle loop, not a walk cycle). Only the frames the app
+// plays are copied: the other 18 of each Subject's 21 were 450 files nothing ever requested.
+// Keep this list in step with `IDLE_FRAMES` in src/components/shared/SubjectSprite.tsx. ----
+const SUBJECT_ANIM_FRAMES = [7, 8, 9];
 const subjectAnimDir = path.join(ROOT, "public/assets/subjectAnim");
 fs.rmSync(subjectAnimDir, { recursive: true, force: true });
 let totalFrames = 0;
-subjectNames.forEach((name, index) => {
+for (const [index, name] of subjectNames.entries()) {
   const position = index + 1;
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "");
   const dir = path.join(subjectAnimDir, slug);
-  let frame = 1;
-  while (copyIfExists(`AUnit${position}Motion${frame}.png`, dir, `${frame}.png`)) {
-    frame++;
-    totalFrames++;
+  for (const frame of SUBJECT_ANIM_FRAMES) {
+    if (await webpIfExists(`AUnit${position}Motion${frame}.png`, dir, `${frame}.webp`)) totalFrames++;
   }
-});
+}
 console.log(`Subject animation frames copied: ${totalFrames} across ${subjectNames.length} subjects`);
 
 // ---- Generic UI chrome/decoration assets — no id convention, just a curated list of
@@ -227,13 +247,13 @@ const UI_ICONS = [
 ];
 for (const name of UI_ICONS) copyIfExists(`${name}.png`, path.join(uiDir, "icons"), `${name}.png`);
 
-copyIfExists("UI_Line01.png", path.join(uiDir, "dividers"), "UI_Line01.png");
+await webpIfExists("UI_Line01.png", path.join(uiDir, "dividers"), "UI_Line01.webp");
 
 const UI_TITLE = ["TitleImgFront1", "TitleImgFront2", "TitleImgFront3", "TitleText"];
-for (const name of UI_TITLE) copyIfExists(`${name}.png`, path.join(uiDir, "title"), `${name}.png`);
+for (const name of UI_TITLE) await webpIfExists(`${name}.png`, path.join(uiDir, "title"), `${name}.webp`);
 
 const UI_UNIT = ["UnitSkinBackGround", "UnitAllyShadow01", "UnitEnemyShadow01"];
-for (const name of UI_UNIT) copyIfExists(`${name}.png`, path.join(uiDir, "unit"), `${name}.png`);
+for (const name of UI_UNIT) await webpIfExists(`${name}.png`, path.join(uiDir, "unit"), `${name}.webp`);
 
 // StatusIcon_* renamed to their matching StatKey — confirmed a confident 1:1 map against
 // all 17 StatKey entries (e.g. "HitDmg" -> damageTaken, "HpMax" -> hp). If STAT_KEYS in
@@ -259,14 +279,14 @@ const STATUS_ICON_TO_STAT_KEY = {
 };
 let statusIconCount = 0;
 for (const [src, statKey] of Object.entries(STATUS_ICON_TO_STAT_KEY)) {
-  if (copyIfExists(`${src}.png`, path.join(uiDir, "statusIcons"), `${statKey}.png`)) statusIconCount++;
+  if (await webpIfExists(`${src}.png`, path.join(uiDir, "statusIcons"), `${statKey}.webp`)) statusIconCount++;
 }
 console.log(`UI chrome assets copied: ${UI_ICONS.length} icons, 1 divider, ${UI_TITLE.length} title images, ${UI_UNIT.length} unit sprites, ${statusIconCount}/${Object.keys(STATUS_ICON_TO_STAT_KEY).length} status icons`);
 
 // Card border strips for Owned Magic/Artifact tiles (user-identified, 2026-09-20): A = top
 // and bottom edges, B = left and right edges (rotated 90deg in CSS). White-on-transparent masks.
 for (const name of ["AreaProgressBarA", "AreaProgressBarB", "ArtifactBackGroundA"]) {
-  copyIfExists(`${name}.png`, path.join(uiDir, "frames"), `${name}.png`);
+  await webpIfExists(`${name}.png`, path.join(uiDir, "frames"), `${name}.webp`);
 }
 // The Magic Combination icons with their black disc turned into transparency (a glyph-only heptagram that sits on a chip
 // background like the Dashboard's other buttons): the lines keep their colors, the black fades out.
@@ -289,7 +309,7 @@ for (const name of ["AreaProgressBarA", "AreaProgressBarB", "ArtifactBackGroundA
 {
   const { default: sharp } = await import("sharp");
   const strip = path.join(SPRITES_DIR, "AreaProgressBarB.png");
-  if (fs.existsSync(strip)) await sharp(strip).rotate(90).toFile(path.join(uiDir, "frames", "AreaProgressBarB_V.png"));
+  if (fs.existsSync(strip)) await sharp(strip).rotate(90).webp({ lossless: true, effort: 6 }).toFile(path.join(uiDir, "frames", "AreaProgressBarB_V.webp"));
 }
 
 // Synergy completion-ring frames — curated list (no id convention, same pattern as UI_ICONS
@@ -304,23 +324,24 @@ const SYNERGY_RINGS = [
 ];
 let synergyRingCount = 0;
 for (const name of SYNERGY_RINGS) {
-  if (copyIfExists(`${name}.png`, path.join(uiDir, "synergyRings"), `${name}.png`)) synergyRingCount++;
+  if (await webpIfExists(`${name}.png`, path.join(uiDir, "synergyRings"), `${name}.webp`)) synergyRingCount++;
 }
 console.log(`Synergy ring frames copied: ${synergyRingCount}/${SYNERGY_RINGS.length}`);
 
-// ---- Button click sound effects. The game plays one of 7 UI sound variants at random on
-// button press (shared
-// per-button click sound, one of 7 variants,
-// used across every screen). ----
+// ---- Button click sound effect. The game plays one of 7 UI sound variants at random on
+// button press (Sound_UI1..7, shared across every screen); the app plays the first one
+// (src/engine/uiSound.ts), so only that one is copied — the other six were 1.2 MB nothing
+// requested. The folder is not wiped first: it also holds Sound_Etc28.ogg (the Magic Circle
+// sound), which this script doesn't produce. ----
 const AUDIO_SRC_DIR = path.join(ROOT, "raw-assets/Audio");
 const uiAudioDir = path.join(ROOT, "public/assets/audio/ui");
-fs.rmSync(uiAudioDir, { recursive: true, force: true });
+const UI_CLICK_SOUNDS = ["Sound_UI1.wav"];
 let uiAudioCount = 0;
-for (let i = 1; i <= 7; i++) {
-  const src = path.join(AUDIO_SRC_DIR, `Sound_UI${i}.wav`);
+for (const file of UI_CLICK_SOUNDS) {
+  const src = path.join(AUDIO_SRC_DIR, file);
   if (!fs.existsSync(src)) continue;
   fs.mkdirSync(uiAudioDir, { recursive: true });
-  fs.copyFileSync(src, path.join(uiAudioDir, `Sound_UI${i}.wav`));
+  fs.copyFileSync(src, path.join(uiAudioDir, file));
   uiAudioCount++;
 }
-console.log(`UI click sound variants copied: ${uiAudioCount}/7`);
+console.log(`UI click sounds copied: ${uiAudioCount}/${UI_CLICK_SOUNDS.length}`);

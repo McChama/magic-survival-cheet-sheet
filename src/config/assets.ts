@@ -15,7 +15,15 @@
  * magicImages,passiveImages,researchImages}/ and public/assets/magicSurvival.ttf)
  * instead of being hotlinked, so the app works offline and doesn't depend on a
  * third-party repo staying up. `VITE_ASSET_BASE_URL` is still overridable if you
- * ever want to point at a CDN instead.
+ * ever want to point the sprites at a CDN instead (the font is not covered by it: its
+ * `@font-face` is static CSS in index.css, preloaded from index.html).
+ *
+ * Two formats ship. The UI folders (`uiImages/` except `icons/`, `subjectAnim/`,
+ * `subjectImages/`) are lossless WebP: the same pixels as the PNGs they were made from, at
+ * well under half the size. The game-sprite folders (artifacts, passives, magics, base magics,
+ * classes, research, synergies) and `uiImages/icons/` are PNG — WebP barely shrinks those
+ * sprites (~5%), live sync's templates are generated from them, and the Android side loads
+ * the icons by file name. A new file goes in as whatever its folder already is.
  *
  * Falls back to `import.meta.env.BASE_URL` (Vite's own `base` config value, e.g.
  * "/magic-survival-cheet-sheet/" on GitHub Pages, "/" in dev) rather than a hardcoded
@@ -23,8 +31,6 @@
  * sub-path, which is exactly how GitHub Pages project sites work.
  */
 export const IMAGE_BASE_URL = import.meta.env.VITE_ASSET_BASE_URL ?? `${import.meta.env.BASE_URL}assets/`;
-
-export const FONT_URL = `${IMAGE_BASE_URL}magicSurvival.ttf`;
 
 export function assetUrl(relativePath: string): string {
   return `${IMAGE_BASE_URL}${relativePath}`;
@@ -56,7 +62,7 @@ export function subjectImage(fileName: string): string {
 
 /** One frame (1-indexed) of a Subject's idle-sway animation — see public/assets/subjectAnim/{slug}/. */
 export function subjectAnimFrame(slug: string, frame: number): string {
-  return assetUrl(`subjectAnim/${slug}/${frame}.png`);
+  return assetUrl(`subjectAnim/${slug}/${frame}.webp`);
 }
 
 export function baseMagicImage(fileName: string): string {
@@ -70,13 +76,4 @@ export function synergyImage(fileName: string): string {
 /** Generic chrome/decoration assets not tied to a game entity (dividers, frames, icons). */
 export function uiImage(fileName: string): string {
   return assetUrl(`uiImages/${fileName}`);
-}
-
-/**
- * One of the 7 real in-game button-click sound variants (public/assets/audio/ui/) — the
- * game picks one at random per click, see research/game-data-sources.md. Not wired up to
- * any button yet; this is just the path helper for when that lands.
- */
-export function uiClickSound(variant: number): string {
-  return assetUrl(`audio/ui/Sound_UI${variant}.wav`);
 }

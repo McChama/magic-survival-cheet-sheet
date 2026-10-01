@@ -28,6 +28,8 @@ export const useNavigationStore = create<NavigationStore>()(
       screen: "home",
       setScreen: (screen) => set({ screen }),
     }),
+    // index.html reads this same key before the bundle loads, to preload Home's title art only when Home is the
+    // screen about to open — rename it there too.
     { name: "magic-survival-navigation" },
   ),
 );

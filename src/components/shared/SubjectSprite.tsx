@@ -39,7 +39,7 @@ export function SubjectSprite({ name, label, className = "" }: { name: string; l
       onError={(e) => {
         // Fall back to the static portrait if this subject's animation set is somehow incomplete.
         e.currentTarget.onerror = null;
-        e.currentTarget.src = subjectImage(`${slug}.png`);
+        e.currentTarget.src = subjectImage(`${slug}.webp`);
       }}
     />
   );

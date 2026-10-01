@@ -47,9 +47,9 @@ function SubjectSilhouette({ name, label, selected, applied, locked }: { name: s
         className={`max-w-full max-h-[68%] object-contain relative z-10 ${locked ? "grayscale opacity-40" : selected ? "opacity-100" : "opacity-[.85]"}`}
       />
       {selected ? (
-        <img src={uiImage("unit/UnitAllyShadow01.png")} alt="" className="absolute bottom-[2%] w-[82%] object-contain" />
+        <img src={uiImage("unit/UnitAllyShadow01.webp")} alt="" className="absolute bottom-[2%] w-[82%] object-contain" />
       ) : applied ? (
-        <img src={uiImage("unit/UnitEnemyShadow01.png")} alt="" className="absolute bottom-[2%] w-[82%] object-contain" />
+        <img src={uiImage("unit/UnitEnemyShadow01.webp")} alt="" className="absolute bottom-[2%] w-[82%] object-contain" />
       ) : (
         <div className="absolute bottom-[2%] w-[65%] h-[13%] rounded-full bg-[#282e34]/[32%]" />
       )}
@@ -58,25 +58,11 @@ function SubjectSilhouette({ name, label, selected, applied, locked }: { name: s
 }
 
 /**
- * Placeholder for the divider asset between a subject's name and its description — no such
- * asset has been dropped into public/assets/uiImages/ yet, so this renders a plain line and
- * silently upgrades to the real image the moment `subject-detail-divider.png` exists there.
+ * The divider between a subject's name and its description: a plain line. The game's own divider art hasn't been
+ * extracted — when it is, swap this for an `<img>`; asking for a file that isn't there cost a 404 on every visit.
  */
 function SubjectDetailDivider() {
-  const [broken, setBroken] = useState(false);
-
-  if (broken) {
-    return <div className="w-[70%] max-w-[220px] h-px bg-white/[.16] mt-0.5 mb-1" />;
-  }
-
-  return (
-    <img
-      src={uiImage("subject-detail-divider.png")}
-      alt=""
-      className="w-[70%] max-w-[220px] h-auto mt-0.5 mb-1"
-      onError={() => setBroken(true)}
-    />
-  );
+  return <div className="w-[70%] max-w-[220px] h-px bg-white/[.16] mt-0.5 mb-1" />;
 }
 
 export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
@@ -108,7 +94,7 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
   return (
     <div
       className="absolute inset-0 flex flex-col bg-cover bg-center"
-      style={{ backgroundImage: `url(${uiImage("unit/UnitSkinBackGround.png")})` }}
+      style={{ backgroundImage: `url(${uiImage("unit/UnitSkinBackGround.webp")})` }}
     >
       <ScreenHeader
         onAction={handleClose}

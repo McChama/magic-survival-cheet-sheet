@@ -83,8 +83,17 @@ export function playMagicCircleSound() {
 }
 
 export function initUiClickSound() {
-  void loadMagicCircleBuffer()
-  void loadClickBuffer()
+  // Nothing can sound before the first touch, so the two files (162 KB) stay out of the page's first load: the
+  // press that comes before the first click starts them, and a click that beats the download plays once it lands
+  // (see playClickSound).
+  window.addEventListener(
+    'pointerdown',
+    () => {
+      void loadClickBuffer()
+      void loadMagicCircleBuffer()
+    },
+    { once: true, capture: true },
+  )
 
   document.addEventListener(
     'click',
