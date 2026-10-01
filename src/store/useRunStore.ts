@@ -24,9 +24,36 @@ function dropOrphanedDependents(fusionTargets: string[]): string[] {
   });
 }
 
-function freshRun(): CurrentRunState {
+/**
+ * What belongs to the player's account rather than to one run: it is bought once in the game and every run starts
+ * with it. A new run is built from the latest profile (`store/runs.ts`), so starting one never loses the research.
+ * The class and subject picked last come along too — they are what the next run most likely uses.
+ */
+export interface RunProfile {
+  characterClass: string | null;
+  subject: string;
+  classLevels: Record<string, number>;
+  unlockedSubjects: string[];
+  researchLevels: Record<string, number>;
+}
+
+export function profileOf(run: CurrentRunState): RunProfile {
+  const { characterClass, subject, classLevels, unlockedSubjects } = run.meta;
+  return { characterClass, subject, classLevels, unlockedSubjects, researchLevels: run.researchLevels };
+}
+
+/** An empty run: nothing picked up yet, level 1 — on top of `profile` when there is one. */
+export function freshRun(profile?: RunProfile): CurrentRunState {
+  const researchLevels = profile?.researchLevels ?? {};
   return {
-    meta: { characterClass: null, classLevels: {}, subject: DEFAULT_SUBJECT, unlockedSubjects: [], researchPoints: TOTAL_RESEARCH_POINTS, startedAt: null },
+    meta: {
+      characterClass: profile?.characterClass ?? null,
+      classLevels: profile?.classLevels ?? {},
+      subject: profile?.subject || DEFAULT_SUBJECT,
+      unlockedSubjects: profile?.unlockedSubjects ?? [],
+      researchPoints: TOTAL_RESEARCH_POINTS - Object.values(researchLevels).reduce((sum, level) => sum + level, 0),
+      startedAt: null,
+    },
     fusionTargets: [],
     statAdjustments: emptyStatBlock(),
     equipped: [],
@@ -37,7 +64,7 @@ function freshRun(): CurrentRunState {
     currentLevel: 1,
     enemiesKilled: 0,
     magicCircleActive: false,
-    researchLevels: {},
+    researchLevels,
   };
 }
 
@@ -69,7 +96,8 @@ interface RunStore {
   researchDown: (id: string) => void;
   /** Sets every research node back to level 0 and refunds all the points. */
   resetResearch: () => void;
-  startNewRun: () => void;
+  /** Swaps in a whole run: another saved one, or a new one (`store/runs.ts` is what decides which). */
+  loadRun: (run: CurrentRunState) => void;
 }
 
 export const useRunStore = create<RunStore>()(
@@ -216,7 +244,7 @@ export const useRunStore = create<RunStore>()(
           run: { ...state.run, meta: { ...state.run.meta, researchPoints: TOTAL_RESEARCH_POINTS }, researchLevels: {} },
         })),
 
-      startNewRun: () => set({ run: freshRun() }),
+      loadRun: (run) => set({ run }),
     }),
     {
       name: "magic-survival-current-run",

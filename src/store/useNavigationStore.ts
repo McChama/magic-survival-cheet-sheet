@@ -7,6 +7,7 @@ export type Screen =
   | "class"
   | "dashboard"
   | "research"
+  | "runs"
   | "dropProbability"
   | "recommender"
   | "ownedMagic"

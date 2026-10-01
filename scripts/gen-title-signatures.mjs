@@ -17,6 +17,8 @@ const SOURCES = {
   ownedMagic: "owned-magic",
   ownedArtifact: "owned-artifact",
   synergy: "synergy",
+  enterArea: "enter-area",
+  lifeOrDeath: "life-or-death",
 };
 
 const lines = [];

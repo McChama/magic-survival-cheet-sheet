@@ -67,7 +67,7 @@ is built from the same four stacked zones, using the shared components in
 |---|---|---|---|
 | Header | `ScreenHeader` | 36px (`h-9`) — exactly the action button's own height, no padding around it | Optional `leftSlot` (e.g. a point counter) + exactly one top-right action button, a fixed 36×36 icon button (`ScreenHeader` enforces this) regardless of what glyph/icon it shows — a deliberate choice to keep the header compact over a larger (WCAG-minimum) tap target. |
 | Title | `ScreenTitle` | 48px (`h-12`) | One line, `1.75rem`, **regular weight — never bold**, centered. This is the screen's name; its color is a named `tone` (`default`, `gold`, or `dark` — Subject Select's dark-on-light title with its soft shadow), never a per-screen `style`, font size or weight. |
-| Content | plain `flex-1` | fills whatever's left | **Scroll is allowed only on the long lists** — `OwnedMagicScreen`, `OwnedArtifactScreen`, `SynergyScreen`, `MagicCombinationScreen`'s grid and the "+" menu's Select Magic / Select Artifact sheets (plain `overflow-y-auto`, since their item counts are genuinely unbounded/large: all 63 fusions, the whole catalog, or however many magics/artifacts a long run has picked up). **No modal ever scrolls**: a modal's content is laid out to fit its card (`DetailModal` clips instead of scrolling, 72dvh tall; check a new modal's content at ~820px height). The Recommender's grid and results *page* instead (`PagedGrid`/`PagedList`/`Pager`: they measure the room with `useElementSize` and show as many whole rows as fit). Every *picker* screen (Subject Select, Class Select, Research, and `RunDashboardScreen` itself since its Loadout section was replaced by nav buttons — see below) is sized to always fit without scrolling instead: chunk the item list into rows, give the row container `flex-1 min-h-0 flex flex-col justify-evenly`, make each row `flex-1 min-h-0 flex justify-center items-center`, and size each item off its row's height (`h-full`/`h-[70%]` + `aspect-*` + `max-w-full`), not a fixed px size — see `SubjectSelectScreen`'s `SUBJECT_ROWS`/`SubjectSilhouette` or `ResearchScreen`'s `RESEARCH_ROWS` for the pattern. This means items shrink on short viewports instead of scrolling; that's the accepted tradeoff. Screen-specific sub-blocks (Research's pips/description, Class Select's level stepper) live here, between the standardized Title and the item grid. |
+| Content | plain `flex-1` | fills whatever's left | **Scroll is allowed only on the long lists** — `OwnedMagicScreen`, `OwnedArtifactScreen`, `SynergyScreen`, `RunsScreen`, `MagicCombinationScreen`'s grid and the "+" menu's Select Magic / Select Artifact sheets (plain `overflow-y-auto`, since their item counts are genuinely unbounded/large: all 63 fusions, the whole catalog, or however many magics/artifacts a long run has picked up). **No modal ever scrolls**: a modal's content is laid out to fit its card (`DetailModal` clips instead of scrolling, 72dvh tall; check a new modal's content at ~820px height). The Recommender's grid and results *page* instead (`PagedGrid`/`PagedList`/`Pager`: they measure the room with `useElementSize` and show as many whole rows as fit). Every *picker* screen (Subject Select, Class Select, Research, and `RunDashboardScreen` itself since its Loadout section was replaced by nav buttons — see below) is sized to always fit without scrolling instead: chunk the item list into rows, give the row container `flex-1 min-h-0 flex flex-col justify-evenly`, make each row `flex-1 min-h-0 flex justify-center items-center`, and size each item off its row's height (`h-full`/`h-[70%]` + `aspect-*` + `max-w-full`), not a fixed px size — see `SubjectSelectScreen`'s `SUBJECT_ROWS`/`SubjectSilhouette` or `ResearchScreen`'s `RESEARCH_ROWS` for the pattern. This means items shrink on short viewports instead of scrolling; that's the accepted tradeoff. Screen-specific sub-blocks (Research's pips/description, Class Select's level stepper) live here, between the standardized Title and the item grid. |
 | Footer | `ScreenFooter` | 96px floor, grows with content | Always a normal flex sibling — **never `position: absolute`**. An absolutely-positioned footer overlaying scrollable content is exactly what caused a real scroll-clipping bug (Subject Select) and is still fine to *look* fine while quietly being one content-length change away from breaking again (this was still true of Class Select's gradient-overlay footer). |
 
 `RunDashboardScreen` no longer has its own "Loadout" section — instead a row
@@ -79,7 +79,7 @@ its popup opens *upward* via `bottom-full`, and its dismiss backdrop is `fixed i
 precisely because it's no longer sitting in its own full-screen wrapper). Every chip in the nav row shows its
 icon in the same 24px glyph box; the Magic Combination button is the game's own heptagram, plain white (masked —
 see `NavIconButton`'s `tint` below) while no combination is available and its own red once one is.
-Home has only two icon buttons now (Research, Subject) — the Drop Probability and Recommender buttons are gone
+Home has three icon buttons now (Research, Subject, Runs — the game's own "Diary" sprite, `UI_Icon006`) — the Drop Probability and Recommender buttons are gone
 (`DropProbabilityScreen` is still in the app, just without an entry point until it gets a new home; the Recommender
 is reached from the Dashboard's "+" menu as "Compare Offer"). A small circular button next to "Current Level" starts
 the real level-up event: it opens Select Magic (the same sheet the "+" menu's "Magic" item opens — `RunDashboardScreen`
@@ -116,6 +116,39 @@ talent-level group it has** (`run.magicTalents[magicId]: string[]`, `store/useRu
 level, talentName)` replacing only the group at `level`) — every magic has one group except Magic Bolt, which picks
 independently at level 4 and again at level 7, and a combination can need either pick (the level-4 one unlocks some
 Combinations on its own, not only the level-7 one) — both are checked (`.includes`), not just the most recent pick.
+
+## Runs and the profile
+
+The game only ever has **one run in progress** (it can be saved and continued, never run next to another), but the
+player wants to look back at past builds and never have one run's data land on another. So every run is a record
+(`store/useRunsStore.ts`, `localStorage` key `magic-survival-runs`): at most one is not `ended`, the rest are history.
+`useRunStore` is unchanged for every screen and formula — it holds the **loaded** run (normally the one in progress,
+or an old one opened from the Runs screen); the runs store mirrors it into its record on every change and swaps
+another record's run in on `loadRun`. `startNewRun` turns the run in progress into history and loads a fresh one —
+unless nothing has happened in it yet, in which case it is simply reused (starting twice leaves one run, not two).
+
+**The profile is what a new run starts from**: research, class levels and unlocked subjects belong to the player's
+account, not to a run (`RunProfile` in `useRunStore.ts`; a run used to start from nothing, losing the research). It
+follows the run in progress — editing research while an old run is open changes that old record only — and each
+history record keeps the profile it was played with, so its stats still read as they did.
+
+`RunsScreen` lists them like save slots: the Subject's sprite — swaying, the shared `SubjectSprite` Subject Select
+uses too, and with no backdrop (the player's call): the sprites are dark silhouettes drawn for Subject Select's pale
+wall, so on black a pale `drop-shadow` glow hugging the silhouette is what keeps them visible — the Subject as title,
+the Class under it, then "In progress" or how long ago;
+on the right the character level and the build's main magic (its highest-level one) with that magic's level. White
+frame for the run in progress, dark for history (the Magic Combination grid's pair). Tapping a row loads it and opens
+its dashboard; the small X asks before removing. **Sizes there are in `rem` against this app's 24px root**
+(`index.css`), not the browser's 16 — a first pass sized for 16px came out half again too big.
+
+With live sync, everything that happens in the game is applied to the run in progress whichever run is open
+(`ensureActiveRunLoaded`), and the run boundaries are read off the screen (`session.ts`): **"Enter Area" followed by
+the run = a new run** (`runStarted`; the area takes a while to load, so the screen counts for 15 s after it is gone),
+and the **"Life or Death" prompt not followed by the run = the run is over** (`runEnded`, after 3 s) — unless the run
+then comes back after all (a revive plays an ad first), which reopens it (`runResumed`). A run that simply comes
+back without Enter Area (the game's own "Load") is the same run. Not read yet: the menus before a run (Research,
+Test Subject, Class, the area and what it gives) — their fixtures are in `scripts/capture-fixtures/` and for now
+must only not be mistaken for another screen.
 
 ## Navigation persists across reloads
 

@@ -4,7 +4,8 @@
     "cheatSheet": "Cheat Sheet",
     "startGame": "Start Game",
     "researchAria": "Research",
-    "subjectAria": "Subject"
+    "subjectAria": "Subject",
+    "runsAria": "Runs"
   },
   "classSelect": {
     "closeAria": "Close",
@@ -195,8 +196,24 @@
       "treasureChest": "Treasure Chest ({{selected}})",
       "ownedMagic": "Owned Magic ({{count}} read)",
       "ownedArtifact": "Owned Artifact ({{count}} read)",
-      "nothingSelected": "nothing selected"
+      "nothingSelected": "nothing selected",
+      "enterArea": "Enter Area",
+      "lifeOrDeath": "Life or Death"
     },
-    "retrieved": "Mana retrieved"
+    "retrieved": "Mana retrieved",
+    "runStarted": "New run started",
+    "runEnded": "Run ended"
+  },
+  "runs": {
+    "title": "Runs",
+    "closeAria": "Close",
+    "newRun": "New Run",
+    "inProgress": "In progress",
+    "noClass": "No class",
+    "level": "Lv {{level}}",
+    "openAria": "{{subject}} — open run",
+    "removeAria": "Remove run",
+    "remove": "Remove",
+    "keep": "Keep"
   }
 }

@@ -29,7 +29,7 @@ export interface OfferRow {
 
 /** What one frame shows, already reduced to ids. */
 export type Observation =
-  | { screen: "gameplay" | "unknown" | "pause" | "synergy" }
+  | { screen: "gameplay" | "unknown" | "pause" | "synergy" | "enterArea" | "lifeOrDeath" }
   | { screen: "selectMagic"; options: OwnedRef[]; rows: OfferRow[]; retrieve: ScreenRect | null }
   | { screen: "selectAttribute"; magicId: string | null; groupLevel: number | null; talent: string | null }
   | { screen: "treasureChest"; selectedId: string | null }
@@ -45,6 +45,12 @@ export type CaptureEvent =
    */
   | { type: "pickNeeded"; options: OwnedRef[] }
   | { type: "artifactObtained"; id: string }
+  /** "Enter Area" was pressed and the run came up: a new run, not more of the last one. */
+  | { type: "runStarted" }
+  /** The death prompt came up and the run did not come back: it is over. */
+  | { type: "runEnded" }
+  /** ...and then it did come back after all (a revive takes an ad's length): the same run goes on. */
+  | { type: "runResumed" }
   /** The game's own Owned Magic list was on screen: the run's real magics and levels. */
   | { type: "magicsSynced"; entries: OwnedLevel[] }
   | { type: "artifactsSynced"; ids: string[] };
@@ -123,7 +129,17 @@ function outcome(pending: Pending | null): CaptureEvent[] {
   return [];
 }
 
+/** How many readings (four a second) "Enter Area" still counts for once it leaves the screen: the area takes a while to load. */
+const AREA_GRACE = 60;
+/** How many readings without the run coming back, after the death prompt, before the run is called over. */
+const DEATH_GRACE = 12;
+
 export class CaptureSession {
+  /** Readings left during which the run appearing means "Enter Area was just pressed". */
+  private areaGrace = 0;
+  /** Readings since the death prompt that showed neither it nor the run; -1 when there was no prompt. */
+  private sinceDeath = -1;
+  private endReported = false;
   /** The choice screen the player is in the middle of, until the run resumes (or the next choice starts). */
   private pending: Pending | null = null;
   /** The last owned-list reading, and whether it was already reported — a list is trusted once two frames in a row agree. */
@@ -131,6 +147,40 @@ export class CaptureSession {
   private listReported = false;
 
   push(observation: Observation): CaptureEvent[] {
+    const lifecycle = this.lifecycle(observation);
+    // A new run starts clean: no choice of the last one is still open.
+    if (lifecycle.some((event) => event.type === "runStarted")) this.pending = null;
+    return [...lifecycle, ...this.choices(observation)];
+  }
+
+  /** Where one run ends and the next begins. */
+  private lifecycle(observation: Observation): CaptureEvent[] {
+    switch (observation.screen) {
+      case "enterArea":
+        this.areaGrace = AREA_GRACE;
+        return [];
+      case "lifeOrDeath":
+        this.sinceDeath = 0;
+        return [];
+      case "gameplay": {
+        const events: CaptureEvent[] = this.areaGrace > 0 ? [{ type: "runStarted" }] : this.endReported ? [{ type: "runResumed" }] : [];
+        this.areaGrace = 0;
+        this.sinceDeath = -1;
+        this.endReported = false;
+        return events;
+      }
+      default:
+        if (this.areaGrace > 0) this.areaGrace--;
+        if (this.sinceDeath >= 0 && !this.endReported && ++this.sinceDeath >= DEATH_GRACE) {
+          this.endReported = true;
+          return [{ type: "runEnded" }];
+        }
+        return [];
+    }
+  }
+
+  /** What the player picked on the choice screens, and what the game's own lists show. */
+  private choices(observation: Observation): CaptureEvent[] {
     if (observation.screen !== "ownedMagic" && observation.screen !== "ownedArtifact") {
       this.lastList = "";
       this.listReported = false;

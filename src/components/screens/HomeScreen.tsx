@@ -7,6 +7,7 @@ interface HomeScreenProps {
   onStartGame: () => void;
   onOpenCharacter: () => void;
   onOpenResearch: () => void;
+  onOpenRuns: () => void;
 }
 
 /** The 3-frame title art loops as a subtle idle flicker, same idea as the Subject idle-sway frames. */
@@ -36,7 +37,7 @@ function TitleBackdrop() {
   );
 }
 
-export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch }: HomeScreenProps) {
+export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch, onOpenRuns }: HomeScreenProps) {
   const { t } = useTranslation("translation");
   return (
     <div className="absolute inset-0 bg-black overflow-hidden flex flex-col">
@@ -65,6 +66,7 @@ export function HomeScreen({ onStartGame, onOpenCharacter, onOpenResearch }: Hom
         <div className="flex items-center justify-around mt-7 px-[15%]">
           <NavIconButton onClick={onOpenResearch} ariaLabel={t("home.researchAria")} icon={uiImage("icons/UI_Icon002.png")} />
           <NavIconButton onClick={onOpenCharacter} ariaLabel={t("home.subjectAria")} icon={uiImage("icons/UI_Icon003.png")} />
+          <NavIconButton onClick={onOpenRuns} ariaLabel={t("home.runsAria")} icon={uiImage("icons/UI_Icon006.png")} />
         </div>
       </div>
     </div>

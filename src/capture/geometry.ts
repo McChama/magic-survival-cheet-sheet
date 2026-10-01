@@ -6,7 +6,16 @@ import type { Rect } from "./frame";
  * onto whatever size the live capture is.
  */
 
-export type ScreenId = "selectMagic" | "selectAttribute" | "treasureChest" | "pause" | "ownedMagic" | "ownedArtifact" | "synergy";
+export type ScreenId =
+  | "selectMagic"
+  | "selectAttribute"
+  | "treasureChest"
+  | "pause"
+  | "ownedMagic"
+  | "ownedArtifact"
+  | "synergy"
+  | "enterArea"
+  | "lifeOrDeath";
 
 /** The band each screen's title is looked for in (generous: the title's own box is found inside it). */
 export const TITLE_BAND: Record<ScreenId, Rect> = {
@@ -18,6 +27,10 @@ export const TITLE_BAND: Record<ScreenId, Rect> = {
   ownedMagic: { x: 250, y: 160, w: 580, h: 130 },
   ownedArtifact: { x: 250, y: 160, w: 580, h: 130 },
   synergy: { x: 250, y: 160, w: 580, h: 130 },
+  // Not titles, but what names these two: the area screen's title is the area's own name, so its "Enter Area"
+  // button is what is looked for; the death prompt's "Life or Death" sits mid-screen, in red.
+  enterArea: { x: 330, y: 2150, w: 420, h: 150 },
+  lifeOrDeath: { x: 280, y: 1220, w: 520, h: 170 },
 };
 
 /** The two white bars of the in-run pause button (top right) — lit only while the run itself is on screen. */

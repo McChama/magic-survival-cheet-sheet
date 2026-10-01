@@ -5,6 +5,7 @@ import { getMagicLevelPick, getPassiveLevelPick } from "../engine/magicLeveling"
 import { getObtainedPassiveIds } from "../engine/ownedPassives";
 import { getEquippedItems, ITEM_BY_ID } from "../engine/tierAdaptive";
 import { useRunStore } from "../store/useRunStore";
+import { endActiveRun, ensureActiveRunLoaded, startNewRun } from "../store/useRunsStore";
 import type { CaptureEvent, OwnedRef } from "./session";
 
 /**
@@ -57,6 +58,13 @@ function setOwnedLevel(ref: OwnedRef, level: number, special: boolean) {
 }
 
 export function applyCaptureEvent(event: CaptureEvent): string | null {
+  // A new run is a new record (built from the profile); the one before it stays as history.
+  if (event.type === "runStarted") {
+    startNewRun();
+    return i18n.t("capture.runStarted");
+  }
+  // Everything else that happens in the game belongs to the run in progress, whichever run the player has open.
+  ensureActiveRunLoaded();
   switch (event.type) {
     case "talentLearned":
       gainLevel();
@@ -79,11 +87,20 @@ export function applyCaptureEvent(event: CaptureEvent): string | null {
     case "pickNeeded":
       // Resolved by the player's answer (`applyPick`), or by the next Owned Magic sync.
       return null;
+
+    case "runEnded":
+      endActiveRun();
+      return i18n.t("capture.runEnded");
+
+    case "runResumed":
+      // `ensureActiveRunLoaded` above already reopened it.
+      return null;
   }
 }
 
 /** The player said which row of a level-up they took: obtain it, or raise it by one. */
 export function applyPick(ref: OwnedRef): string | null {
+  ensureActiveRunLoaded();
   const { run } = store();
   if (ref.kind === "magic") {
     if (!BASE_MAGIC_BY_ID[ref.id]) return null;

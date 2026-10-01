@@ -23,11 +23,17 @@ export interface TitleSignature {
   aspect: number;
 }
 
-/** Select Magic's title is cyan on a field of glowing orbs — only its own color counts there. Every other title sits on black. */
+/**
+ * Most titles are light text on black. Two sit on the dimmed run instead, among glowing orbs and enemies, and are
+ * told from it by their own color: Select Magic's cyan, and the red of "Life or Death".
+ */
+const TITLE_INK: Partial<Record<ScreenId, "cyan" | "red">> = { selectMagic: "cyan", lifeOrDeath: "red" };
+
 function isTitleInk(screen: ScreenId, frame: Frame, x: number, y: number): boolean {
-  if (screen !== "selectMagic") return peak(frame, x, y) > 150;
+  const ink = TITLE_INK[screen];
+  if (!ink) return peak(frame, x, y) > 150;
   const [r, g, b] = rgb(frame, x, y);
-  return g > 190 && b > 160 && r < 170;
+  return ink === "cyan" ? g > 190 && b > 160 && r < 170 : r > 170 && g < 90 && b < 90;
 }
 
 export function titleSignature(frame: Frame, screen: ScreenId): TitleSignature | null {
@@ -87,7 +93,7 @@ export function classifyScreen(frame: Frame): Screen {
   for (const screen of Object.keys(TITLE_SIGNATURES) as ScreenId[]) {
     // Screens sharing a band and an ink rule (the three "Owned"/Synergy titles) are measured once.
     const band = TITLE_BAND[screen];
-    const key = `${band.x},${band.y},${band.w},${band.h},${screen === "selectMagic"}`;
+    const key = `${band.x},${band.y},${band.w},${band.h},${TITLE_INK[screen] ?? "light"}`;
     if (!cache.has(key)) cache.set(key, titleSignature(frame, screen));
     const signature = cache.get(key);
     if (!signature) continue;

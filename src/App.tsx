@@ -7,6 +7,7 @@ import { MagicCombinationScreen } from "./components/screens/MagicCombinationScr
 import { OwnedArtifactScreen, OwnedMagicScreen } from "./components/screens/OwnedGridScreen";
 import { RecommenderScreen } from "./components/screens/RecommenderScreen";
 import { ResearchScreen } from "./components/screens/ResearchScreen";
+import { RunsScreen } from "./components/screens/RunsScreen";
 import { SubjectSelectScreen } from "./components/screens/SubjectSelectScreen";
 import { SynergyScreen } from "./components/screens/SynergyScreen";
 import { useNavigationStore, type Screen } from "./store/useNavigationStore";
@@ -26,7 +27,11 @@ function App() {
           onStartGame={() => setScreen("class")}
           onOpenCharacter={() => setScreen("subject")}
           onOpenResearch={() => setScreen("research")}
+          onOpenRuns={() => setScreen("runs")}
         />
+      )}
+      {screen === "runs" && (
+        <RunsScreen onClose={() => setScreen("home")} onOpenRun={() => setScreen("dashboard")} onNewRun={() => setScreen("class")} />
       )}
       {screen === "research" && <ResearchScreen onClose={() => setScreen("home")} />}
       {screen === "dropProbability" && <DropProbabilityScreen onClose={() => setScreen("home")} />}

@@ -26,6 +26,12 @@ const SCREENS = {
   "owned-magic": "ownedMagic",
   "owned-artifact": "ownedArtifact",
   synergy: "synergy",
+  "enter-area": "enterArea",
+  "life-or-death": "lifeOrDeath",
+  // The menus before a run that aren't read yet must at least not be mistaken for anything else.
+  research: "unknown",
+  "test-subject": "unknown",
+  class: "unknown",
   "gameplay-1": "gameplay",
   "gameplay-2": "gameplay",
   "gameplay-3": "gameplay",
@@ -154,6 +160,22 @@ for (const width of WIDTHS) {
     [],
     [{ type: "pickNeeded", options: OFFER }],
   ]);
+  // Where one run ends and the next begins.
+  const lifecycle = (events) => events.flat().map((event) => event.type);
+  expect("sequence: Enter Area starts a new run", lifecycle(await play("enter-area", "enter-area", "research", "gameplay-1", "gameplay-2")), ["runStarted"]);
+  expect("sequence: the run coming back without Enter Area is the same run", lifecycle(await play("pause", "gameplay-1")), []);
+  expect("sequence: death, then revived", lifecycle(await play("gameplay-1", "life-or-death", "research", "gameplay-2")), []);
+  expect(
+    "sequence: death, the run over, then back after all",
+    lifecycle(await play("gameplay-1", "life-or-death", ...Array(12).fill("research"), "research", "gameplay-2")),
+    ["runEnded", "runResumed"]
+  );
+  expect(
+    "sequence: death, then a new run",
+    lifecycle(await play("life-or-death", ...Array(12).fill("research"), "enter-area", "gameplay-1")),
+    ["runEnded", "runStarted"]
+  );
+
   expect("sequence: chest", await play("treasure-chest", "treasure-chest-picked", "gameplay-3"), [[], [], [{ type: "artifactObtained", id: "organicshield" }]]);
   expect("sequence: chest left without picking", await play("treasure-chest", "gameplay-3"), [[], []]);
   expect("sequence: owned lists", await play("pause", "owned-magic", "owned-magic", "owned-magic", "owned-artifact", "owned-artifact"), [
