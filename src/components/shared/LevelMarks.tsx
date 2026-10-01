@@ -8,9 +8,9 @@ export function Pip({ filled, maxed, size }: { filled: boolean; maxed: boolean; 
 
 /** A special ability's marker where an active magic shows its level pips: same row, but a
  *  star noticeably bigger than a pip (a star reads much smaller than a circle of the same box). */
-export function StarIcon({ size }: { size: string }) {
+export function StarIcon({ size, fill = "fill-[#ff3c64]" }: { size: string; fill?: string }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden className={`flex-none fill-[#ff3c64] ${size}`}>
+    <svg viewBox="0 0 24 24" aria-hidden className={`flex-none ${fill} ${size}`}>
       <polygon points="12,1 15,9 23,9 16.5,14 19,23 12,17.5 5,23 7.5,14 1,9 9,9" />
     </svg>
   );

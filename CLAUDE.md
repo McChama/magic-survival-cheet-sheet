@@ -233,6 +233,20 @@ opens the Treasure Chest window (`ArtifactOfferModal`, the game's screen): the o
 (the selected one white), its name, rarity, real description, the Synergies it belongs to with their progress rings
 (`ItemSynergies`) and the Obtain button that adds it — and takes it out of the pool (the Recommender's artifact list too) **without leaving the sheet**: the modal closes and Select Artifact stays open for the next offer.
 
+**Enchant is a level-up offer of its own kind** (`data/enchant.ts`; the dictionary's row 329, type "인챈트" — neither
+a magic nor a passive, so it is in neither list): taking it opens the game's "Choose the Magic to strengthen" screen,
+where one **attack** magic — owned or not, all 17 are on the grid, in rows of 4, 4, 4, 3, 2 — gets +50% Damage and a
+second line of its own (the fifth description line of each magic's row: Cooldown -5%, Size +10%, Cyclone's Duration
++15%, Satellite's Rotation Speed +25%). The run records it as the magics it went to (`run.enchantedMagicIds`, read
+through `getEnchantedMagicIds` since an older saved run has no such field), and `collectMagicEffects` counts those
+lines like any other, doubled once the run owns the Fairy ("{Enchant} effect becomes 2X"). In the app it leads Select
+Magic's Special chip as the game draws it — an olive frame, icon and star in pale gold (`ENCHANT_FRAME`) — and its row
+opens `EnchantSelect` (the game's screen: dark tiles on dark brown, the selected one lighter, the "Selected" button),
+whose commit is the pick; Owned Magic then shows one Enchant tile whose modal lists the magics it went to, each with a
+"Remove". Read off one real level-up; **not checked in game**: that it can be taken three times (its max-level column
+says 3), whether the same magic can take it twice, how the Fairy doubles a cooldown cut (here 5% becomes 10%), and
+how the game's own Owned Magic list shows it.
+
 **Passives have levels like the magics** (`data/passiveLevels.ts`, from `eng_Dictionary_Ability.txt`): the ten base passives level up to
 Intelligence 5 (+10% ATK, +3% per level), Fast Casting 3 (-5% cooldown, +1%), Vitality 5 (+20% Max HP and +10% Life Orb, +10% Max HP per level),
 Haste 2 (+10%, +2%), Arcane Effuse 3 (+5%, +2%), Concentration 3 (+10%, +3%), Snipe 3 (+5%, +1%), Explorer 3 (+33%, +10%), Rupture 3 (+15%, +5%)
@@ -565,7 +579,10 @@ permission). Everything that interprets a frame is pure TypeScript in `src/captu
   since the game shows that one panel under five titles — Treasure Chest, Relic Chest, Black Chest, Obelisk, Broken
   Obelisk. **The label is searched for, not assumed**: an Obelisk has a "Reroll" button under it that pushes "Obtain"
   up, which is exactly why a first, fixed-position version read the Obelisk as "not a game screen". Treasure Chest
-  and Obelisk are fixtures; Relic Chest, Black Chest and Broken Obelisk have still never been seen) and what it shows. Icons are matched against the
+  and Obelisk are fixtures; Relic Chest, Black Chest and Broken Obelisk have still never been seen; Enchant's grid of
+  magics by its "Selected" button — the very label, in the very spot, the Class menu is known by, so the two are told
+  apart by what is behind it: black there, a dark brown here. Before that an Enchant was read as the Class menu the
+  moment a magic was selected) and what it shows. Icons are matched against the
   sprites the app already ships (`library.ts`: the icon's own bounding box stretched to a 16x16 grid, so position, size
   and the game's squashing don't matter; magics/passives by shape, artifacts in color). Positions live in
   `geometry.ts`, **measured on one phone (1080x2460)** and scaled by width/height — another aspect ratio is not
@@ -587,7 +604,12 @@ permission). Everything that interprets a frame is pure TypeScript in `src/captu
   (`UI_Icon007` / `_Gold`) for a level-up, from the moment the guards are up ("ready, your first tap marks") to the
   mark, with a beat on every mark since moving the mark changes nothing else; and the Owned Artifact icon
   (`UI_Icon009` / `_Gold`) while a chest is open, gold once a card is selected and "Obtain" is still to be pressed
-  (`Host.chest` — the chest needs no guards, the game itself selects before it confirms).
+  (`Host.choice` — the chest needs no guards, the game itself selects before it confirms). **Enchant** is both: its
+  row in Select Magic is marked and confirmed like any other, and the grid it opens selects before it confirms like a
+  chest — the bubble keeps the Owned Magic icon there, white until a magic is selected, gold until "Selected" is
+  pressed. The magic selected when the run comes back is the one it went to (`magicEnchanted`: the level and the
+  Enchant are recorded, nothing is asked — before, the level-up's other rows were offered as "which one did you
+  pick?"); the grid's X leads back to the same level-up, with nothing taken.
   **A level-up offers two, three or four rows** (Arcanist: two, and then no Retrieve button), centered as a block — the
   rows never change size, the title and the Retrieve button ride up and down with them; all three layouts are fixtures,
   and Retrieve is found by its label rather than assumed (a fourth row sits where three rows' Retrieve would be).

@@ -69,9 +69,9 @@ import java.util.List;
  * twice a second to read the captured frame; it reports back through {@link Host}. The bubble's
  * ring shows whether that loop is alive (green), broken (red) or off (gold), and the panel's
  * header says what the reader last saw. During a choice the whole bubble — ring and icon —
- * says where it stands: the Owned Magic icon for a level-up (once the tap guards are up) or the
- * Owned Artifact icon for a chest, white while nothing is selected and gold once something is
- * and only the confirming tap is missing.
+ * says where it stands: the Owned Magic icon for a level-up (once the tap guards are up) and for
+ * Enchant's grid of magics, or the Owned Artifact icon for a chest, white while nothing is selected
+ * and gold once something is and only the confirming tap is missing.
  */
 public class OverlayService extends Service {
     private static final String CHANNEL_ID = "companion";
@@ -208,8 +208,11 @@ public class OverlayService extends Service {
     private String shownLine;
     private int shownRing;
     private int shownLook = -1;
-    /** The artifact-offer panel as the web app last reported it: 0 not on screen, 1 open, 2 a card selected. */
-    private int chestState;
+    /**
+     * A choice the game itself selects before it confirms, as the web app last reported it: 0 none on screen;
+     * the artifact-offer panel, 1 open, 2 a card selected; Enchant's grid of magics, 3 open, 4 a magic selected.
+     */
+    private int choiceState;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -307,7 +310,7 @@ public class OverlayService extends Service {
             capture.start(this, intent.getIntExtra(EXTRA_RESULT_CODE, 0), data, main, () -> {
                 startInForeground(false);
                 setAvoid("[]");
-                chestState = 0;
+                choiceState = 0;
                 refreshSyncStatus();
             });
             if (!capture.isRunning()) captureFailure = "no projection";
@@ -356,7 +359,10 @@ public class OverlayService extends Service {
         // A choice outranks the sync colors: it is what the player needs to see before tapping.
         int look = LOOK_DEFAULT;
         if (!guards.isEmpty()) look = markedGuard >= 0 ? LOOK_MAGIC_PENDING : LOOK_MAGIC;
-        else if (chestState > 0) look = chestState == 2 ? LOOK_ARTIFACT_PENDING : LOOK_ARTIFACT;
+        else if (choiceState == 1) look = LOOK_ARTIFACT;
+        else if (choiceState == 2) look = LOOK_ARTIFACT_PENDING;
+        else if (choiceState == 3) look = LOOK_MAGIC;
+        else if (choiceState == 4) look = LOOK_MAGIC_PENDING;
         if (look != LOOK_DEFAULT) ring = look == LOOK_MAGIC_PENDING || look == LOOK_ARTIFACT_PENDING ? RING_PENDING : RING_READY;
         // This runs every tick; the bubble is only touched (and redrawn) when what it shows really changed.
         if (ring == shownRing && look == shownLook) return;
@@ -420,9 +426,9 @@ public class OverlayService extends Service {
         }
 
         @JavascriptInterface
-        public void chest(int state) {
+        public void choice(int state) {
             main.post(() -> {
-                chestState = state;
+                choiceState = state;
                 refreshSyncStatus();
             });
         }

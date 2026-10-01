@@ -1,4 +1,5 @@
 import i18n from "../i18n";
+import { ENCHANT } from "../data/enchant";
 import { BASE_MAGIC_BY_ID } from "../data/magics";
 import { isLeveledPassive } from "../data/passiveLevels";
 import { getMagicLevelPick, getPassiveLevelPick } from "../engine/magicLeveling";
@@ -21,7 +22,13 @@ import type { CaptureEvent, OwnedRef } from "./session";
 const store = () => useRunStore.getState();
 
 export function refName(ref: OwnedRef): string {
+  if (isEnchant(ref)) return ENCHANT.name;
   return ref.kind === "magic" ? (BASE_MAGIC_BY_ID[ref.id]?.name ?? ref.id) : (ITEM_BY_ID[ref.id]?.name ?? ref.id);
+}
+
+/** A level-up's Enchant row: read like a passive's (it is an icon in a row), but nothing a pick can simply add. */
+export function isEnchant(ref: OwnedRef): boolean {
+  return ref.kind === "passive" && ref.id === ENCHANT.id;
 }
 
 /**
@@ -93,6 +100,13 @@ export function applyCaptureEvent(event: CaptureEvent): string | null {
     case "artifactObtained":
       return ensureArtifact(event.id) ? i18n.t("capture.artifactObtained", { name: ITEM_BY_ID[event.id].name }) : null;
 
+    case "magicEnchanted":
+      // Enchant is what that level-up was spent on, whichever magic it went to.
+      gainLevel();
+      if (!event.magicId || !BASE_MAGIC_BY_ID[event.magicId]) return i18n.t("capture.enchantedUnknown");
+      store().addEnchant(event.magicId);
+      return i18n.t("capture.enchanted", { magic: refName({ kind: "magic", id: event.magicId }) });
+
     case "magicsSynced":
       // The game's own list starts with the Class being played: the one fact about a run that can be read mid-run.
       if (event.className && store().run.meta.characterClass !== event.className) store().setCharacterClass(event.className);
@@ -120,6 +134,11 @@ export function applyCaptureEvent(event: CaptureEvent): string | null {
 /** The player said which row of a level-up they took: obtain it, or raise it by one. */
 export function applyPick(ref: OwnedRef): string | null {
   ensureActiveRunLoaded();
+  // Enchant was marked and confirmed, but its grid was never read: the level went to it all the same.
+  if (isEnchant(ref)) {
+    gainLevel();
+    return i18n.t("capture.enchantedUnknown");
+  }
   const { run } = store();
   if (ref.kind === "magic") {
     if (!BASE_MAGIC_BY_ID[ref.id]) return null;

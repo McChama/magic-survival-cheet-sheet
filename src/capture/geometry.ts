@@ -18,7 +18,8 @@ export type ScreenId =
   | "lifeOrDeath"
   | "classSelect"
   | "testSubject"
-  | "research";
+  | "research"
+  | "enchant";
 
 /** The band each screen's title is looked for in (generous: the title's own box is found inside it). */
 export const TITLE_BAND: Record<ScreenId, Rect> = {
@@ -40,6 +41,42 @@ export const TITLE_BAND: Record<ScreenId, Rect> = {
   classSelect: { x: 330, y: 2150, w: 420, h: 150 },
   testSubject: { x: 330, y: 2280, w: 420, h: 120 },
   research: { x: 250, y: 190, w: 580, h: 140 },
+  // Enchant's "Choose the Magic to strengthen": that title gives way to the selected magic's name, so the screen is
+  // known by its button — "Selected" again, in the Class menu's spot, gray until a magic is picked. What is behind
+  // it tells the two apart (`ENCHANT.backdrop`).
+  enchant: { x: 330, y: 2150, w: 420, h: 150 },
+};
+
+/**
+ * Enchant: the attack magics as dark tiles (17 of them, in rows of 4, 4, 4, 3, 2) on a dark brown backdrop, the
+ * selected one drawn lighter. The tiles are found, not assumed — only their size is given — so a grid with fewer
+ * of them reads the same.
+ */
+export const ENCHANT = {
+  scanTop: 420,
+  scanBottom: 2130,
+  /** The span the tiles sit in, left to right. */
+  left: 100,
+  right: 980,
+  tileWidth: 196,
+  tileHeight: 285,
+  rowGap: 32,
+  /**
+   * Points that are backdrop whatever the grid holds — along both edges, since the companion's bubble docks to
+   * one. No other screen is that brown there: the Class menu, which shares the "Selected" label, is black.
+   */
+  backdrop: [
+    [56, 700],
+    [56, 1100],
+    [56, 1500],
+    [56, 1900],
+    [56, 2380],
+    [1030, 700],
+    [1030, 1100],
+    [1030, 1500],
+    [1030, 1900],
+    [1030, 2380],
+  ] as [number, number][],
 };
 
 /**

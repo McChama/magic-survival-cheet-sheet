@@ -22,6 +22,8 @@ const SOURCES = {
   classSelect: "class",
   testSubject: "test-subject",
   research: "research",
+  // Its "Selected" button, still gray: nothing is selected in this one.
+  enchant: "enchant",
 };
 
 const lines = [];

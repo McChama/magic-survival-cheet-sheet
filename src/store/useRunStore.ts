@@ -60,6 +60,7 @@ export function freshRun(profile?: RunProfile): CurrentRunState {
     acquiredMagicIds: [],
     magicLevels: {},
     magicTalents: {},
+    enchantedMagicIds: [],
     elapsedMinutes: 0,
     currentLevel: 1,
     enemiesKilled: 0,
@@ -91,6 +92,10 @@ interface RunStore {
    *  (`null` clears it) — the other groups' recorded talents (Magic Bolt's level-4 pick while setting its level-7
    *  one, or vice versa) are left alone. */
   setMagicTalent: (magicId: string, level: number, talentName: string | null) => void;
+  /** One more Enchant, spent on `magicId` (`data/enchant.ts`). */
+  addEnchant: (magicId: string) => void;
+  /** Takes back the Enchant at `index` of `run.enchantedMagicIds`. */
+  removeEnchant: (index: number) => void;
   clearLoadout: () => void;
   researchUp: (id: string) => void;
   researchDown: (id: string) => void;
@@ -213,9 +218,15 @@ export const useRunStore = create<RunStore>()(
       setMagicTalent: (magicId, level, talentName) =>
         set((state) => ({ run: { ...state.run, magicTalents: withMagicTalent(state.run.magicTalents, magicId, level, talentName) } })),
 
+      addEnchant: (magicId) =>
+        set((state) => ({ run: { ...state.run, enchantedMagicIds: [...(state.run.enchantedMagicIds ?? []), magicId] } })),
+
+      removeEnchant: (index) =>
+        set((state) => ({ run: { ...state.run, enchantedMagicIds: (state.run.enchantedMagicIds ?? []).filter((_, i) => i !== index) } })),
+
       clearLoadout: () =>
         set((state) => ({
-          run: { ...state.run, equipped: [], acquiredMagicIds: [], magicLevels: {}, magicTalents: {}, magicCircleActive: false },
+          run: { ...state.run, equipped: [], acquiredMagicIds: [], magicLevels: {}, magicTalents: {}, enchantedMagicIds: [], magicCircleActive: false },
         })),
 
       researchUp: (id) =>

@@ -20,6 +20,7 @@ export function useLevelUpActions(isLevelUp: boolean) {
   const setMagicLevel = useRunStore((s) => s.setMagicLevel);
   const setMagicTalent = useRunStore((s) => s.setMagicTalent);
   const equipItem = useRunStore((s) => s.equipItem);
+  const addEnchant = useRunStore((s) => s.addEnchant);
   const setCurrentLevel = useRunStore((s) => s.setCurrentLevel);
 
   function ensureAcquired(magicId: string) {
@@ -57,6 +58,11 @@ export function useLevelUpActions(isLevelUp: boolean) {
     /** An owned passive's level-up (base passives only — a special passive never levels past Obtain). */
     levelUpPassive: (item: EquippableItem, targetLevel: number) => {
       setMagicLevel(item.id, targetLevel);
+      commitLevelUp();
+    },
+    /** Enchant: the pick goes to strengthening `magicId`, owned or not (`EnchantSelect`'s "Selected"). */
+    enchantMagic: (magicId: string) => {
+      addEnchant(magicId);
       commitLevelUp();
     },
   };

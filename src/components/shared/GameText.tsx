@@ -7,7 +7,8 @@ import { Fragment } from "react";
  * 4 of the 7 bracket types recolored to a fixed highlight color, confirmed against a real
  * screenshot the user provided (Wizard's Lv1 tooltip: "〔Magic Bolt Lv +1〕" in cyan/celeste,
  * "[5]" in pale yellow, "〈3%〉" in green, "『added』" in pink, with the rest of the line in
- * its own base color). `{}`/`【】`/`《》` have **no confirmed color** yet — this renders them
+ * its own base color). `{}` is the same pink as `『』` (Enchant's row in a real level-up screenshot: "Select one
+ * [Attack Spell] to {Enhance}", "Enhance" in pink). `【】`/`《》` have **no confirmed color** yet — this renders them
  * in the line's own base `color` rather than guessing; don't invent a color for them
  * without a real screenshot to check against.
  *
@@ -26,7 +27,7 @@ const BRACKET_COLORS: { open: string; close: string; color: string | null }[] = 
   { open: "[", close: "]", color: "#FFEB9B" }, // confirmed: pale yellow — notable term/number
   { open: "〈", close: "〉", color: "#64FF32" }, // confirmed: green — numeric value
   { open: "『", close: "』", color: "#FF76DE" }, // confirmed: pink — emphasis phrase
-  { open: "{", close: "}", color: null }, // unconfirmed — inherits surrounding color
+  { open: "{", close: "}", color: "#FF76DE" }, // confirmed: pink — an effect's own name ({Enhance}, {Amplify})
   { open: "【", close: "】", color: null }, // unconfirmed — inherits surrounding color
   { open: "《", close: "》", color: null }, // unconfirmed — inherits surrounding color
 ];

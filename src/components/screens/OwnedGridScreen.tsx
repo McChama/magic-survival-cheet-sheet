@@ -1,8 +1,10 @@
 import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ENCHANT, ENCHANT_LINE_COLOR } from "../../data/enchant";
 import { BASE_MAGIC_BY_ID, MAGIC_DESCRIPTION, baseMagicSpriteUrl, getMagicMaxLevel } from "../../data/magics";
 import { MAGIC_TALENTS_BY_MAGIC_ID, TALENT_TYPE_COLOR, getMagicTalentGroups } from "../../data/magicTalents";
 import { MAGIC_BASE_STATS, MAGIC_STATS, MAGIC_STAT_LABEL, formatMagicStat } from "../../data/magicStats";
+import { enchantEffectText, getEnchantedMagicIds } from "../../engine/enchant";
 import { magicDamageMultiplier } from "../../engine/magicDamage";
 import { applyMagicEffects, collectMagicEffects } from "../../engine/magicEffects";
 import { getRunStats } from "../../engine/runStats";
@@ -18,7 +20,7 @@ import { namedMagicIdsInText } from "../../engine/synergy";
 import { useRunStore } from "../../store/useRunStore";
 import { slug as classSlug } from "../../i18n/gameData";
 import { useGameDataText } from "../../i18n/useGameDataText";
-import { ACTIVE_MAGIC_FRAME, CLASS_FRAME, PASSIVE_FRAME, SPECIAL_FRAME } from "../../config/frameColors";
+import { ACTIVE_MAGIC_FRAME, CLASS_FRAME, ENCHANT_FRAME, ENCHANT_STAR_CLASS, PASSIVE_FRAME, SPECIAL_FRAME } from "../../config/frameColors";
 import { RARITY_RING, RARITY_TEXT } from "../../config/rarityColors";
 import { ScreenHeader } from "../shared/ScreenHeader";
 import { ScreenTitle } from "../shared/ScreenTitle";
@@ -46,10 +48,10 @@ function LevelPips({ level, max, passive }: { level: number; max: number; passiv
   );
 }
 
-function SpecialStar() {
+function SpecialStar({ fill }: { fill?: string }) {
   return (
     <span className="absolute inset-x-0 bottom-[13cqh] h-[6.5cqw] flex items-center justify-center">
-      <StarIcon size="w-[20cqw] h-[20cqw]" />
+      <StarIcon size="w-[20cqw] h-[20cqw]" fill={fill} />
     </span>
   );
 }
@@ -73,15 +75,17 @@ const PASSIVE_ICON_CLASS = "bg-[#a6e8a6]";
  * their class-derived level, then the ones added with the "+" button at the level and talent the
  * player recorded — `getOwnedMagics`), then one per passive added with "+" (green pips — the same recorded-level
  * system as the magics), then one per named special ability (Guardian Angel, Doctor, ... the Class unlocks, plus the
- * ones added with "+"). See `getClassMagicProgression` in `data/classes.ts` for the class-side derivation. The class tile
+ * ones added with "+"), then — once the run has spent a level-up on it — one Enchant tile. See `getClassMagicProgression`
+ * in `data/classes.ts` for the class-side derivation. The class tile
  * opens the class's bonus breakdown, a magic or passive tile its own detail (where its level — and a magic's talent —
- * is set), a special its effect lines.
+ * is set), a special its effect lines, Enchant the magics it went to.
  */
 type MagicSelection =
   | { kind: "class" }
   | { kind: "magic"; magicId: string }
   | { kind: "passive"; itemId: string }
-  | { kind: "special"; name: string };
+  | { kind: "special"; name: string }
+  | { kind: "enchant" };
 
 /** A talent's icon in the row at the bottom of a magic's modal: the magic's own icon, small, in
  *  the talent's category color (`TALENT_TYPE_COLOR`) at the game's 25% opacity — full opacity when it is the
@@ -290,6 +294,51 @@ function SpecialDetail({ passive, onRemove, gt, t }: { passive: EquippableItem; 
   );
 }
 
+/**
+ * Enchant's detail, laid out like a special's: its icon in its own colors, its name, its pale gold star, the line
+ * its Select Magic row carries — then every magic the run's Enchants went to, each with what it got (doubled with
+ * the Fairy) and a "Remove" for that one Enchant. Three at most by the game's data, so it fits without scrolling.
+ */
+function EnchantDetail({ onEmpty, gt, t }: { onEmpty: () => void; gt: (key: string, fallback: string) => string; t: (key: string, options?: Record<string, unknown>) => string }) {
+  const run = useRunStore((st) => st.run);
+  const removeEnchant = useRunStore((st) => st.removeEnchant);
+  const enchantedIds = getEnchantedMagicIds(run);
+  return (
+    <div className="relative flex flex-col items-center text-center gap-2 min-h-full">
+      <DetailHero icon={ENCHANT.image} alt={t("enchant.name")} name={t("enchant.name")} levelRow={<StarIcon size="w-[14px] h-[14px]" fill={ENCHANT_STAR_CLASS} />} unmasked />
+      <GameText text={ENCHANT.description.text} color={ENCHANT.description.color} className="mt-1 text-[0.8rem]" />
+      <div className="flex flex-col gap-2.5 mt-2">
+        {enchantedIds.map((magicId, index) => {
+          const name = gt(`magic.${magicId}.name`, BASE_MAGIC_BY_ID[magicId]?.name ?? magicId);
+          const effect = enchantEffectText(magicId, run);
+          return (
+            <div key={index} className="flex flex-col items-center gap-0.5">
+              <div className="flex items-center gap-1.5 text-[0.9rem] text-[#e8e8e2]">
+                <span className="w-4 h-4 flex-none flex items-center justify-center">
+                  <MaskedMagicIcon src={baseMagicSpriteUrl(magicId)} alt="" full />
+                </span>
+                {name}
+              </div>
+              {effect && <GameText text={effect} color={ENCHANT_LINE_COLOR} className="text-[0.75rem]" />}
+              <button
+                type="button"
+                aria-label={t("enchant.removeAria", { magic: name })}
+                onClick={() => {
+                  removeEnchant(index);
+                  if (enchantedIds.length === 1) onEmpty();
+                }}
+                className="bg-transparent border-none p-0 text-[0.7rem] text-[#f0603c] cursor-pointer"
+              >
+                {t("ownedMagic.removeBtn")}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function OwnedMagicScreen({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("translation");
   const gt = useGameDataText();
@@ -317,6 +366,9 @@ export function OwnedMagicScreen({ onClose }: { onClose: () => void }) {
   const classLabel = characterClass ? gt(`class.${classSlug(characterClass)}.name`, characterClass) : null;
   const selectedPassive = selected?.kind === "passive" ? passives.find((p) => p.item.id === selected.itemId)?.item : undefined;
   const selectedSpecial = selected?.kind === "special" ? PASSIVE_BY_NAME[selected.name] : undefined;
+  const enchanted = getEnchantedMagicIds(run).length > 0;
+  // Enchant's modal has nothing to show without an Enchant (live sync may swap the run under an open modal).
+  const shown = selected?.kind === "enchant" && !enchanted ? null : selected;
 
   return (
     <div className="absolute inset-0 flex flex-col bg-[#050506]">
@@ -324,7 +376,7 @@ export function OwnedMagicScreen({ onClose }: { onClose: () => void }) {
       <ScreenTitle tone="gold">{t("ownedMagic.title")}</ScreenTitle>
 
       <GridPanel>
-        {!characterClass && magics.length === 0 && passives.length === 0 ? (
+        {!characterClass && magics.length === 0 && passives.length === 0 && !enchanted ? (
           <div className="py-[30px] text-center text-[0.8rem] text-[#e8e8e2]/35">{t("ownedMagic.empty")}</div>
         ) : (
           <div className="grid grid-cols-6 gap-x-[1%] gap-y-1.5">
@@ -383,22 +435,32 @@ export function OwnedMagicScreen({ onClose }: { onClose: () => void }) {
                 </CardArt>
               </GridTile>
             ))}
+
+            {enchanted && (
+              <GridTile onClick={() => setSelected({ kind: "enchant" })} frame={ENCHANT_FRAME} label={t("enchant.name")} aspect={CARD_ASPECT} badge={<SpecialStar fill={ENCHANT_STAR_CLASS} />}>
+                <CardArt>
+                  <GridIcon src={ENCHANT.image} alt={t("enchant.name")} />
+                </CardArt>
+              </GridTile>
+            )}
           </div>
         )}
       </GridPanel>
 
-      {selected && (selected.kind !== "class" || characterClass) && (
+      {shown && (shown.kind !== "class" || characterClass) && (
         <DetailModal
           onClose={closeModal}
           onBackdropClick={openTalent ? () => setTalentName(null) : undefined}
           closeAria={t("ownedMagic.closeAria")}
-          align={selected.kind === "class" || (selected.kind === "special" && !selectedSpecial) ? "center" : "top"}
+          align={shown.kind === "class" || (shown.kind === "special" && !selectedSpecial) ? "center" : "top"}
         >
-          {selected.kind === "magic" ? (
-            <MagicDetail magicId={selected.magicId} talent={openTalent} onTalentChange={setTalentName} onRemoved={closeModal} gt={gt} t={t} />
-          ) : selected.kind === "passive" ? (
+          {shown.kind === "magic" ? (
+            <MagicDetail magicId={shown.magicId} talent={openTalent} onTalentChange={setTalentName} onRemoved={closeModal} gt={gt} t={t} />
+          ) : shown.kind === "enchant" ? (
+            <EnchantDetail onEmpty={closeModal} gt={gt} t={t} />
+          ) : shown.kind === "passive" ? (
             selectedPassive && <PassiveDetail item={selectedPassive} onRemoved={closeModal} gt={gt} t={t} />
-          ) : selected.kind === "special" && selectedSpecial ? (
+          ) : shown.kind === "special" && selectedSpecial ? (
             <SpecialDetail
               passive={selectedSpecial}
               gt={gt}

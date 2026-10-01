@@ -1,5 +1,6 @@
 import { ARTIFACTS } from "../data/artifacts";
 import { CLASSES } from "../data/classes";
+import { ENCHANT } from "../data/enchant";
 import { BASE_MAGICS, baseMagicSpriteUrl } from "../data/magics";
 import { PASSIVES } from "../data/passives";
 import { classImage } from "../config/assets";
@@ -168,6 +169,8 @@ export async function buildLibrary(loadSprite: (url: string) => Promise<Frame | 
       // Intelligence is the passive, not a base magic (see CLAUDE.md's "+" menu section).
       ...BASE_MAGICS.filter((m) => m.id !== "intelligence").map((m) => templates("magic", m.id, baseMagicSpriteUrl(m.id), white)),
       ...PASSIVES.map((p) => templates("passive", p.id, p.image, whiteOrOwn)),
+      // Enchant is neither a magic nor a passive (`data/enchant.ts`), but a level-up offers it in a row like theirs.
+      templates("passive", ENCHANT.id, ENCHANT.image, whiteOrOwn),
       ...CLASSES.map((name) => templates("class", name, classImage(`${slug(name)}.png`), white)),
     ]),
     Promise.all(ARTIFACTS.map((a) => templates("artifact", a.id, a.image, [{ asMask: false, color: true }]))),

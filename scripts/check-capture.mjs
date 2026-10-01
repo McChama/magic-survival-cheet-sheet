@@ -11,6 +11,7 @@ import {
   classifyScreen,
   readClassLevel,
   readClassSelect,
+  readEnchant,
   readOwnedArtifacts,
   readOwnedMagic,
   readSelectAttribute,
@@ -53,6 +54,11 @@ const SCREENS = {
   // The same panel as Treasure Chest, with a "Reroll" button that pushes "Obtain" up.
   obelisk: "treasureChest",
   "obelisk-picked": "treasureChest",
+  // A level-up offering Enchant, and the grid of magics taking it opens. Once a magic is selected the grid's
+  // "Selected" button lights up exactly where the Class menu has its own — and it must not be read as that menu.
+  "select-magic-enchant": "selectMagic",
+  enchant: "enchant",
+  "enchant-picked": "enchant",
 };
 
 let failures = 0;
@@ -157,6 +163,8 @@ for (const width of WIDTHS) {
       rows: [[20, 36], [37, 53], [55, 70], [72, 88]],
       retrieve: [90, 95],
     },
+    // Enchant is offered in a row like a passive's, its icon in its own colors.
+    "select-magic-enchant": { ids: ["passive:enchant", "magic:incineration", "passive:ruptura-passive"], rows: [[28, 43], [45, 61], [63, 78]], retrieve: [81, 86] },
   };
   for (const [fixture, expected] of Object.entries(OFFERS)) {
     const offerFrame = await frame(fixture);
@@ -171,13 +179,30 @@ for (const width of WIDTHS) {
     expect(`${fixture} retrieve`, offer.retrieve && [share(offer.retrieve.top), share(offer.retrieve.bottom)], expected.retrieve);
   }
 
+  // Enchant's grid: every attack magic, in the order of the game's own list, and the one drawn lighter once selected.
+  const ENCHANT_GRID = ["magicBolt", "fireball", "spirit", "satellite", "frostNova", "thunderstorm", "electricZone", "tsunami", "meteor", "cyclone", "electricShock", "incineration", "energyBolt", "blizzard", "arcaneRay", "lavaZone", "flashShock"];
+  for (const [fixture, selected] of [["enchant", null], ["enchant-picked", 6]]) {
+    const grid = readEnchant(await frame(fixture), library);
+    if (VERBOSE) console.log(`  ${fixture}:`, grid.tiles.map(detail).join(" | "), "selected", grid.selected);
+    expect(`${fixture} tiles`, grid.tiles.map((tile) => tile?.id ?? null), ENCHANT_GRID);
+    expect(`${fixture} selected`, grid.selected, selected);
+  }
+  // The bubble docked on the grid's right edge, over the end of a row: the tile under it is still found.
+  {
+    const gridFrame = await frame("enchant-picked");
+    const bubble = { x: Math.round(gridFrame.width * 0.86), y: Math.round(gridFrame.height * 0.325), w: Math.round(gridFrame.width * 0.14), h: Math.round(gridFrame.height * 0.062) };
+    const grid = readEnchant(gridFrame, library, bubble);
+    expect("bubble on the Enchant grid: tiles", grid.tiles.length, ENCHANT_GRID.length);
+    expect("bubble on the Enchant grid: selected", grid.tiles[grid.selected ?? -1]?.id, "electricZone");
+  }
+
   // The companion's bubble only ever steps aside on the Owned lists, where a card under it is simply not read. On
   // a choice screen (a level-up, a chest) it stays where the player put it, whatever it covers.
   const bubbleRight = { x: 0.844, y: 0.24, w: 0.156, h: 0.068 };
   const covered = async (fixture, screen, bubble) => readKeepOut(await frame(fixture), screen).some((zone) => intersects(zone, bubble));
   expect("bubble on the Owned Magic cards moves", await covered("owned-magic", "ownedMagic", bubbleRight), true);
   expect("bubble below the Owned Magic cards stays", await covered("owned-magic", "ownedMagic", { ...bubbleRight, y: 0.6 }), false);
-  for (const [fixture, screen] of [["select-magic", "selectMagic"], ["select-magic-4", "selectMagic"], ["treasure-chest", "treasureChest"], ["obelisk", "treasureChest"], ["pause", "pause"], ["select-attribute", "selectAttribute"]]) {
+  for (const [fixture, screen] of [["select-magic", "selectMagic"], ["select-magic-4", "selectMagic"], ["treasure-chest", "treasureChest"], ["obelisk", "treasureChest"], ["pause", "pause"], ["select-attribute", "selectAttribute"], ["enchant", "enchant"]]) {
     expect(`bubble never moves on ${fixture}`, readKeepOut(await frame(fixture), screen), []);
   }
 
@@ -227,6 +252,22 @@ for (const width of WIDTHS) {
     [],
     [{ type: "pickNeeded", options: OFFER }],
   ]);
+  // Enchant: the level-up it was offered in turns into its grid of magics, and the one selected when the run
+  // comes back is the one it went to — nothing is asked, and none of it is taken for the Class menu.
+  const ENCHANTED = [{ type: "magicEnchanted", magicId: "electricZone" }];
+  expect("sequence: Enchant", await play("gameplay-1", "select-magic-enchant", "enchant", "enchant-picked", "enchant-picked", "gameplay-2"), [[], [], [], [], [], ENCHANTED]);
+  // Its X leads back to the same level-up: nothing was taken there, and the offer is open again.
+  expect("sequence: Enchant backed out of, then a plain row", await play("select-magic-enchant", "enchant", "enchant-picked", "select-magic-enchant", "gameplay-2"), [
+    [],
+    [],
+    [],
+    [],
+    [{ type: "pickNeeded", options: [{ kind: "passive", id: "enchant" }, { kind: "magic", id: "incineration" }, { kind: "passive", id: "ruptura-passive" }] }],
+  ]);
+  // The next level-up right behind it (Terra, the Owl): the Enchant is settled when that different offer shows.
+  expect("sequence: Enchant, then another level-up", await play("select-magic-enchant", "enchant-picked", "select-magic", "gameplay-2"), [[], [], ENCHANTED, [{ type: "pickNeeded", options: OFFER }]]);
+  expect("sequence: Enchant's grid closed with nothing selected", await play("select-magic-enchant", "enchant", "gameplay-2"), [[], [], []]);
+
   // The menus before a run say what it will be played with — once each, not on every reading.
   expect("sequence: the menus before a run", await play("class", "class", "class", "test-subject", "test-subject", "research", "research", "class", "class"), [
     [],

@@ -294,6 +294,10 @@ export interface CurrentRunState {
    *  so this is an array, one entry per group, not a single value). Missing entry means
    *  "not recorded yet," not "no talent exists." */
   magicTalents: Record<string, string[]>;
+  /** The magic each Enchant of this run went to, in the order taken (`data/enchant.ts`; the same magic can be
+   *  there more than once). Absent in a run saved before Enchant was recorded — read it through
+   *  `getEnchantedMagicIds` (`engine/enchant.ts`). */
+  enchantedMagicIds?: string[];
   elapsedMinutes: number;
   currentLevel: number;
   enemiesKilled: number;

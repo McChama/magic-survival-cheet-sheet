@@ -6,6 +6,7 @@ import {
   classifyScreen,
   readClassLevel,
   readClassSelect,
+  readEnchant,
   readOwnedArtifacts,
   readOwnedMagic,
   readSelectAttribute,
@@ -53,7 +54,12 @@ export type Observation =
   /** The Test Subject menu, on the subject marked "Applying", and every subject it draws as unlocked. */
   | { screen: "testSubject"; subject: string | null; unlocked: string[] }
   /** The Research menu: each bought node's level. */
-  | { screen: "research"; levels: Record<string, number> };
+  | { screen: "research"; levels: Record<string, number> }
+  /**
+   * Enchant's "Choose the Magic to strengthen": which tile is the selected one (null = none yet), and the magic on
+   * it (null when its icon wasn't recognized). `tiles`: how many were found, for the status line.
+   */
+  | { screen: "enchant"; selected: number | null; magicId: string | null; tiles: number };
 
 export type CaptureEvent =
   /** "Learn" was pressed with this talent selected (the magic reached that talent's level). */
@@ -64,6 +70,11 @@ export type CaptureEvent =
    */
   | { type: "pickNeeded"; options: OwnedRef[] }
   | { type: "artifactObtained"; id: string }
+  /**
+   * A level-up was spent on Enchant, and this is the magic it went to ("Selected" was pressed with it selected).
+   * Null: a magic was selected, but its icon wasn't recognized.
+   */
+  | { type: "magicEnchanted"; magicId: string | null }
   /** "Enter Area" was pressed and the run came up: a new run, not more of the last one. */
   | { type: "runStarted" }
   /** The death prompt came up and the run did not come back: it is over. */
@@ -155,6 +166,10 @@ export function observe(frame: Frame, library: Library, bubble?: ScreenRect | nu
       return { screen, subject: readTestSubject(frame), unlocked: readUnlockedSubjects(frame, toFrame(bubble, frame)) };
     case "research":
       return { screen, levels: readResearch(frame) };
+    case "enchant": {
+      const reading = readEnchant(frame, library, toFrame(bubble, frame));
+      return { screen, selected: reading.selected, magicId: reading.selected === null ? null : (reading.tiles[reading.selected]?.id ?? null), tiles: reading.tiles.length };
+    }
     default:
       return { screen };
   }
@@ -163,7 +178,9 @@ export function observe(frame: Frame, library: Library, bubble?: ScreenRect | nu
 type Pending =
   | { kind: "offer"; options: OwnedRef[] }
   | { kind: "attribute"; magicId: string | null; groupLevel: number | null; talent: string | null }
-  | { kind: "chest"; selectedId: string | null; offers: string };
+  | { kind: "chest"; selectedId: string | null; offers: string }
+  /** `from`: the level-up whose Enchant row led here (null when that screen was never seen). */
+  | { kind: "enchant"; selected: number | null; magicId: string | null; from: OwnedRef[] | null };
 
 /** One reading of an offer is contained in another: the same offer, read more or less completely. */
 const within = (a: OwnedRef[], b: OwnedRef[]) => a.every((o) => b.some((n) => n.kind === o.kind && n.id === o.id));
@@ -175,6 +192,8 @@ function outcome(pending: Pending | null): CaptureEvent[] {
     return [{ type: "talentLearned", magicId: pending.magicId, groupLevel: pending.groupLevel, talent: pending.talent }];
   }
   if (pending?.kind === "chest" && pending.selectedId) return [{ type: "artifactObtained", id: pending.selectedId }];
+  // "Selected" only works with a magic selected: a grid that closed with none ever seen selected wasn't confirmed.
+  if (pending?.kind === "enchant" && pending.selected !== null) return [{ type: "magicEnchanted", magicId: pending.magicId }];
   return [];
 }
 
@@ -270,6 +289,12 @@ export class CaptureSession {
 
     switch (observation.screen) {
       case "selectMagic": {
+        // Back from Enchant's grid by its X: the same level-up is on offer again, and nothing was taken.
+        const enchant = this.pending?.kind === "enchant" ? this.pending : null;
+        if (enchant?.from && (within(observation.options, enchant.from) || within(enchant.from, observation.options))) {
+          this.pending = { kind: "offer", options: observation.options.length > enchant.from.length ? observation.options : enchant.from };
+          return [];
+        }
         const open = this.pending?.kind === "offer" ? this.pending : null;
         if (open && (within(observation.options, open.options) || within(open.options, observation.options))) {
           // Still the same offer: keep its fullest reading.
@@ -293,6 +318,24 @@ export class CaptureSession {
           // "Learn" closes the screen on whatever was selected last; a selection can change but not be undone.
           talent: observation.talent ?? previous?.talent ?? null,
         };
+        return events;
+      }
+
+      case "enchant": {
+        const previous = this.pending?.kind === "enchant" ? this.pending : null;
+        const offer = this.pending?.kind === "offer" ? this.pending : null;
+        // Reached by tapping Select Magic's Enchant row: that offer turns out to be this choice, not an unknown one.
+        const events = previous || offer ? [] : outcome(this.pending);
+        const from = previous ? previous.from : (offer?.options ?? null);
+        if (observation.selected === null) {
+          // Nothing selected in this frame: the grid just opened, or it is fading out on what was selected last.
+          this.pending = previous ?? { kind: "enchant", selected: null, magicId: null, from };
+        } else {
+          // "Selected" takes whichever tile was selected last. An icon that isn't read on one frame keeps the name
+          // read for that same tile on another.
+          const sameTile = previous?.selected === observation.selected;
+          this.pending = { kind: "enchant", selected: observation.selected, magicId: observation.magicId ?? (sameTile ? previous.magicId : null), from };
+        }
         return events;
       }
 

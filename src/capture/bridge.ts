@@ -2,7 +2,8 @@ import i18n from "../i18n";
 import { baseMagicSpriteUrl } from "../data/magics";
 import { ITEM_BY_ID } from "../engine/tierAdaptive";
 import { useUiStore } from "../store/useUiStore";
-import { applyCaptureEvent, applyPick, refName } from "./apply";
+import { ENCHANT } from "../data/enchant";
+import { applyCaptureEvent, applyPick, isEnchant, refName } from "./apply";
 import type { Frame } from "./frame";
 import { readKeepOut, type ScreenRect } from "./keepOut";
 import { decodeLibrary, type EncodedLibrary, type Library } from "./library";
@@ -43,11 +44,13 @@ interface CompanionHost {
    */
   avoid(rectsJson: string): void;
   /**
-   * The artifact-offer panel: 0 = not on screen, 1 = open with nothing selected, 2 = a card selected, "Obtain" still
-   * to be pressed. The host's bubble shows it (the Owned Artifact icon, white then gold), the way it shows a
-   * level-up's mark with the Owned Magic icon.
+   * A choice the game itself selects before it confirms, so it needs no guards: 0 = none on screen; the
+   * artifact-offer panel, 1 = open with nothing selected, 2 = a card selected and "Obtain" still to be pressed;
+   * Enchant's grid, 3 = open, 4 = a magic selected and "Selected" still to be pressed. The host's bubble shows it
+   * (the Owned Artifact icon for the panel, the Owned Magic icon for the grid — white, then gold), the way it
+   * shows a level-up's mark.
    */
-  chest(state: number): void;
+  choice(state: number): void;
   /** What the reader is seeing right now — every tick, so the host can tell a working reader from a silent one. */
   status(text: string): void;
 }
@@ -107,13 +110,26 @@ function describe(observation: Observation): string {
       return i18n.t("capture.status.ownedMagic", { count: observation.entries.length });
     case "ownedArtifact":
       return i18n.t("capture.status.ownedArtifact", { count: observation.ids.length });
+    case "enchant":
+      return i18n.t("capture.status.enchant", {
+        count: observation.tiles,
+        selected: observation.magicId ? refName({ kind: "magic", id: observation.magicId }) : i18n.t(observation.selected === null ? "capture.status.nothingSelected" : "capture.status.unrecognized"),
+      });
     default:
       return i18n.t(`capture.status.${observation.screen}`);
   }
 }
 
 function iconUrl(ref: OwnedRef): string {
+  if (isEnchant(ref)) return ENCHANT.image;
   return ref.kind === "magic" ? baseMagicSpriteUrl(ref.id) : (ITEM_BY_ID[ref.id]?.image ?? "");
+}
+
+/** The state `Host.choice` is told about (see there). */
+function choiceState(observation: Observation): number {
+  if (observation.screen === "treasureChest") return observation.hasSelection ? 2 : 1;
+  if (observation.screen === "enchant") return observation.selected === null ? 3 : 4;
+  return 0;
 }
 
 export function initCaptureBridge() {
@@ -127,7 +143,7 @@ export function initCaptureBridge() {
   let busy = false;
   let keepOut: ScreenRect[] = [];
   let avoidSent = "[]";
-  let chestSent = 0;
+  let choiceSent = 0;
   let statusLine = "";
   /** Select Magic's tap guards: what each guarded row offers (the Retrieve button, when there is one, is one past the last), and the one the player marked. */
   let guarding = false;
@@ -146,7 +162,10 @@ export function initCaptureBridge() {
   /** With nothing readable on screen for this long, the host is told it can read less often. */
   const IDLE_AFTER_MS = 2000;
 
-  function ask(options: OwnedRef[]) {
+  function ask(offered: OwnedRef[]) {
+    // Never Enchant: taking it opens its grid, and then this offer is settled there instead of asked about.
+    const options = offered.filter((ref) => !isEnchant(ref));
+    if (options.length === 0) return;
     askedOptions = options;
     host!.askPick(i18n.t("capture.pickPrompt"), JSON.stringify(options.map((ref) => ({ label: refName(ref), icon: iconUrl(ref) }))));
   }
@@ -206,10 +225,10 @@ export function initCaptureBridge() {
           avoidSent = avoid;
           host!.avoid(avoid);
         }
-        const chest = observation.screen !== "treasureChest" ? 0 : observation.hasSelection ? 2 : 1;
-        if (chest !== chestSent) {
-          chestSent = chest;
-          host!.chest(chest);
+        const choice = choiceState(observation);
+        if (choice !== choiceSent) {
+          choiceSent = choice;
+          host!.choice(choice);
         }
       }
       for (const event of session.push(observation, now)) {

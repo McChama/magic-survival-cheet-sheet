@@ -7,6 +7,7 @@ import {
   CHEST,
   CLASS_LINES,
   CLASS_NAME_BAND,
+  ENCHANT,
   OWNED_GRID,
   PAUSE_BARS,
   RESEARCH_GRID,
@@ -41,19 +42,22 @@ export interface TitleSignature {
 
 /**
  * Most titles are light text on black. Two sit on the dimmed run instead, among glowing orbs and enemies, and are
- * told from it by their own color: Select Magic's cyan, and the red of "Life or Death".
+ * told from it by their own color: Select Magic's cyan, and the red of "Life or Death". Enchant is known by a
+ * button's label, gray until it can be pressed and white after: its ink is whatever stands out in its band.
  */
-const TITLE_INK: Partial<Record<ScreenId, "cyan" | "red">> = { selectMagic: "cyan", lifeOrDeath: "red" };
-
-function isTitleInk(screen: ScreenId, frame: Frame, x: number, y: number): boolean {
-  const ink = TITLE_INK[screen];
-  if (!ink) return peak(frame, x, y) > 150;
-  const [r, g, b] = rgb(frame, x, y);
-  return ink === "cyan" ? g > 190 && b > 160 && r < 170 : r > 170 && g < 90 && b < 90;
-}
+const TITLE_INK: Partial<Record<ScreenId, "cyan" | "red" | "label">> = { selectMagic: "cyan", lifeOrDeath: "red", enchant: "label" };
 
 export function titleSignature(frame: Frame, screen: ScreenId): TitleSignature | null {
-  return readText(scaleRect(frame, TITLE_BAND[screen]), (x, y) => isTitleInk(screen, frame, x, y))?.signature ?? null;
+  const band = scaleRect(frame, TITLE_BAND[screen]);
+  const ink = TITLE_INK[screen];
+  let threshold = 150;
+  if (ink === "label") threshold = Math.max(60, maxPeak(frame, band) * 0.55);
+  const isInk = (x: number, y: number) => {
+    if (ink !== "cyan" && ink !== "red") return peak(frame, x, y) > threshold;
+    const [r, g, b] = rgb(frame, x, y);
+    return ink === "cyan" ? g > 190 && b > 160 && r < 170 : r > 170 && g < 90 && b < 90;
+  };
+  return readText(band, isInk)?.signature ?? null;
 }
 
 /**
@@ -217,7 +221,11 @@ export function classifyScreen(frame: Frame): Screen {
   let best: Screen = "unknown";
   let bestScore = SIGNATURE_MATCH;
   const cache = new Map<string, TitleSignature | null>();
+  // "Selected" is the label of two screens, told apart by what is behind it: the Class menu is black, Enchant's
+  // grid sits on a dark brown. (Read as the Class menu, an Enchant would look like a new run being set up.)
+  const notThisOne: ScreenId = hasEnchantBackdrop(frame) ? "classSelect" : "enchant";
   for (const screen of Object.keys(TITLE_SIGNATURES) as ScreenId[]) {
+    if (screen === notThisOne) continue;
     // Screens sharing a band and an ink rule (the three "Owned"/Synergy titles) are measured once.
     const band = TITLE_BAND[screen];
     const key = `${band.x},${band.y},${band.w},${band.h},${TITLE_INK[screen] ?? "light"}`;
@@ -494,6 +502,93 @@ export function readSelectAttribute(frame: Frame, library: Library): SelectAttri
     talents: bestGroup?.talents.map((t) => t.name) ?? [],
     selected,
   };
+}
+
+// --- Enchant ("Choose the Magic to strengthen") -----------------------------------------------
+
+/** The dark brown behind Enchant's grid (29, 25, 22 on the real screen): warm, where the game's other dark screens are black or gray. */
+function isEnchantBackdrop(frame: Frame, x: number, y: number): boolean {
+  const [r, g, b] = rgb(frame, x, y);
+  return Math.abs(r - 29) <= 8 && Math.abs(g - 25) <= 8 && Math.abs(b - 22) <= 8 && r - b >= 4;
+}
+
+function hasEnchantBackdrop(frame: Frame): boolean {
+  let hits = 0;
+  for (const [x, y] of ENCHANT.backdrop) if (isEnchantBackdrop(frame, scaleX(frame, x), scaleY(frame, y))) hits++;
+  // Not all of them: the companion's bubble may sit on one.
+  return hits >= ENCHANT.backdrop.length * 0.7;
+}
+
+export interface EnchantReading {
+  /** The magics on the grid, in reading order (null = a tile whose icon wasn't recognized). */
+  tiles: (Match | null)[];
+  /** The tile drawn lighter than the rest: the magic the "Selected" button would take. */
+  selected: number | null;
+}
+
+/** `mask`: where the companion's own bubble is, in frame pixels. */
+export function readEnchant(frame: Frame, library: Library, mask?: Rect | null): EnchantReading {
+  const g = ENCHANT;
+  const masked = (x: number, y: number) => !!mask && x >= mask.x && x < mask.x + mask.w && y >= mask.y && y < mask.y + mask.h;
+  // A tile is darker than the backdrop (luma 17 against 26), the selected one lighter (36) and neutral gray.
+  const tone = (x: number, y: number): "tile" | "selected" | null => {
+    if (masked(x, y)) return null;
+    const value = luma(frame, x, y);
+    if (value < 21.5) return "tile";
+    if (value <= 31 || value >= 46) return null;
+    const [r, , b] = rgb(frame, x, y);
+    return Math.abs(r - b) <= 8 ? "selected" : null;
+  };
+
+  const left = scaleX(frame, g.left);
+  const right = scaleX(frame, g.right);
+  const step = Math.max(1, Math.round((right - left) / 160));
+  const tileWidth = scaleX(frame, g.tileWidth);
+  const tileHeight = scaleY(frame, g.tileHeight);
+  const rowGap = scaleY(frame, g.rowGap);
+  // A row of tiles is tile-colored along a good part of the screen's width, at every height of it; a line of text never is.
+  const inTileRow = (y: number) => {
+    let seen = 0;
+    let hits = 0;
+    for (let x = left; x < right; x += step) {
+      seen++;
+      if (tone(x, y)) hits++;
+    }
+    return hits >= seen * 0.08;
+  };
+  const bands = runs(scaleY(frame, g.scanTop), scaleY(frame, g.scanBottom), inTileRow, Math.round(tileHeight * 0.6));
+
+  const rects: Rect[] = [];
+  for (const [top, bottom] of bands) {
+    // Rows something dark bridged (the bubble, sitting on the gap between two) come back as one tall band.
+    const count = Math.max(1, Math.round((bottom - top + 1 + rowGap) / (tileHeight + rowGap)));
+    const height = (bottom - top + 1 - (count - 1) * rowGap) / count;
+    for (let i = 0; i < count; i++) {
+      const rowTop = Math.round(top + i * (height + rowGap));
+      // Just under a tile's top edge, above its icon: tile-colored from one side of the tile to the other.
+      const probeY = rowTop + Math.round(height * 0.07);
+      for (const [from, to] of runs(left, right, (x) => tone(x, probeY) !== null, Math.round(tileWidth * 0.6))) {
+        rects.push({ x: from, y: rowTop, w: to - from + 1, h: Math.round(height) });
+      }
+    }
+  }
+
+  const magics = library.icons.filter((t) => t.kind === "magic");
+  let selected: number | null = null;
+  const tiles = rects.map((rect, index) => {
+    // The tile's own color, away from its icon: its corners and the middle of its top edge.
+    const corners = [
+      [0.08, 0.07],
+      [0.92, 0.07],
+      [0.5, 0.07],
+      [0.08, 0.93],
+      [0.92, 0.93],
+    ].map(([fx, fy]) => tone(rect.x + Math.round(rect.w * fx), rect.y + Math.round(rect.h * fy)));
+    if (corners.filter((c) => c === "selected").length > corners.filter((c) => c === "tile").length) selected = index;
+    const patch = extractPatch(frame, inset(rect, 0.1, 0.1, 0.1, 0.1), false, mask);
+    return patch ? confident(bestMatch(patch, magics)) : null;
+  });
+  return { tiles, selected };
 }
 
 // --- Select Magic -----------------------------------------------------------------------------
