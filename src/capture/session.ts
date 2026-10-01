@@ -32,7 +32,7 @@ export type Observation =
   | { screen: "gameplay" | "unknown" | "pause" | "synergy" | "enterArea" | "lifeOrDeath" }
   | { screen: "selectMagic"; options: OwnedRef[]; rows: OfferRow[]; retrieve: ScreenRect | null }
   | { screen: "selectAttribute"; magicId: string | null; groupLevel: number | null; talent: string | null }
-  | { screen: "treasureChest"; selectedId: string | null; hasSelection: boolean }
+  | { screen: "treasureChest"; selectedId: string | null; hasSelection: boolean; offers: (string | null)[] }
   | { screen: "ownedMagic"; entries: OwnedLevel[] }
   | { screen: "ownedArtifact"; ids: string[] };
 
@@ -100,6 +100,7 @@ export function observe(frame: Frame, library: Library): Observation {
         selectedId: reading.selected === null ? null : (reading.offers[reading.selected]?.id ?? null),
         // A card is selected even when which artifact it is wasn't recognized.
         hasSelection: reading.selected !== null,
+        offers: reading.offers.map((offer) => offer?.id ?? null),
       };
     }
     case "ownedMagic":
@@ -119,7 +120,7 @@ export function observe(frame: Frame, library: Library): Observation {
 type Pending =
   | { kind: "offer"; options: OwnedRef[] }
   | { kind: "attribute"; magicId: string | null; groupLevel: number | null; talent: string | null }
-  | { kind: "chest"; selectedId: string | null };
+  | { kind: "chest"; selectedId: string | null; offers: string };
 
 /** One reading of an offer is contained in another: the same offer, read more or less completely. */
 const within = (a: OwnedRef[], b: OwnedRef[]) => a.every((o) => b.some((n) => n.kind === o.kind && n.id === o.id));
@@ -222,7 +223,10 @@ export class CaptureSession {
       case "treasureChest": {
         const previous = this.pending?.kind === "chest" ? this.pending : null;
         const events = previous ? [] : outcome(this.pending);
-        this.pending = { kind: "chest", selectedId: observation.selectedId ?? previous?.selectedId ?? null };
+        // An Obelisk's "Reroll" deals new cards on the same screen: a card selected before it is no longer on offer.
+        const offers = JSON.stringify(observation.offers);
+        const remembered = previous && previous.offers === offers ? previous.selectedId : null;
+        this.pending = { kind: "chest", selectedId: observation.selectedId ?? remembered, offers };
         return events;
       }
 

@@ -36,6 +36,11 @@ const SCREENS = {
   "gameplay-1": "gameplay",
   "gameplay-2": "gameplay",
   "gameplay-3": "gameplay",
+  // Another area (water and grass instead of sand), an obelisk standing in it.
+  "gameplay-4": "gameplay",
+  // The same panel as Treasure Chest, with a "Reroll" button that pushes "Obtain" up.
+  obelisk: "treasureChest",
+  "obelisk-picked": "treasureChest",
 };
 
 let failures = 0;
@@ -92,6 +97,14 @@ for (const width of WIDTHS) {
     if (VERBOSE) console.log(`  ${fixture}:`, chest.offers.map(detail).join(" | "), "selected", chest.selected);
     expect(`${fixture} offers`, chest.offers.map(id), ["artifact:organicshield", "artifact:forcefield", "artifact:sapphire"]);
     expect(`${fixture} selected`, chest.selected, selected);
+  }
+
+  // An Obelisk: three legendaries, "Obtain" higher up than in a chest. The screenshot itself names the third one.
+  for (const [fixture, selected] of [["obelisk", null], ["obelisk-picked", 2]]) {
+    const obelisk = readTreasureChest(await frame(fixture), library);
+    if (VERBOSE) console.log(`  ${fixture}:`, obelisk.offers.map(detail).join(" | "), "selected", obelisk.selected);
+    expect(`${fixture} offers`, obelisk.offers.map(id), ["artifact:genomemap", "artifact:sacrosanct", "artifact:dragonmagic"]);
+    expect(`${fixture} selected`, obelisk.selected, selected);
   }
 
   // The same panel under another title (Obelisk, Relic Chest, ...): only the "Obtain" label identifies it.
@@ -187,6 +200,9 @@ for (const width of WIDTHS) {
 
   expect("sequence: chest", await play("treasure-chest", "treasure-chest-picked", "gameplay-3"), [[], [], [{ type: "artifactObtained", id: "organicshield" }]]);
   expect("sequence: chest left without picking", await play("treasure-chest", "gameplay-3"), [[], []]);
+  expect("sequence: obelisk", await play("gameplay-4", "obelisk", "obelisk-picked", "gameplay-4"), [[], [], [], [{ type: "artifactObtained", id: "dragonmagic" }]]);
+  // "Reroll" deals new cards on the same screen: the card selected before it is gone, so nothing was obtained.
+  expect("sequence: selection lost to a reroll", await play("obelisk-picked", "treasure-chest", "gameplay-4"), [[], [], []]);
   expect("sequence: owned lists", await play("pause", "owned-magic", "owned-magic", "owned-magic", "owned-artifact", "owned-artifact"), [
     [],
     [],

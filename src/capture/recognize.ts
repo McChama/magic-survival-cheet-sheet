@@ -37,7 +37,7 @@ function isTitleInk(screen: ScreenId, frame: Frame, x: number, y: number): boole
 }
 
 export function titleSignature(frame: Frame, screen: ScreenId): TitleSignature | null {
-  return textSignature(scaleRect(frame, TITLE_BAND[screen]), (x, y) => isTitleInk(screen, frame, x, y));
+  return readText(scaleRect(frame, TITLE_BAND[screen]), (x, y) => isTitleInk(screen, frame, x, y))?.signature ?? null;
 }
 
 /**
@@ -46,10 +46,16 @@ export function titleSignature(frame: Frame, screen: ScreenId): TitleSignature |
  * the button is what identifies it, not the title. Gray while nothing is selected, white after.
  */
 export function obtainSignature(frame: Frame): TitleSignature | null {
-  return textSignature(scaleRect(frame, CHEST.obtainBand), (x, y) => peak(frame, x, y) > 60);
+  return findObtain(frame)?.signature ?? null;
 }
 
-function textSignature(band: Rect, isInk: (x: number, y: number) => boolean): TitleSignature | null {
+/** The "Obtain" label wherever it sits in its band (see `CHEST.obtainBand`): what it looks like, and where it is. */
+function findObtain(frame: Frame): { signature: TitleSignature; box: Rect } | null {
+  return readText(scaleRect(frame, CHEST.obtainBand), (x, y) => peak(frame, x, y) > 60);
+}
+
+/** The text inside `band`: its coarse bitmap, and the box it occupies. */
+function readText(band: Rect, isInk: (x: number, y: number) => boolean): { signature: TitleSignature; box: Rect } | null {
   const box = inkBounds(band, isInk, 40);
   if (!box || box.h < 6 || box.w < box.h * 2) return null;
 
@@ -65,7 +71,7 @@ function textSignature(band: Rect, isInk: (x: number, y: number) => boolean): Ti
       bits += ink / ((x1 - x0) * (y1 - y0)) > 0.3 ? "1" : "0";
     }
   }
-  return { bits, aspect: box.w / box.h };
+  return { signature: { bits, aspect: box.w / box.h }, box };
 }
 
 function signatureScore(a: TitleSignature, b: TitleSignature): number {
@@ -273,7 +279,9 @@ export function readTreasureChest(frame: Frame, library: Library): TreasureChest
   });
 
   let selected: number | null = null;
-  if (maxPeak(frame, scaleRect(frame, CHEST.obtainLabel)) > 180) {
+  // "Obtain" lights up white once a card is selected — wherever the label is on this panel.
+  const obtain = findObtain(frame);
+  if (obtain && maxPeak(frame, obtain.box) > 180) {
     let best = 140;
     cards.forEach((card, i) => {
       if (card.whiteness > best) {

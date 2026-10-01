@@ -58,9 +58,12 @@ export const CHEST = {
   cardWidth: 226,
   scanLeft: 100,
   scanRight: 980,
-  obtainLabel: { x: 450, y: 2000, w: 180, h: 70 } as Rect,
-  /** Where the "Obtain" label is looked for (generous, like a title band). */
-  obtainBand: { x: 380, y: 1985, w: 320, h: 100 } as Rect,
+  /**
+   * Where the "Obtain" label is looked for. It is not always in the same place: an Obelisk adds a "Reroll" button
+   * under it, which pushes it up (label at 1940-1973 there, 2016-2051 in a Treasure Chest). The band takes in both
+   * and stops short of "Reroll" itself (2116-2153).
+   */
+  obtainBand: { x: 380, y: 1900, w: 320, h: 195 } as Rect,
 };
 
 /** Select Attribute: the three talent icons (top, bottom-left, bottom-right — the order the data lists them) and "Learn". */
