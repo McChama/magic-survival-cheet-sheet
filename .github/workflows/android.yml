@@ -34,6 +34,11 @@ jobs:
       - run: npm run check:capture
       - run: npm run build
 
+      # An APK once shipped with live sync's reader missing from the bundle (never called from
+      # main.tsx): the Android side captured the screen and nothing was listening.
+      - name: Check the live sync reader is in the bundle
+        run: grep -q "MSCompanionHost" dist/assets/*.js
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

@@ -5,8 +5,11 @@ import './i18n'
 import App from './App.tsx'
 import { FONT_URL } from './config/assets'
 import { initUiClickSound } from './engine/uiSound'
+import { initCaptureBridge } from './capture/bridge'
 
 initUiClickSound()
+// Live sync: only does anything inside the Android companion (android/), see src/capture/bridge.ts.
+initCaptureBridge()
 
 // Registered here (not a static @font-face url() in index.css) so the path resolves
 // against Vite's `base` — see src/config/assets.ts.
