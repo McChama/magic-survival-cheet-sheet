@@ -4,7 +4,7 @@ import { ITEM_BY_ID } from "../engine/tierAdaptive";
 import { applyCaptureEvent, applyPick, refName } from "./apply";
 import type { Frame } from "./frame";
 import { buildLibrary, type Library } from "./library";
-import { CaptureSession, observe, type Observation, type OwnedRef } from "./session";
+import { CaptureSession, observe, RETRIEVE_RECT, type Observation, type OwnedRef } from "./session";
 
 /**
  * The live half of the screen reading, only alive inside the Android companion
@@ -19,6 +19,13 @@ interface CompanionHost {
   toast(text: string): void;
   /** Asks which of these level-up rows was taken; the answer comes back through `resolvePick`. */
   askPick(prompt: string, optionsJson: string): void;
+  /**
+   * Select Magic is up: cover these screen rectangles (fractions of the screen; the offer's rows, then the Retrieve
+   * button) so a first tap on one only marks it — reported through `mark` — and the next tap on the marked one
+   * reaches the game. Sent every tick as a keep-alive; the host drops the cover on its own if they stop.
+   */
+  guard(rectsJson: string): void;
+  unguard(): void;
   /** A game menu is up (or the run is back): the host moves its bubble out of the menus' way and back. */
   menu(open: boolean): void;
   /** What the reader is seeing right now — every tick, so the host can tell a working reader from a silent one. */
@@ -28,7 +35,7 @@ interface CompanionHost {
 declare global {
   interface Window {
     MSCompanionHost?: CompanionHost;
-    __msCapture?: { tick: () => void; resolvePick: (index: number) => void };
+    __msCapture?: { tick: () => void; resolvePick: (index: number) => void; mark: (index: number) => void };
   }
 }
 
@@ -98,6 +105,34 @@ export function initCaptureBridge() {
   let askedOptions: OwnedRef[] = [];
   let busy = false;
   let menuOpen = false;
+  /** Select Magic's tap guards: what each guarded row offers (the Retrieve button is one past the last), and the one the player marked. */
+  let guarding = false;
+  let guardRefs: (OwnedRef | null)[] = [];
+  let marked: number | null = null;
+
+  function ask(options: OwnedRef[]) {
+    askedOptions = options;
+    host!.askPick(i18n.t("capture.pickPrompt"), JSON.stringify(options.map((ref) => ({ label: refName(ref), icon: iconUrl(ref) }))));
+  }
+
+  /**
+   * A level-up closed on a plain row or on Retrieve. The game itself shows no selection there, but the guards made
+   * the player mark one first, and the game only ever received a tap on the marked one — so that is what was taken.
+   */
+  function resolveOffer(options: OwnedRef[]) {
+    const index = marked;
+    marked = null;
+    if (guarding) host!.unguard();
+    guarding = false;
+    // Tapped before the guards were up (the screen is read a moment after it appears): fall back to asking.
+    if (index === null) return ask(options);
+    // Mana Retrieve: nothing taken, and the character keeps its level.
+    if (index >= guardRefs.length) return;
+    const ref = guardRefs[index];
+    if (!ref) return ask(options);
+    const message = applyPick(ref);
+    if (message) host!.toast(message);
+  }
 
   async function tick() {
     if (busy) return;
@@ -129,10 +164,18 @@ export function initCaptureBridge() {
       for (const event of session.push(observation)) {
         const message = applyCaptureEvent(event);
         if (message) host!.toast(message);
-        if (event.type === "pickNeeded") {
-          askedOptions = event.options;
-          host!.askPick(i18n.t("capture.pickPrompt"), JSON.stringify(event.options.map((ref) => ({ label: refName(ref), icon: iconUrl(ref) }))));
-        }
+        if (event.type === "pickNeeded") resolveOffer(event.options);
+      }
+      if (observation.screen === "selectMagic") {
+        // Until a row is marked the reading may still be settling; after it, the mark's own border hides part of a row.
+        if (marked === null) guardRefs = observation.rows.map((row) => row.ref);
+        host!.guard(JSON.stringify([...observation.rows.map((row) => row.rect), RETRIEVE_RECT]));
+        guarding = true;
+      } else if (observation.screen !== "unknown") {
+        // Any other screen ends the offer (Select Attribute takes it from here on its own).
+        if (guarding) host!.unguard();
+        guarding = false;
+        marked = null;
       }
     } catch (error) {
       // The next tick reads the screen again; the host's status line is where a persistent failure shows.
@@ -144,6 +187,9 @@ export function initCaptureBridge() {
 
   window.__msCapture = {
     tick: () => void tick(),
+    mark: (index) => {
+      marked = index;
+    },
     resolvePick: (index) => {
       const ref = askedOptions[index];
       askedOptions = [];

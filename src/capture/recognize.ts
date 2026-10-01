@@ -363,8 +363,16 @@ export function readSelectAttribute(frame: Frame, library: Library): SelectAttri
 
 // --- Select Magic -----------------------------------------------------------------------------
 
-/** The magics/passives a level-up offers, top to bottom (null = a row whose icon wasn't recognized). */
-export function readSelectMagic(frame: Frame, library: Library): (Match | null)[] {
+export interface SelectMagicRow {
+  /** null = a row whose icon wasn't recognized. */
+  match: Match | null;
+  /** The row's vertical extent in frame pixels. */
+  top: number;
+  bottom: number;
+}
+
+/** The magics/passives a level-up offers, top to bottom. */
+export function readSelectMagic(frame: Frame, library: Library): SelectMagicRow[] {
   const probes = SELECT_MAGIC.probeXs.map((x) => scaleX(frame, x));
   const rowHeight = scaleY(frame, SELECT_MAGIC.rowHeight);
   const rows = runs(
@@ -379,6 +387,6 @@ export function readSelectMagic(frame: Frame, library: Library): (Match | null)[
   return rows.map(([top, bottom]) => {
     const height = bottom - top + 1;
     const patch = extractPatch(frame, { x: left, y: top + Math.round(height * 0.08), w: right - left, h: Math.round(height * 0.84) }, false);
-    return patch ? confident(bestMatch(patch, offered)) : null;
+    return { match: patch ? confident(bestMatch(patch, offered)) : null, top, bottom };
   });
 }

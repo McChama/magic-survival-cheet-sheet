@@ -518,8 +518,16 @@ permission). Everything that interprets a frame is pure TypeScript in `src/captu
 - `session.ts` — what a *sequence* of frames means: a chest with a card selected, or Select Attribute with a talent
   selected, followed by the run resuming = that one was taken; the game's Owned Magic / Owned Artifact lists (seen twice
   in a row) = the run's real magics, levels and artifacts. **A plain Select Magic row shows no selection before it
-  closes**, so that pick can't be read: the companion asks instead (`pickNeeded` → small chips on the game's top bar),
-  and the next Owned Magic visit corrects whatever wasn't answered.
+  closes** (not even while held — the player checked), and Android never lets an app see taps meant for another, so
+  that pick can't be *read*. Instead it is **marked, then confirmed**: while Select Magic is up, `bridge.ts` hands the
+  host each row's rectangle plus the Retrieve button's (`Host.guard`, every tick as a keep-alive) and `OverlayService`
+  covers them with invisible windows that swallow taps. The first tap on one marks it (a white frame, and that window
+  starts letting touches through); the next tap there reaches the game. The game can only ever receive a tap on the
+  marked one, so when the screen closes the mark *is* the pick — a row (`applyPick`), or Retrieve (nothing taken).
+  A tap that lands before the guards are up (the screen is read a moment after it appears) leaves no mark: then the
+  companion falls back to asking (`pickNeeded` → small chips on the game's top bar), and the next Owned Magic visit
+  corrects whatever wasn't answered. The guards drop on their own 1.5 s after the last keep-alive, and when the panel
+  opens — they must never outlive the screen they cover.
 - `apply.ts` — commits through the same store actions as the app's own sheets, and only ever adds or raises (a missed
   icon must not delete a recorded talent). **`run.currentLevel` goes up with a pick (a learned talent, an answered
   chip), never with the level-up screen appearing**: "Mana Retrieve" closes Select Magic without taking anything and

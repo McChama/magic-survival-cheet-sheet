@@ -94,9 +94,16 @@ for (const width of WIDTHS) {
     expect(fixture, attribute, { magicId: "shield", groupLevel: 5, talents: ["Barrier", "Reconstruct", "Destruction Field"], selected });
   }
 
-  const offer = readSelectMagic(await frame("select-magic"), library);
-  if (VERBOSE) console.log("  select magic:", offer.map(detail).join(" | "));
-  expect("select magic", offer.map(id), ["magic:flashShock", "magic:shield", "magic:meteor"]);
+  const offerFrame = await frame("select-magic");
+  const offer = readSelectMagic(offerFrame, library);
+  if (VERBOSE) console.log("  select magic:", offer.map((row) => detail(row.match)).join(" | "));
+  expect("select magic", offer.map((row) => id(row.match)), ["magic:flashShock", "magic:shield", "magic:meteor"]);
+  // Where each row is, as the share of the screen height the tap guards are laid out with (measured: 685-1069, 1113-1496, 1541-1924 of 2460).
+  expect(
+    "select magic rows",
+    offer.map((row) => [Math.round((row.top / (offerFrame.height)) * 100), Math.round((row.bottom / (offerFrame.height)) * 100)]),
+    [[28, 43], [45, 61], [63, 78]]
+  );
 
   // What a sequence of screens amounts to: the events of each frame, in order.
   const play = async (...fixtures) => {

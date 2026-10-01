@@ -47,11 +47,14 @@ import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Draws the companion over the game as overlay windows: a small draggable bubble (always there,
@@ -74,7 +77,11 @@ public class OverlayService extends Service {
     static final String EXTRA_RESULT_DATA = "resultData";
     private static final String PREFS = "bubble";
     private static final int BUBBLE_DP = 56;
-    private static final long TICK_MS = 500;
+    private static final long TICK_MS = 250;
+    /** Tap guards vanish on their own this long after the web app last asked for them — they must never outlive the screen they cover. */
+    private static final long GUARD_KEEPALIVE_MS = 1500;
+    private static final int GUARD_FLAGS = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
     private static final long PICK_TIMEOUT_MS = 15000;
     private static final long NOTICE_MS = 2500;
     /** No word from the web app for this long while capturing = the reader is not working. */
@@ -106,6 +113,11 @@ public class OverlayService extends Service {
     private boolean menuMode;
     private int homeX;
     private int homeY;
+    /** Select Magic's tap guards, in the order the web app listed them; {@code markedGuard} is the one let through. */
+    private final List<View> guards = new ArrayList<>();
+    private String guardLayout;
+    private int markedGuard = -1;
+    private final Runnable dropGuards = this::removeGuards;
     private final Runnable dismissPick = this::removePickStrip;
     private final Runnable dismissNotice = this::removeNotice;
     private final Runnable tick = new Runnable() {
@@ -149,6 +161,7 @@ public class OverlayService extends Service {
     public void onDestroy() {
         main.removeCallbacksAndMessages(null);
         capture.stop();
+        removeGuards();
         removePickStrip();
         removeNotice();
         if (panel != null) windowManager.removeView(panel);
@@ -250,6 +263,16 @@ public class OverlayService extends Service {
         }
 
         @JavascriptInterface
+        public void guard(String rectsJson) {
+            main.post(() -> showGuards(rectsJson));
+        }
+
+        @JavascriptInterface
+        public void unguard() {
+            main.post(OverlayService.this::removeGuards);
+        }
+
+        @JavascriptInterface
         public void menu(boolean open) {
             main.post(() -> setMenuMode(open));
         }
@@ -262,6 +285,86 @@ public class OverlayService extends Service {
                 refreshSyncStatus();
             });
         }
+    }
+
+    /**
+     * "Mark, then confirm" for Select Magic. The game picks a row the instant it is tapped and
+     * shows no selection first, and Android never lets one app see taps meant for another — so
+     * the only way to know the pick is to take the first tap ourselves. Each rectangle (a row,
+     * or the Retrieve button) gets an invisible window that swallows taps. Tapping one marks it:
+     * its window turns into a white frame that lets touches through, so the *next* tap there
+     * reaches the game, while the others keep swallowing. The game can therefore only ever
+     * receive a tap on the marked one — the same select-then-confirm the game itself uses for
+     * chests and attributes.
+     */
+    private void showGuards(String rectsJson) {
+        main.removeCallbacks(dropGuards);
+        if (panelOpen) return;
+        main.postDelayed(dropGuards, GUARD_KEEPALIVE_MS);
+        // Unchanged, or frozen: once something is marked, its frame is part of what the reader sees.
+        if (!guards.isEmpty() && (markedGuard >= 0 || rectsJson.equals(guardLayout))) return;
+        removeGuardViews();
+        Point screen = screenSize();
+        try {
+            JSONArray rects = new JSONArray(rectsJson);
+            for (int i = 0; i < rects.length(); i++) {
+                JSONObject rect = rects.getJSONObject(i);
+                final int index = i;
+                View guard = new View(this);
+                guard.setOnTouchListener((view, event) -> {
+                    if (event.getActionMasked() == MotionEvent.ACTION_UP) markGuard(index);
+                    return true;
+                });
+                WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                        (int) Math.round(rect.getDouble("w") * screen.x), (int) Math.round(rect.getDouble("h") * screen.y),
+                        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, GUARD_FLAGS, PixelFormat.TRANSLUCENT);
+                params.gravity = Gravity.TOP | Gravity.START;
+                params.x = (int) Math.round(rect.getDouble("x") * screen.x);
+                params.y = (int) Math.round(rect.getDouble("y") * screen.y);
+                if (Build.VERSION.SDK_INT >= 28) {
+                    params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                }
+                windowManager.addView(guard, params);
+                guards.add(guard);
+            }
+        } catch (JSONException malformed) {
+            removeGuardViews();
+            return;
+        }
+        guardLayout = rectsJson;
+    }
+
+    private void markGuard(int index) {
+        markedGuard = index;
+        for (int i = 0; i < guards.size(); i++) {
+            View guard = guards.get(i);
+            WindowManager.LayoutParams params = (WindowManager.LayoutParams) guard.getLayoutParams();
+            boolean marked = i == index;
+            params.flags = marked ? GUARD_FLAGS | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE : GUARD_FLAGS;
+            // Android 12+ only lets touches pass through an overlay this see-through or more.
+            params.alpha = marked ? 0.8f : 1f;
+            GradientDrawable frame = null;
+            if (marked) {
+                frame = new GradientDrawable();
+                frame.setColor(Color.TRANSPARENT);
+                frame.setStroke(dp(3), Color.WHITE);
+            }
+            guard.setBackground(frame);
+            windowManager.updateViewLayout(guard, params);
+        }
+        webView.evaluateJavascript("window.__msCapture&&window.__msCapture.mark(" + index + ")", null);
+    }
+
+    private void removeGuards() {
+        main.removeCallbacks(dropGuards);
+        removeGuardViews();
+    }
+
+    private void removeGuardViews() {
+        for (View guard : guards) windowManager.removeView(guard);
+        guards.clear();
+        guardLayout = null;
+        markedGuard = -1;
     }
 
     /**
@@ -604,6 +707,8 @@ public class OverlayService extends Service {
     private void openPanel() {
         if (panelOpen) return;
         removePickStrip();
+        // The guards sit above every other window of ours: left up, they would swallow taps meant for the panel.
+        removeGuards();
         panelOpen = true;
         refreshSyncStatus();
         markParked(false);

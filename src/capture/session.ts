@@ -1,4 +1,5 @@
-import type { Frame } from "./frame";
+import { REF_HEIGHT, REF_WIDTH, type Frame } from "./frame";
+import { SELECT_MAGIC } from "./geometry";
 import type { Library, Match } from "./library";
 import { classifyScreen, readOwnedArtifacts, readOwnedMagic, readSelectAttribute, readSelectMagic, readTreasureChest, type Screen } from "./recognize";
 
@@ -19,10 +20,32 @@ export interface OwnedLevel extends OwnedRef {
   special: boolean;
 }
 
+/** A rectangle as fractions of the screen (0-1), so it means the same on the capture and on the real display. */
+export interface ScreenRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** One row of a level-up offer: where it is, and what it offers (null when the icon wasn't recognized). */
+export interface OfferRow {
+  ref: OwnedRef | null;
+  rect: ScreenRect;
+}
+
+/** The "Mana N% Retrieve" button under a level-up's rows: tapping it declines the level-up. */
+export const RETRIEVE_RECT: ScreenRect = {
+  x: SELECT_MAGIC.retrieve.x / REF_WIDTH,
+  y: SELECT_MAGIC.retrieve.y / REF_HEIGHT,
+  w: SELECT_MAGIC.retrieve.w / REF_WIDTH,
+  h: SELECT_MAGIC.retrieve.h / REF_HEIGHT,
+};
+
 /** What one frame shows, already reduced to ids. */
 export type Observation =
   | { screen: "gameplay" | "unknown" | "pause" | "synergy" }
-  | { screen: "selectMagic"; options: OwnedRef[] }
+  | { screen: "selectMagic"; options: OwnedRef[]; rows: OfferRow[] }
   | { screen: "selectAttribute"; magicId: string | null; groupLevel: number | null; talent: string | null }
   | { screen: "treasureChest"; selectedId: string | null }
   | { screen: "ownedMagic"; entries: OwnedLevel[] }
@@ -50,8 +73,18 @@ function ownedRef(match: Match | null): OwnedRef[] {
 export function observe(frame: Frame, library: Library): Observation {
   const screen: Screen = classifyScreen(frame);
   switch (screen) {
-    case "selectMagic":
-      return { screen, options: readSelectMagic(frame, library).flatMap(ownedRef) };
+    case "selectMagic": {
+      const rows = readSelectMagic(frame, library).map((row) => ({
+        ref: ownedRef(row.match)[0] ?? null,
+        rect: {
+          x: SELECT_MAGIC.rowLeft / REF_WIDTH,
+          y: row.top / frame.height,
+          w: (SELECT_MAGIC.rowRight - SELECT_MAGIC.rowLeft) / REF_WIDTH,
+          h: (row.bottom - row.top + 1) / frame.height,
+        },
+      }));
+      return { screen, options: rows.flatMap((row) => (row.ref ? [row.ref] : [])), rows };
+    }
     case "selectAttribute": {
       const reading = readSelectAttribute(frame, library);
       return {

@@ -68,4 +68,8 @@ export const SELECT_MAGIC = {
   rowHeight: 375,
   iconLeft: 100,
   iconRight: 315,
+  /** A row's own left and right edges, and the "Mana N% Retrieve" button under the rows. */
+  rowLeft: 53,
+  rowRight: 1026,
+  retrieve: { x: 250, y: 1995, w: 575, h: 122 } as Rect,
 };
