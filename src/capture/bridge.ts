@@ -1,18 +1,24 @@
 import i18n from "../i18n";
 import { baseMagicSpriteUrl } from "../data/magics";
 import { ITEM_BY_ID } from "../engine/tierAdaptive";
+import { useUiStore } from "../store/useUiStore";
 import { applyCaptureEvent, applyPick, refName } from "./apply";
 import type { Frame } from "./frame";
 import { readKeepOut, type ScreenRect } from "./keepOut";
-import { buildLibrary, type Library } from "./library";
+import { decodeLibrary, type EncodedLibrary, type Library } from "./library";
 import { CaptureSession, observe, type Observation, type OwnedRef } from "./session";
 
 /**
  * The live half of the screen reading, only alive inside the Android companion
  * (`android/`, `OverlayService`): the app there captures the screen and exposes each frame at
- * `<base>__capture/frame`, then calls `window.__msCapture.tick()` twice a second while the
+ * `<base>__capture/frame`, then calls `window.__msCapture.tick()` four times a second while the
  * game — not this panel — is what's on screen. In a plain browser `MSCompanionHost` doesn't
  * exist and none of this runs.
+ *
+ * It is built to cost nothing while the player is simply playing, which is nearly all the time:
+ * the host itself tells the run from a menu (three pixels) and, while the run stays up, neither
+ * copies a frame nor calls in here. A frame only crosses over when a menu is up, and a menu is a
+ * still picture — one frame, then "unchanged" until it closes.
  */
 
 interface CompanionHost {
@@ -39,7 +45,14 @@ interface CompanionHost {
 declare global {
   interface Window {
     MSCompanionHost?: CompanionHost;
-    __msCapture?: { tick: () => void; resolvePick: (index: number) => void; mark: (index: number) => void };
+    __msCapture?: {
+      /** `playing`: the host already saw the run itself on screen, so there is no frame to fetch. */
+      tick: (playing?: boolean) => void;
+      resolvePick: (index: number) => void;
+      mark: (index: number) => void;
+      /** The panel went off-screen (or came back): nobody is looking, so nothing should keep animating. */
+      parked: (parked: boolean) => void;
+    };
   }
 }
 
@@ -59,20 +72,9 @@ async function fetchFrame(): Promise<Frame | null> {
   return { width, height, data: new Uint8ClampedArray(buffer, 8, width * height * 4) };
 }
 
-async function loadSprite(url: string): Promise<Frame | null> {
-  try {
-    const bitmap = await createImageBitmap(await (await fetch(url)).blob());
-    const canvas = document.createElement("canvas");
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context) return null;
-    context.drawImage(bitmap, 0, 0);
-    const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
-    return { width: bitmap.width, height: bitmap.height, data };
-  } catch {
-    return null;
-  }
+/** The sprite templates, generated ahead of time (`npm run capture:templates`) and loaded only once a menu needs reading. */
+function loadLibrary(): Promise<Library> {
+  return import("./templates.generated.json").then((module) => decodeLibrary(module.default as unknown as EncodedLibrary));
 }
 
 /** One short line for the host's status display: which screen, and how much of it was read. */
@@ -110,6 +112,7 @@ export function initCaptureBridge() {
   let busy = false;
   let keepOut: ScreenRect[] = [];
   let avoidSent = "[]";
+  let statusLine = "";
   /** Select Magic's tap guards: what each guarded row offers (the Retrieve button, when there is one, is one past the last), and the one the player marked. */
   let guarding = false;
   let guardRefs: (OwnedRef | null)[] = [];
@@ -139,31 +142,35 @@ export function initCaptureBridge() {
     if (message) host!.toast(message);
   }
 
-  async function tick() {
+  async function tick(playing = false) {
     if (busy) return;
     busy = true;
     try {
-      const frame = await fetchFrame();
-      if (frame && !library) {
-        host!.status(i18n.t("capture.status.loading"));
-        library = buildLibrary(loadSprite);
+      let observation: Observation | null = lastObservation;
+      if (playing) {
+        observation = { screen: "gameplay" };
+        keepOut = [];
+        statusLine = describe(observation);
+      } else {
+        const frame = await fetchFrame();
+        // No frame = an unchanged screen: the previous reading again — that repeat is what confirms a list as stable.
+        if (frame) {
+          const sprites = await (library ??= loadLibrary());
+          const started = performance.now();
+          observation = observe(frame, sprites);
+          if (observation.screen !== "unknown") keepOut = readKeepOut(frame, observation.screen);
+          // How long one reading takes on this phone, shown in the host's status line: the number to watch on a slow one.
+          statusLine = i18n.t("capture.status.timed", { status: describe(observation), ms: Math.round(performance.now() - started) });
+        }
       }
-      const sprites = library ? await library : null;
-      if (sprites && sprites.icons.length + sprites.artifacts.length === 0) {
-        host!.status(i18n.t("capture.status.noSprites"));
-        return;
-      }
-      // An unchanged screen is the previous reading again — that repeat is what confirms a list as stable.
-      const observation = frame && sprites ? observe(frame, sprites) : lastObservation;
       if (!observation) {
         host!.status(i18n.t("capture.status.waiting"));
         return;
       }
       lastObservation = observation;
-      host!.status(describe(observation));
+      host!.status(statusLine);
       // "unknown" is a transition frame as often as not: it changes nothing.
       if (observation.screen !== "unknown") {
-        if (frame) keepOut = readKeepOut(frame, observation.screen);
         const avoid = JSON.stringify(keepOut);
         if (avoid !== avoidSent) {
           avoidSent = avoid;
@@ -195,7 +202,11 @@ export function initCaptureBridge() {
   }
 
   window.__msCapture = {
-    tick: () => void tick(),
+    tick: (playing) => void tick(playing),
+    parked: (parked) => {
+      document.documentElement.classList.toggle("parked", parked);
+      useUiStore.getState().setParked(parked);
+    },
     mark: (index) => {
       marked = index;
     },

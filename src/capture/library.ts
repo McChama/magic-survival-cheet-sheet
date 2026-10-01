@@ -142,32 +142,69 @@ function spritePatch(sprite: Frame, asMask: boolean, color: boolean): Patch | nu
 }
 
 /**
- * Every sprite turned into a template. `loadSprite` decodes one image URL (a canvas in the
- * WebView, `sharp` in the Node check) — the only part that differs between the two.
+ * Every sprite turned into a template. This decodes ~300 images, so it is **not what the app does
+ * at run time**: `npm run capture:templates` runs it once (`loadSprite` = `sharp`, in Node) and the
+ * result ships as `templates.generated.json`, which `decodeLibrary` turns back into a Library
+ * instantly — no image decoding on the phone. The order is the data files' own, so the output is stable.
  */
 export async function buildLibrary(loadSprite: (url: string) => Promise<Frame | null>): Promise<Library> {
-  const icons: Template[] = [];
-  const artifacts: Template[] = [];
-
-  async function add(list: Template[], kind: TemplateKind, id: string, url: string, variants: { asMask: boolean; color: boolean }[]) {
+  async function templates(kind: TemplateKind, id: string, url: string, variants: { asMask: boolean; color: boolean }[]): Promise<Template[]> {
     const sprite = await loadSprite(url);
-    if (!sprite) return;
-    for (const variant of variants) {
+    if (!sprite) return [];
+    return variants.flatMap((variant) => {
       const patch = spritePatch(sprite, variant.asMask, variant.color);
-      if (patch) list.push({ kind, id, patch });
-    }
+      return patch ? [{ kind, id, patch }] : [];
+    });
   }
 
   const white = [{ asMask: true, color: false }];
   // A special ability's card keeps the sprite's own colors, a leveled passive's is flat — both are tried.
   const whiteOrOwn = [...white, { asMask: false, color: false }];
 
-  await Promise.all([
-    // Intelligence is the passive, not a base magic (see CLAUDE.md's "+" menu section).
-    ...BASE_MAGICS.filter((m) => m.id !== "intelligence").map((m) => add(icons, "magic", m.id, baseMagicSpriteUrl(m.id), white)),
-    ...PASSIVES.map((p) => add(icons, "passive", p.id, p.image, whiteOrOwn)),
-    ...CLASSES.map((name) => add(icons, "class", name, classImage(`${slug(name)}.png`), white)),
-    ...ARTIFACTS.map((a) => add(artifacts, "artifact", a.id, a.image, [{ asMask: false, color: true }])),
+  const [icons, artifacts] = await Promise.all([
+    Promise.all([
+      // Intelligence is the passive, not a base magic (see CLAUDE.md's "+" menu section).
+      ...BASE_MAGICS.filter((m) => m.id !== "intelligence").map((m) => templates("magic", m.id, baseMagicSpriteUrl(m.id), white)),
+      ...PASSIVES.map((p) => templates("passive", p.id, p.image, whiteOrOwn)),
+      ...CLASSES.map((name) => templates("class", name, classImage(`${slug(name)}.png`), white)),
+    ]),
+    Promise.all(ARTIFACTS.map((a) => templates("artifact", a.id, a.image, [{ asMask: false, color: true }]))),
   ]);
-  return { icons, artifacts };
+  return { icons: icons.flat(), artifacts: artifacts.flat() };
+}
+
+/** A Library as plain JSON: each template's values squeezed to one byte each (they only ever feed a similarity score). */
+export interface EncodedLibrary {
+  icons: [TemplateKind, string, string][];
+  artifacts: [TemplateKind, string, string][];
+}
+
+function encodeTemplate({ kind, id, patch }: Template): [TemplateKind, string, string] {
+  let largest = 0;
+  for (const v of patch.values) largest = Math.max(largest, Math.abs(v));
+  let bytes = "";
+  for (const v of patch.values) bytes += String.fromCharCode(Math.round((v / (largest || 1)) * 127) & 0xff);
+  return [kind, id, btoa(bytes)];
+}
+
+function decodeTemplate([kind, id, data]: [TemplateKind, string, string]): Template {
+  const bytes = atob(data);
+  const values = new Float32Array(bytes.length);
+  let norm = 0;
+  for (let i = 0; i < bytes.length; i++) {
+    const byte = bytes.charCodeAt(i);
+    values[i] = byte > 127 ? byte - 256 : byte;
+    norm += values[i] * values[i];
+  }
+  norm = Math.sqrt(norm) || 1;
+  for (let i = 0; i < values.length; i++) values[i] /= norm;
+  return { kind, id, patch: { values } };
+}
+
+export function encodeLibrary(library: Library): EncodedLibrary {
+  return { icons: library.icons.map(encodeTemplate), artifacts: library.artifacts.map(encodeTemplate) };
+}
+
+export function decodeLibrary(encoded: EncodedLibrary): Library {
+  return { icons: encoded.icons.map(decodeTemplate), artifacts: encoded.artifacts.map(decodeTemplate) };
 }

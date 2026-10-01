@@ -31,6 +31,7 @@ public class MainActivity extends Activity {
     private Button grantButton;
     private Button playButton;
     private CheckBox liveSync;
+    private CheckBox economy;
 
     private static final int REQUEST_CAPTURE = 2;
     private static final String PREFS = "launcher";
@@ -73,6 +74,15 @@ public class MainActivity extends Activity {
                 getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean("liveSync", checked).apply());
         root.addView(liveSync);
         root.addView(text(getString(R.string.live_sync_blurb), 12, "#9a9aa2"));
+
+        economy = new CheckBox(this);
+        economy.setText(R.string.economy);
+        economy.setTextColor(Color.WHITE);
+        economy.setChecked(getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("economy", false));
+        economy.setOnCheckedChangeListener((box, checked) ->
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean("economy", checked).apply());
+        root.addView(economy);
+        root.addView(text(getString(R.string.economy_blurb), 12, "#9a9aa2"));
 
         playButton = button(getString(R.string.play));
         playButton.setOnClickListener(v -> play());
@@ -124,7 +134,8 @@ public class MainActivity extends Activity {
             startForegroundService(new Intent(this, OverlayService.class)
                     .setAction(OverlayService.ACTION_START_CAPTURE)
                     .putExtra(OverlayService.EXTRA_RESULT_CODE, resultCode)
-                    .putExtra(OverlayService.EXTRA_RESULT_DATA, data));
+                    .putExtra(OverlayService.EXTRA_RESULT_DATA, data)
+                    .putExtra(OverlayService.EXTRA_ECONOMY, economy.isChecked()));
         }
         launchGame();
     }

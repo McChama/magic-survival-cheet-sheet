@@ -184,8 +184,6 @@
     "pickPrompt": "Which one did you pick?",
     "status": {
       "waiting": "waiting for the first frame",
-      "loading": "loading sprites",
-      "noSprites": "sprites failed to load",
       "error": "error: {{message}}",
       "gameplay": "the run",
       "unknown": "not a game screen",
@@ -198,7 +196,8 @@
       "ownedArtifact": "Owned Artifact ({{count}} read)",
       "nothingSelected": "nothing selected",
       "enterArea": "Enter Area",
-      "lifeOrDeath": "Life or Death"
+      "lifeOrDeath": "Life or Death",
+      "timed": "{{status}} · {{ms}} ms"
     },
     "retrieved": "Mana retrieved",
     "runStarted": "New run started",

@@ -13,7 +13,8 @@
     "i18n:check-hardcoded-text": "node scripts/check-hardcoded-text.mjs",
     "check:formulas": "vite-node scripts/check-formulas.mjs",
     "check:capture": "vite-node scripts/check-capture.mjs",
-    "capture:signatures": "vite-node scripts/gen-title-signatures.mjs"
+    "capture:signatures": "vite-node scripts/gen-title-signatures.mjs",
+    "capture:templates": "vite-node scripts/gen-capture-templates.mjs"
   },
   "dependencies": {
     "i18next": "^26.4.2",

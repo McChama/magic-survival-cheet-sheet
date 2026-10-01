@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { uiImage } from "../../config/assets";
+import { useUiStore } from "../../store/useUiStore";
 import { NavIconButton } from "../shared/NavIconButton";
 
 interface HomeScreenProps {
@@ -20,13 +21,16 @@ const TITLE_FRAME_MS = 150;
 
 function TitleBackdrop() {
   const [frameIndex, setFrameIndex] = useState(0);
+  const parked = useUiStore((s) => s.parked);
 
   useEffect(() => {
+    // Off-screen (the companion's panel is parked): no timer, so no re-render nobody would see.
+    if (parked) return;
     const id = window.setInterval(() => {
       setFrameIndex((i) => (i + 1) % TITLE_FRAMES.length);
     }, TITLE_FRAME_MS);
     return () => window.clearInterval(id);
-  }, []);
+  }, [parked]);
 
   return (
     <img

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { subjectAnimFrame, subjectImage } from "../../config/assets";
 import { slug as subjectSlug } from "../../i18n/gameData";
+import { useUiStore } from "../../store/useUiStore";
 
 /**
  * User-picked subset of the 21-frame animation set that reads as a calm idle sway rather
@@ -19,13 +20,16 @@ const IDLE_FRAME_MS = 150;
 export function SubjectSprite({ name, label, className = "" }: { name: string; label: string; className?: string }) {
   const slug = subjectSlug(name);
   const [frameIndex, setFrameIndex] = useState(0);
+  const parked = useUiStore((s) => s.parked);
 
   useEffect(() => {
+    // Off-screen (the companion's panel is parked): no timer, so no re-render nobody would see.
+    if (parked) return;
     const id = window.setInterval(() => {
       setFrameIndex((i) => (i + 1) % IDLE_FRAMES.length);
     }, IDLE_FRAME_MS);
     return () => window.clearInterval(id);
-  }, [slug]);
+  }, [slug, parked]);
 
   return (
     <img

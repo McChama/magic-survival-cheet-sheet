@@ -5,13 +5,14 @@
 //
 //   npm run check:capture
 
-import { buildLibrary } from "../src/capture/library.ts";
+import { readFileSync } from "node:fs";
+import { buildLibrary, decodeLibrary, encodeLibrary } from "../src/capture/library.ts";
 import { classifyScreen, readOwnedArtifacts, readOwnedMagic, readSelectAttribute, readSelectMagic, readTreasureChest } from "../src/capture/recognize.ts";
 import { intersects, readKeepOut } from "../src/capture/keepOut.ts";
 import { CaptureSession, observe } from "../src/capture/session.ts";
 import { loadFixture, loadSprite } from "./capture-node.mjs";
 
-const WIDTHS = [1080, 720];
+const WIDTHS = (process.env.WIDTHS ?? "1080,720").split(",").map(Number);
 const VERBOSE = process.argv.includes("--verbose");
 
 const SCREENS = {
@@ -52,8 +53,15 @@ function expect(label, actual, expected) {
 const id = (match) => (match ? `${match.kind}:${match.id}` : null);
 const detail = (match) => (match ? `${match.kind}:${match.id} ${match.score.toFixed(2)}/+${match.margin.toFixed(2)}` : "null");
 
-const library = await buildLibrary(loadSprite);
+// Everything below reads with the templates the app actually ships (generated ahead of time, one byte per value),
+// and those must still be what the current sprites produce.
+const shipped = readFileSync(new URL("../src/capture/templates.generated.json", import.meta.url), "utf8");
+const library = decodeLibrary(JSON.parse(shipped));
 console.log(`Library: ${library.icons.length} icon templates, ${library.artifacts.length} artifact templates.`);
+if (JSON.stringify(encodeLibrary(await buildLibrary(loadSprite))) + "\n" !== shipped) {
+  failures++;
+  console.error("  FAIL  src/capture/templates.generated.json is stale. Run: npm run capture:templates");
+}
 
 for (const width of WIDTHS) {
   console.log(`\n@ ${width}px`);

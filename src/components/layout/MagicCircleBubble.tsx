@@ -56,10 +56,13 @@ const circleSprite = (n: number): string => uiImage(`magicCircle/MagicCircle${n}
  */
 function SpinningCircle({ overmind }: { overmind: boolean }) {
   const [variant, setVariant] = useState(0);
+  const parked = useUiStore((s) => s.parked);
   useEffect(() => {
+    // Off-screen (the companion's panel is parked — and the Dashboard is where it usually is left): no timer.
+    if (parked) return;
     const id = window.setInterval(() => setVariant((v) => (v + 1) % CIRCLE_VARIANTS), CIRCLE_VARIANT_MS);
     return () => window.clearInterval(id);
-  }, []);
+  }, [parked]);
   if (overmind) {
     return (
       <span aria-hidden className="relative block w-[88%] h-[88%] pointer-events-none motion-safe:animate-spin-cw">

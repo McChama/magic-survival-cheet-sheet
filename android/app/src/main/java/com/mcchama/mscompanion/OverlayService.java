@@ -77,6 +77,7 @@ public class OverlayService extends Service {
     static final String ACTION_START_CAPTURE = "com.mcchama.mscompanion.START_CAPTURE";
     static final String EXTRA_RESULT_CODE = "resultCode";
     static final String EXTRA_RESULT_DATA = "resultData";
+    static final String EXTRA_ECONOMY = "economy";
     private static final String PREFS = "bubble";
     private static final int BUBBLE_DP = 56;
     private static final long TICK_MS = 250;
@@ -130,16 +131,35 @@ public class OverlayService extends Service {
     private final Runnable dropGuards = this::removeGuards;
     private final Runnable dismissPick = this::removePickStrip;
     private final Runnable dismissNotice = this::removeNotice;
+    /** The last tick already found the run itself on screen (and told the web app so). */
+    private boolean wasPlaying;
     private final Runnable tick = new Runnable() {
         @Override
         public void run() {
             if (!capture.isRunning()) return;
             // Our own panel on screen would be read as if it were the game (it looks like it on purpose).
-            if (!panelOpen) webView.evaluateJavascript("window.__msCapture&&window.__msCapture.tick()", null);
+            if (panelOpen) {
+                wasPlaying = false;
+            } else {
+                boolean playing = capture.showsTheRun();
+                if (playing && wasPlaying && readerStatus != null) {
+                    // Still just the run — the tick that happens all game long. Nothing is copied and the web app
+                    // isn't woken: three pixels were all there was to look at.
+                    readerStatusAt = SystemClock.uptimeMillis();
+                } else {
+                    webView.evaluateJavascript("window.__msCapture&&window.__msCapture.tick(" + playing + ")", null);
+                }
+                wasPlaying = playing;
+            }
+            capture.requestFrame();
             refreshSyncStatus();
             main.postDelayed(this, TICK_MS);
         }
     };
+    /** What the header and the bubble currently show, so a tick that changes nothing redraws nothing. */
+    private String shownLine;
+    private int shownRing;
+    private int shownTint;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -220,6 +240,8 @@ public class OverlayService extends Service {
         if (data == null || capture.isRunning()) return;
         captureFailure = null;
         readerStatus = null;
+        wasPlaying = false;
+        capture.setEconomy(intent.getBooleanExtra(EXTRA_ECONOMY, false));
         try {
             startInForeground(true);
             capture.start(this, intent.getIntExtra(EXTRA_RESULT_CODE, 0), data, main, () -> {
@@ -256,12 +278,20 @@ public class OverlayService extends Service {
             boolean silent = !panelOpen && SystemClock.uptimeMillis() - readerStatusAt > SILENT_MS;
             ring = silent ? RING_BROKEN : RING_ALIVE;
         }
-        syncLine.setText(line);
+        if (!line.equals(shownLine)) {
+            shownLine = line;
+            syncLine.setText(line);
+        }
         if (bubbleRing == null) return;
         // The guards outrank the sync colors: they are what the player needs to know before tapping a row.
         boolean guarding = !guards.isEmpty();
-        int tint = markedGuard >= 0 ? RING_MARKED : RING_LISTENING;
-        bubbleRing.setStroke(dp(2), guarding ? tint : ring);
+        int tint = !guarding ? 0 : markedGuard >= 0 ? RING_MARKED : RING_LISTENING;
+        if (guarding) ring = tint;
+        // This runs every tick; the bubble is only touched (and redrawn) when what it shows really changed.
+        if (ring == shownRing && tint == shownTint) return;
+        shownRing = ring;
+        shownTint = tint;
+        bubbleRing.setStroke(dp(2), ring);
         if (guarding) bubble.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
         else bubble.clearColorFilter();
     }
@@ -754,7 +784,9 @@ public class OverlayService extends Service {
 
     /** Tells the web app whether anyone can see it, so it stops animating while parked (index.css, `.parked`). */
     private void markParked(boolean parked) {
-        webView.evaluateJavascript("document.documentElement.classList.toggle('parked'," + parked + ")", null);
+        // Pauses the app's animations and timers (src/capture/bridge.ts); the class alone if the bridge isn't up yet.
+        webView.evaluateJavascript("window.__msCapture?window.__msCapture.parked(" + parked
+                + "):document.documentElement.classList.toggle('parked'," + parked + ")", null);
     }
 
     private void openPanel() {

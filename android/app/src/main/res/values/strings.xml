@@ -17,6 +17,8 @@
     <string name="live_sync">Live sync (reads the game screen)</string>
     <string name="live_sync_blurb">Fills in artifacts, talents and the Owned lists as you play. Android asks to share the screen each time; nothing leaves the phone.</string>
     <string name="pick_skip">None of these</string>
+    <string name="economy">Low-power capture (experimental)</string>
+    <string name="economy_blurb">Reads the screen a few times a second instead of mirroring every frame. Easier on a slow phone; a level-up may take a moment longer to be noticed. Turn it off if live sync stops reading.</string>
     <string name="sync_off">Live sync off</string>
     <string name="sync_failed">Live sync failed: %1$s</string>
     <string name="sync_silent">Live sync: screen shared, reader not answering (frames %1$d)</string>
