@@ -38,6 +38,12 @@ interface CompanionHost {
    * host's bubble is in the captured picture too, so it steps aside while it would cover one — and only then.
    */
   avoid(rectsJson: string): void;
+  /**
+   * The artifact-offer panel: 0 = not on screen, 1 = open with nothing selected, 2 = a card selected, "Obtain" still
+   * to be pressed. The host's bubble shows it (the Owned Artifact icon, white then gold), the way it shows a
+   * level-up's mark with the Owned Magic icon.
+   */
+  chest(state: number): void;
   /** What the reader is seeing right now — every tick, so the host can tell a working reader from a silent one. */
   status(text: string): void;
 }
@@ -112,6 +118,7 @@ export function initCaptureBridge() {
   let busy = false;
   let keepOut: ScreenRect[] = [];
   let avoidSent = "[]";
+  let chestSent = 0;
   let statusLine = "";
   /** Select Magic's tap guards: what each guarded row offers (the Retrieve button, when there is one, is one past the last), and the one the player marked. */
   let guarding = false;
@@ -175,6 +182,11 @@ export function initCaptureBridge() {
         if (avoid !== avoidSent) {
           avoidSent = avoid;
           host!.avoid(avoid);
+        }
+        const chest = observation.screen !== "treasureChest" ? 0 : observation.hasSelection ? 2 : 1;
+        if (chest !== chestSent) {
+          chestSent = chest;
+          host!.chest(chest);
         }
       }
       for (const event of session.push(observation)) {

@@ -558,8 +558,13 @@ permission). Everything that interprets a frame is pure TypeScript in `src/captu
   touches through); the next tap there reaches the game. The game can only ever receive a tap on the marked one —
   i.e. **only a tap on the same thing as the previous tap** — so when the screen closes the mark *is* the pick: a row
   (`applyPick`), or Retrieve (nothing taken, a "Mana retrieved" notice). Nothing is drawn over the game (the player
-  asked for that): the **bubble** carries the state, ring and icon — cyan once the guards are up ("ready, your first
-  tap marks"), white once something is marked, with a beat on every mark since moving the mark changes no color.
+  asked for that): the **bubble** carries the state. During a choice it stops showing its heptagram and shows the
+  icon of the Dashboard button that choice belongs to, in the game's own two sprites — **white while nothing is
+  selected, gold once something is and only the confirming tap is missing** (ring to match): the Owned Magic icon
+  (`UI_Icon007` / `_Gold`) for a level-up, from the moment the guards are up ("ready, your first tap marks") to the
+  mark, with a beat on every mark since moving the mark changes nothing else; and the Owned Artifact icon
+  (`UI_Icon009` / `_Gold`) while a chest is open, gold once a card is selected and "Obtain" is still to be pressed
+  (`Host.chest` — the chest needs no guards, the game itself selects before it confirms).
   **A level-up offers two, three or four rows** (Arcanist: two, and then no Retrieve button), centered as a block — the
   rows never change size, the title and the Retrieve button ride up and down with them; all three layouts are fixtures,
   and Retrieve is found by its label rather than assumed (a fourth row sits where three rows' Retrieve would be).
@@ -575,7 +580,9 @@ permission). Everything that interprets a frame is pure TypeScript in `src/captu
 The companion's own bubble is part of what gets captured — left in place it hid whatever card sat under it in the
 Owned lists — so it **steps aside** to the bottom corner on its side (the one strip no menu draws in), but **only while
 its resting place overlaps something that is actually read**: `keepOut.ts` lists those areas per screen (the Owned
-grids through one row past the last card, the chest's card row, the left end of Select Magic's rows) and `Host.avoid`
+grids through one row past the last card, the chest's card row, the left end of Select Magic's rows — and nothing
+at all while Select Magic is still fading in and no row is solid yet: guessing "anywhere" there made the bubble drop
+to the corner and come straight back on every level-up) and `Host.avoid`
 hands them to `OverlayService`. Anywhere else it stays put — over a Select Magic row's "Lv N" label (never read: the
 level comes from the run), on Pause, Synergy or Select Attribute. It can't be dropped on the game's top bar either:
 there it would hide the pause button the run is recognised by.

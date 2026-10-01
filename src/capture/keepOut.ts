@@ -41,8 +41,11 @@ export function readKeepOut(frame: Frame, screen: Screen): ScreenRect[] {
       // the ones found sit lopsided there is another the bubble is hiding: the span is mirrored to cover it.
       const g = SELECT_MAGIC;
       const rows = findSelectMagicRows(frame).map(([top, bottom]) => [(top * REF_HEIGHT) / frame.height, (bottom * REF_HEIGHT) / frame.height]);
-      const first = rows.length ? rows[0][0] : g.scanTop;
-      const last = rows.length ? rows[rows.length - 1][1] : g.scanBottom;
+      // No row found yet: the screen is still fading in (its title shows before its rows turn solid). Guessing
+      // "anywhere" here sent the bubble to the corner and straight back on every level-up.
+      if (rows.length === 0) return [];
+      const first = rows[0][0];
+      const last = rows[rows.length - 1][1];
       const top = Math.max(g.scanTop, Math.min(first, 2 * g.centerY - last));
       const bottom = Math.min(g.scanBottom, Math.max(last, 2 * g.centerY - first));
       return [fromRef({ x: g.rowLeft, y: top, w: g.iconRight - g.rowLeft, h: bottom - top })];

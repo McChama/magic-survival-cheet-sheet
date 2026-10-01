@@ -144,6 +144,7 @@ for (const width of WIDTHS) {
   expect("bubble on the chest's cards moves", await covered("treasure-chest", "treasureChest", { ...bubbleRight, y: 0.3 }), true);
   expect("bubble above the four rows stays", await covered("select-magic-4", "selectMagic", { ...bubbleLeft, y: 0.12 }), false);
   expect("bubble on the first of four rows moves", await covered("select-magic-4", "selectMagic", { ...bubbleLeft, y: 0.22 }), true);
+  expect("Select Magic still fading in (no row solid yet) moves nothing", readKeepOut(await frame("gameplay-1"), "selectMagic"), []);
   expect("bubble on Pause stays", await covered("pause", "pause", bubbleRight), false);
   expect("bubble on Select Attribute stays", await covered("select-attribute", "selectAttribute", bubbleRight), false);
 

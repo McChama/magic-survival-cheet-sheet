@@ -67,9 +67,10 @@ import java.util.List;
  * Live sync (optional, {@link ScreenCapture}): while the panel is parked, the web app is asked
  * twice a second to read the captured frame; it reports back through {@link Host}. The bubble's
  * ring shows whether that loop is alive (green), broken (red) or off (gold), and the panel's
- * header says what the reader last saw. During a level-up the whole bubble — ring and icon —
- * says where "mark, then confirm" stands: cyan once the tap guards are up, white once something
- * is marked.
+ * header says what the reader last saw. During a choice the whole bubble — ring and icon —
+ * says where it stands: the Owned Magic icon for a level-up (once the tap guards are up) or the
+ * Owned Artifact icon for a chest, white while nothing is selected and gold once something is
+ * and only the confirming tap is missing.
  */
 public class OverlayService extends Service {
     private static final String CHANNEL_ID = "companion";
@@ -94,10 +95,25 @@ public class OverlayService extends Service {
     private static final int RING_OFF = Color.parseColor("#efc84f");
     private static final int RING_ALIVE = Color.parseColor("#3fdc5a");
     private static final int RING_BROKEN = Color.parseColor("#f0603c");
-    /** Select Magic's tap guards are up: the color of that screen's own title. */
-    private static final int RING_LISTENING = Color.parseColor("#5ff5e1");
-    /** A row (or Retrieve) is marked: the white the game itself uses for a selection. */
-    private static final int RING_MARKED = Color.WHITE;
+    /** A choice is on screen and nothing is selected yet. */
+    private static final int RING_READY = Color.WHITE;
+    /** Something is selected and only the confirming tap is missing — the gold of the game's own "_Gold" icons. */
+    private static final int RING_PENDING = Color.parseColor("#efc84f");
+
+    /**
+     * What the bubble shows during a choice, instead of its own heptagram: the icon of the Dashboard button the
+     * choice belongs to — Owned Magic for a level-up, Owned Artifact for a chest — in the game's white sprite
+     * while nothing is selected and its gold one once something is. The sprites are the web app's (assets/web).
+     */
+    private static final int LOOK_DEFAULT = 0;
+    private static final int LOOK_MAGIC = 1;
+    private static final int LOOK_MAGIC_PENDING = 2;
+    private static final int LOOK_ARTIFACT = 3;
+    private static final int LOOK_ARTIFACT_PENDING = 4;
+    private static final String[] LOOK_SPRITES = {
+        null, "UI_Icon007.png", "UI_Icon007_Gold.png", "UI_Icon009.png", "UI_Icon009_Gold.png",
+    };
+    private final Bitmap[] lookBitmaps = new Bitmap[LOOK_SPRITES.length];
 
     private WindowManager windowManager;
     private ImageView bubble;
@@ -159,7 +175,9 @@ public class OverlayService extends Service {
     /** What the header and the bubble currently show, so a tick that changes nothing redraws nothing. */
     private String shownLine;
     private int shownRing;
-    private int shownTint;
+    private int shownLook = -1;
+    /** The artifact-offer panel as the web app last reported it: 0 not on screen, 1 open, 2 a card selected. */
+    private int chestState;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -247,6 +265,7 @@ public class OverlayService extends Service {
             capture.start(this, intent.getIntExtra(EXTRA_RESULT_CODE, 0), data, main, () -> {
                 startInForeground(false);
                 setAvoid("[]");
+                chestState = 0;
                 refreshSyncStatus();
             });
             if (!capture.isRunning()) captureFailure = "no projection";
@@ -283,17 +302,31 @@ public class OverlayService extends Service {
             syncLine.setText(line);
         }
         if (bubbleRing == null) return;
-        // The guards outrank the sync colors: they are what the player needs to know before tapping a row.
-        boolean guarding = !guards.isEmpty();
-        int tint = !guarding ? 0 : markedGuard >= 0 ? RING_MARKED : RING_LISTENING;
-        if (guarding) ring = tint;
+        // A choice outranks the sync colors: it is what the player needs to see before tapping.
+        int look = LOOK_DEFAULT;
+        if (!guards.isEmpty()) look = markedGuard >= 0 ? LOOK_MAGIC_PENDING : LOOK_MAGIC;
+        else if (chestState > 0) look = chestState == 2 ? LOOK_ARTIFACT_PENDING : LOOK_ARTIFACT;
+        if (look != LOOK_DEFAULT) ring = look == LOOK_MAGIC_PENDING || look == LOOK_ARTIFACT_PENDING ? RING_PENDING : RING_READY;
         // This runs every tick; the bubble is only touched (and redrawn) when what it shows really changed.
-        if (ring == shownRing && tint == shownTint) return;
+        if (ring == shownRing && look == shownLook) return;
         shownRing = ring;
-        shownTint = tint;
+        shownLook = look;
         bubbleRing.setStroke(dp(2), ring);
-        if (guarding) bubble.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
-        else bubble.clearColorFilter();
+        Bitmap sprite = lookBitmap(look);
+        if (sprite != null) bubble.setImageBitmap(sprite);
+        else bubble.setImageResource(R.drawable.bubble_glyph);
+    }
+
+    private Bitmap lookBitmap(int look) {
+        if (LOOK_SPRITES[look] == null) return null;
+        if (lookBitmaps[look] == null) {
+            try (InputStream stream = getAssets().open("web/assets/uiImages/icons/" + LOOK_SPRITES[look])) {
+                lookBitmaps[look] = BitmapFactory.decodeStream(stream);
+            } catch (IOException missing) {
+                return null;
+            }
+        }
+        return lookBitmaps[look];
     }
 
     /** What the web app calls back into (window.MSCompanionHost — see src/capture/bridge.ts). */
@@ -324,6 +357,14 @@ public class OverlayService extends Service {
         }
 
         @JavascriptInterface
+        public void chest(int state) {
+            main.post(() -> {
+                chestState = state;
+                refreshSyncStatus();
+            });
+        }
+
+        @JavascriptInterface
         public void status(String text) {
             main.post(() -> {
                 readerStatus = text;
@@ -342,9 +383,9 @@ public class OverlayService extends Service {
      * the others keep swallowing. The game can therefore only ever receive a tap on the marked
      * one — the same select-then-confirm the game itself uses for chests and attributes.
      *
-     * Nothing is drawn over the game. The bubble carries the state instead: cyan while the guards
-     * are up and nothing is marked ("ready — your first tap marks"), white once something is,
-     * with a beat every time a mark registers.
+     * Nothing is drawn over the game. The bubble carries the state instead: it turns into the
+     * Owned Magic icon — white while the guards are up and nothing is marked ("ready — your first
+     * tap marks"), gold once something is — with a beat every time a mark registers.
      */
     private void showGuards(String rectsJson) {
         main.removeCallbacks(dropGuards);

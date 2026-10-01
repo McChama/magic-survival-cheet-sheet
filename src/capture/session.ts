@@ -32,7 +32,7 @@ export type Observation =
   | { screen: "gameplay" | "unknown" | "pause" | "synergy" | "enterArea" | "lifeOrDeath" }
   | { screen: "selectMagic"; options: OwnedRef[]; rows: OfferRow[]; retrieve: ScreenRect | null }
   | { screen: "selectAttribute"; magicId: string | null; groupLevel: number | null; talent: string | null }
-  | { screen: "treasureChest"; selectedId: string | null }
+  | { screen: "treasureChest"; selectedId: string | null; hasSelection: boolean }
   | { screen: "ownedMagic"; entries: OwnedLevel[] }
   | { screen: "ownedArtifact"; ids: string[] };
 
@@ -95,7 +95,12 @@ export function observe(frame: Frame, library: Library): Observation {
     }
     case "treasureChest": {
       const reading = readTreasureChest(frame, library);
-      return { screen, selectedId: reading.selected === null ? null : (reading.offers[reading.selected]?.id ?? null) };
+      return {
+        screen,
+        selectedId: reading.selected === null ? null : (reading.offers[reading.selected]?.id ?? null),
+        // A card is selected even when which artifact it is wasn't recognized.
+        hasSelection: reading.selected !== null,
+      };
     }
     case "ownedMagic":
       return {
