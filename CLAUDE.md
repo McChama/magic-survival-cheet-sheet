@@ -545,6 +545,16 @@ its animations there); `WebAssetClient` serves the bundled
 `ANDROID_KEYSTORE_*`/`ANDROID_KEY_*` repo secrets — without it each build needs an uninstall first, which wipes the
 saved run (localStorage). Anything web-only (external links, `window.open`, file downloads) won't work in the panel.
 
+**In the companion the app is only the Runs list and a run's Dashboard with what opens from it** (`IS_COMPANION`,
+`config/platform.ts`; `App.tsx`'s `COMPANION_SCREENS`). Home, "Start Game" and the Class / Subject / Research menus
+are left out there — the player's call: it sits on top of the real game, which already has all of those, and live
+sync reads them from it. Runs is the root (a remembered screen that isn't allowed falls back to it); its X goes on
+to the loaded run's Dashboard, "New Run" goes straight to the Dashboard (no class to pick first), and the Dashboard's
+header button leads back to Runs instead of to Class Select. The web build is unchanged. Two things the player turned
+down, so they aren't proposed again: an accessibility service to turn mark-then-confirm into a single tap (the
+permission is too much for what it buys — "disturb as little as possible"), and moving the bubble out of the way of
+a choice screen.
+
 **Live sync reads the game's screen** (optional, the launcher's checkbox; no root, the game untouched). Android's own
 capture prompt (`MediaProjection`) lets `ScreenCapture` mirror the screen at 720px wide; while the game — not the
 panel — is on screen, `OverlayService` ticks four times a second and, when a menu is up, the web app fetches the
@@ -616,7 +626,7 @@ replacing a sprite, and add the screenshot whenever the player reports a misread
 - The tick that runs all game long looks at **three pixels** in Java (`ScreenCapture.showsTheRun`, the same pause-bar
   test as `isGameplay` in `recognize.ts` — keep the two in step), which is cheap enough to do every 60 ms: that
   pace, not the reading itself, is what decides how soon a level-up is noticed and its taps guarded. A menu is read
-  every 100 ms while it is up, and once nothing readable has been on screen for 2 s (the game's animated main menu,
+  every 60 ms too while it is up (an unchanged one costs nothing: no frame crosses over), and once nothing readable has been on screen for 2 s (the game's animated main menu,
   which would otherwise hand over a frame per tick) only once a second. While the run stays on screen no frame is copied
   and the web app isn't called at all. A frame (4.7 MB) only crosses into the WebView when a menu is up, and a menu is
   a still picture: one frame, then "unchanged" until it closes. Before this, every tick copied a full frame just to

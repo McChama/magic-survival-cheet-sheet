@@ -37,7 +37,8 @@
     "synergyAria": "Synergy",
     "magicCombinationAria": "Magic Combination",
     "addAria": "Add to loadout",
-    "levelUpAria": "Level up"
+    "levelUpAria": "Level up",
+    "runsAria": "Runs"
   },
   "loadoutFab": {
     "artifact": "Artifact",

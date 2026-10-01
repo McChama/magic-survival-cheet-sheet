@@ -88,7 +88,7 @@ public class OverlayService extends Service {
      * often while it is up, and when nothing readable is on screen (the game's main menu) hardly at all.
      */
     private static final long TICK_PLAYING_MS = 60;
-    private static final long TICK_MENU_MS = 100;
+    private static final long TICK_MENU_MS = 60;
     private static final long TICK_IDLE_MS = 1000;
     /** Low-power capture mirrors one frame per tick, so there the tick itself is what is kept slow. */
     private static final long TICK_ECONOMY_MS = 250;

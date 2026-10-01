@@ -17,7 +17,9 @@ import { StatGridRow } from "./StatGridRow";
 import type { QuickAddKind } from "../../data/quickAddOptions";
 
 interface RunDashboardScreenProps {
-  onChangeClass: () => void;
+  /** The header's button: where leaving this run's dashboard leads, and what to call it (`App.tsx` decides both). */
+  onLeave: () => void;
+  leaveAria: string;
   onOpenRecommender: () => void;
   onOpenOwnedMagic: () => void;
   onOpenOwnedArtifact: () => void;
@@ -27,7 +29,7 @@ interface RunDashboardScreenProps {
 
 const NAV_BG = "#1b2a3a";
 
-export function RunDashboardScreen({ onChangeClass, onOpenRecommender, onOpenOwnedMagic, onOpenOwnedArtifact, onOpenSynergy, onOpenMagicCombination }: RunDashboardScreenProps) {
+export function RunDashboardScreen({ onLeave, leaveAria, onOpenRecommender, onOpenOwnedMagic, onOpenOwnedArtifact, onOpenSynergy, onOpenMagicCombination }: RunDashboardScreenProps) {
   const { t } = useTranslation("translation");
   const gt = useGameDataText();
   const run = useRunStore((s) => s.run);
@@ -61,7 +63,7 @@ export function RunDashboardScreen({ onChangeClass, onOpenRecommender, onOpenOwn
 
   return (
     <div className="absolute inset-0 flex flex-col bg-[#050506]">
-      <ScreenHeader onAction={onChangeClass} actionAria={t("dashboard.changeClassAria")} />
+      <ScreenHeader onAction={onLeave} actionAria={leaveAria} />
       <ScreenTitle>{subjectLabel}</ScreenTitle>
       <div className="flex-none text-center text-[0.7rem] text-[#e8e8e2]/50 -mt-1">{classLabel}</div>
 
