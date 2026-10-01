@@ -4,7 +4,8 @@
     "cheatSheet": "Cheat Sheet",
     "startGame": "Start Game",
     "researchAria": "Research",
-    "subjectAria": "Subject"
+    "subjectAria": "Subject",
+    "runsAria": "Runs"
   },
   "classSelect": {
     "closeAria": "Close",
@@ -36,7 +37,8 @@
     "synergyAria": "Synergy",
     "magicCombinationAria": "Magic Combination",
     "addAria": "Add to loadout",
-    "levelUpAria": "Level up"
+    "levelUpAria": "Level up",
+    "runsAria": "Runs"
   },
   "loadoutFab": {
     "artifact": "Artifact",
@@ -97,6 +99,14 @@
     "selectAttributeBtn": "Select Attribute",
     "learnBtn": "Learn",
     "backAria": "Back to Select Magic"
+  },
+  "enchant": {
+    "name": "Enchant",
+    "prompt": "Choose the Magic to strengthen",
+    "confirmBtn": "Selected",
+    "chooseBtn": "Choose the magic",
+    "backAria": "Back to Select Magic",
+    "removeAria": "Remove the Enchant on {{magic}}"
   },
   "boostSignal": {
     "listLabel": "Boost signals",
@@ -173,5 +183,56 @@
     "estimatedPowerLabel": "Est. power",
     "dropOddsLabel": "≈{{percent}}% in this context",
     "dropOddsUnavailable": "Odds not available for this context"
+  },
+  "capture": {
+    "artifactObtained": "Obtained {{name}}",
+    "talentLearned": "{{magic}}: learned {{talent}}",
+    "magicsSynced": "Owned Magic synced ({{count}})",
+    "artifactsSynced": "Owned Artifact synced ({{count}})",
+    "picked": "{{name}} Lv {{level}}",
+    "pickPrompt": "Which one did you pick?",
+    "status": {
+      "waiting": "waiting for the first frame",
+      "error": "error: {{message}}",
+      "gameplay": "the run",
+      "unknown": "not a game screen",
+      "pause": "Pause",
+      "synergy": "Synergy",
+      "selectMagic": "Select Magic ({{count}} read)",
+      "selectAttribute": "Select Attribute ({{magic}})",
+      "treasureChest": "Treasure Chest ({{selected}})",
+      "ownedMagic": "Owned Magic ({{count}} read)",
+      "ownedArtifact": "Owned Artifact ({{count}} read)",
+      "nothingSelected": "nothing selected",
+      "enterArea": "Enter Area",
+      "lifeOrDeath": "Life or Death",
+      "timed": "{{status}} · {{ms}} ms",
+      "classSelect": "Class",
+      "testSubject": "Test Subject",
+      "research": "Research",
+      "enchant": "Enchant ({{count}} magics, {{selected}})",
+      "unrecognized": "not recognized"
+    },
+    "retrieved": "Mana retrieved",
+    "enchanted": "Enchant: {{magic}}",
+    "enchantedUnknown": "Enchant taken, magic not recognized",
+    "runStarted": "New run started",
+    "runEnded": "Run ended",
+    "classChosen": "Class: {{name}}",
+    "subjectChosen": "Subject: {{name}}",
+    "classChosenAt": "Class: {{name}} Lv {{level}}",
+    "researchRead": "Research synced"
+  },
+  "runs": {
+    "title": "Runs",
+    "closeAria": "Close",
+    "newRun": "New Run",
+    "inProgress": "In progress",
+    "noClass": "No class",
+    "level": "Lv {{level}}",
+    "openAria": "{{subject}} — open run",
+    "removeAria": "Remove run",
+    "remove": "Remove",
+    "keep": "Keep"
   }
 }

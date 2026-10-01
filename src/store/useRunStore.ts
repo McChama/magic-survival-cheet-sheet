@@ -24,20 +24,48 @@ function dropOrphanedDependents(fusionTargets: string[]): string[] {
   });
 }
 
-function freshRun(): CurrentRunState {
+/**
+ * What belongs to the player's account rather than to one run: it is bought once in the game and every run starts
+ * with it. A new run is built from the latest profile (`store/runs.ts`), so starting one never loses the research.
+ * The class and subject picked last come along too — they are what the next run most likely uses.
+ */
+export interface RunProfile {
+  characterClass: string | null;
+  subject: string;
+  classLevels: Record<string, number>;
+  unlockedSubjects: string[];
+  researchLevels: Record<string, number>;
+}
+
+export function profileOf(run: CurrentRunState): RunProfile {
+  const { characterClass, subject, classLevels, unlockedSubjects } = run.meta;
+  return { characterClass, subject, classLevels, unlockedSubjects, researchLevels: run.researchLevels };
+}
+
+/** An empty run: nothing picked up yet, level 1 — on top of `profile` when there is one. */
+export function freshRun(profile?: RunProfile): CurrentRunState {
+  const researchLevels = profile?.researchLevels ?? {};
   return {
-    meta: { characterClass: null, classLevels: {}, subject: DEFAULT_SUBJECT, unlockedSubjects: [], researchPoints: TOTAL_RESEARCH_POINTS, startedAt: null },
+    meta: {
+      characterClass: profile?.characterClass ?? null,
+      classLevels: profile?.classLevels ?? {},
+      subject: profile?.subject || DEFAULT_SUBJECT,
+      unlockedSubjects: profile?.unlockedSubjects ?? [],
+      researchPoints: TOTAL_RESEARCH_POINTS - Object.values(researchLevels).reduce((sum, level) => sum + level, 0),
+      startedAt: null,
+    },
     fusionTargets: [],
     statAdjustments: emptyStatBlock(),
     equipped: [],
     acquiredMagicIds: [],
     magicLevels: {},
     magicTalents: {},
+    enchantedMagicIds: [],
     elapsedMinutes: 0,
     currentLevel: 1,
     enemiesKilled: 0,
     magicCircleActive: false,
-    researchLevels: {},
+    researchLevels,
   };
 }
 
@@ -64,12 +92,23 @@ interface RunStore {
    *  (`null` clears it) — the other groups' recorded talents (Magic Bolt's level-4 pick while setting its level-7
    *  one, or vice versa) are left alone. */
   setMagicTalent: (magicId: string, level: number, talentName: string | null) => void;
+  /** One more Enchant, spent on `magicId` (`data/enchant.ts`). */
+  addEnchant: (magicId: string) => void;
+  /** Takes back the Enchant at `index` of `run.enchantedMagicIds`. */
+  removeEnchant: (index: number) => void;
   clearLoadout: () => void;
   researchUp: (id: string) => void;
   researchDown: (id: string) => void;
   /** Sets every research node back to level 0 and refunds all the points. */
   resetResearch: () => void;
-  startNewRun: () => void;
+  /** Swaps in a whole run: another saved one, or a new one (`store/runs.ts` is what decides which). */
+  loadRun: (run: CurrentRunState) => void;
+  /**
+   * Sets the account-wide part as the game itself shows it (live sync reads it off the game's menus): only the
+   * fields given change, a class level is set for its own class without touching the others', and the research
+   * points left follow from the levels.
+   */
+  applyProfile: (profile: Partial<RunProfile>) => void;
 }
 
 export const useRunStore = create<RunStore>()(
@@ -179,9 +218,15 @@ export const useRunStore = create<RunStore>()(
       setMagicTalent: (magicId, level, talentName) =>
         set((state) => ({ run: { ...state.run, magicTalents: withMagicTalent(state.run.magicTalents, magicId, level, talentName) } })),
 
+      addEnchant: (magicId) =>
+        set((state) => ({ run: { ...state.run, enchantedMagicIds: [...(state.run.enchantedMagicIds ?? []), magicId] } })),
+
+      removeEnchant: (index) =>
+        set((state) => ({ run: { ...state.run, enchantedMagicIds: (state.run.enchantedMagicIds ?? []).filter((_, i) => i !== index) } })),
+
       clearLoadout: () =>
         set((state) => ({
-          run: { ...state.run, equipped: [], acquiredMagicIds: [], magicLevels: {}, magicTalents: {}, magicCircleActive: false },
+          run: { ...state.run, equipped: [], acquiredMagicIds: [], magicLevels: {}, magicTalents: {}, enchantedMagicIds: [], magicCircleActive: false },
         })),
 
       researchUp: (id) =>
@@ -216,7 +261,26 @@ export const useRunStore = create<RunStore>()(
           run: { ...state.run, meta: { ...state.run.meta, researchPoints: TOTAL_RESEARCH_POINTS }, researchLevels: {} },
         })),
 
-      startNewRun: () => set({ run: freshRun() }),
+      loadRun: (run) => set({ run }),
+
+      applyProfile: (profile) =>
+        set((state) => {
+          const researchLevels = profile.researchLevels ?? state.run.researchLevels;
+          return {
+            run: {
+              ...state.run,
+              researchLevels,
+              meta: {
+                ...state.run.meta,
+                characterClass: profile.characterClass ?? state.run.meta.characterClass,
+                subject: profile.subject ?? state.run.meta.subject,
+                unlockedSubjects: profile.unlockedSubjects ?? state.run.meta.unlockedSubjects,
+                classLevels: { ...state.run.meta.classLevels, ...profile.classLevels },
+                researchPoints: TOTAL_RESEARCH_POINTS - Object.values(researchLevels).reduce((sum, level) => sum + level, 0),
+              },
+            },
+          };
+        }),
     }),
     {
       name: "magic-survival-current-run",

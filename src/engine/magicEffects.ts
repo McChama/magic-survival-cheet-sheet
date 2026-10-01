@@ -3,6 +3,7 @@ import { MAGIC_LEVEL_UPS } from "../data/magicLevelUps";
 import { BASE_MAGICS, getMagicMaxLevel } from "../data/magics";
 import { MAGIC_BASE_STATS, type MagicStatBase, type MagicStatKind } from "../data/magicStats";
 import type { CurrentRunState, StatBlock } from "../types/game";
+import { enchantEffectText, getEnchantedMagicIds } from "./enchant";
 import { getEquippedItems } from "./tierAdaptive";
 
 /** Stat changes a magic gets from its own level-ups, its class, and the artifacts the run owns. */
@@ -85,7 +86,8 @@ const LEVEL_EFFECTS_FROM_LEVEL_ONE: ReadonlySet<string> = new Set(["spirit", "sa
  * - its own level-ups up to `level` (`MAGIC_LEVEL_UPS`: entry i is the bonus for level i + 2);
  * - the equipped class's gated bonus lines up to its level (the lines marked "(All Classes)" are
  *   permanent bonuses and are counted elsewhere);
- * - the artifacts the run owns, plus the Subject's starting artifact (the game equips it at start).
+ * - the artifacts the run owns, plus the Subject's starting artifact (the game equips it at start);
+ * - the Enchants spent on it (their Damage is added to the other percentages like any other line — not checked in game).
  * Verified: Wizard Subject + Wizard Class Lv3, Magic Bolt Lv2, ATK 100 -> Damage 1025 (5 x 100 x
  * (100 + 5 Subject + 100 The Freeshooter)%), Number 2 (Lv2 level-up), Cooldown 0.6 s (0.75 x 0.8,
  * the class's Lv3 line). Reductions multiply (see `applyMagicEffects`); that is read from the game's code, not yet checked with two sources.
@@ -118,6 +120,12 @@ export function collectMagicEffects(magicId: string, level: number, run: Current
   }
 
   for (const item of getEquippedItems(run)) total = add(total, parseEffects(item.specialEffect ?? "", magicName));
+
+  // Every Enchant spent on this magic (`data/enchant.ts`): +50% Damage and the magic's own second line.
+  const enchant = enchantEffectText(magicId, run);
+  if (enchant) {
+    for (const enchantedId of getEnchantedMagicIds(run)) if (enchantedId === magicId) total = add(total, parseEffects(enchant, magicName));
+  }
 
   return total;
 }

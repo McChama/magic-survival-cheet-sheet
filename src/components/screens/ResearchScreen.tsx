@@ -70,9 +70,8 @@ function nodeTint(level: number, isSelected: boolean): { bg: string; text: strin
  * `image` is always a truthy URL (never optional), so a missing sprite 404s instead of
  * failing a truthiness check — a hidden probe `<img>` (not the visible element, since a
  * CSS `mask-image` never fires `onerror`) falls back to a tinted "?" glyph on load failure.
- * 13 of the 22 nodes still 404 this way — no real research-tree sprite sheet has been
- * extracted for them yet, only the 9 that double as an in-run passive icon are real (see
- * the sourcing note at the top of `data/research.ts`).
+ * All 22 nodes have a sprite today (see the sourcing note at the top of `data/research.ts`);
+ * the probe is what keeps a future node without one from rendering as an empty box.
  */
 function NodeIcon({ src, alt, tint }: { src: string; alt: string; tint: { bg: string; text: string } }) {
   const [failed, setFailed] = useState(false);

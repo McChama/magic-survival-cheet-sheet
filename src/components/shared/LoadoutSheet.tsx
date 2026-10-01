@@ -6,6 +6,7 @@ import { optionsByKind, type QuickAddKind } from "../../data/quickAddOptions";
 import { useRunStore } from "../../store/useRunStore";
 import { useUiStore } from "../../store/useUiStore";
 import { useGameDataText } from "../../i18n/useGameDataText";
+import { canEnchant } from "../../engine/enchant";
 import { getMagicLevelPick, getPassiveLevelPick } from "../../engine/magicLeveling";
 import { getEquippedItems } from "../../engine/tierAdaptive";
 import { ScreenHeader } from "./ScreenHeader";
@@ -13,6 +14,7 @@ import { ScreenTitle } from "./ScreenTitle";
 import { ScreenFooter } from "./ScreenFooter";
 import { ArtifactOfferModal } from "./ArtifactOfferModal";
 import { AttributeSelect } from "./AttributeSelect";
+import { EnchantSelect } from "./EnchantSelect";
 import { CARD_ASPECT, CardArt, GridIcon, GridTile } from "./GridCard";
 import { GridPanel } from "./GridPanel";
 import { MagicPickList, type AttributeSelectRequest } from "./MagicPickList";
@@ -130,7 +132,7 @@ function ArtifactPickGrid({ options, picked, onToggle }: ArtifactPickGridProps) 
  * specifically, from the Dashboard's level-up star (`isLevelUp`). **Select Magic** lists everything not yet at its
  * real max level (`MagicPickList`), no close button and no separate action button either — tapping a row anywhere
  * obtains a fresh pickup, levels up an owned one, or, once the next level is a talent pick, opens `AttributeSelect`
- * instead of committing directly. It's select-then-commit: pressing the star only opens this sheet with `isLevelUp`
+ * instead of committing directly; the Special chip's Enchant row opens `EnchantSelect` the same way. It's select-then-commit: pressing the star only opens this sheet with `isLevelUp`
  * set, it does **not** touch `run.currentLevel` by itself — that only happens as part of the row's own commit (see
  * `useLevelUpActions`), so a level-up can be abandoned (backed out via a reload) up until a row is actually tapped.
  * Any commit closes the whole sheet — a level-up grants exactly one pick, in the real game and here, so there's
@@ -157,6 +159,7 @@ export function LoadoutSheet({ kind, onClose, isLevelUp = false }: LoadoutSheetP
   const [picked, setPicked] = useState<RecommenderOption[]>([]);
   const [offerOpen, setOfferOpen] = useState(false);
   const [attributeSelect, setAttributeSelect] = useState<AttributeSelectRequest | null>(null);
+  const [enchantSelect, setEnchantSelect] = useState(false);
   // Select Magic is everything not yet at its real max level — a fresh pickup (Obtain) and an owned-but-not-maxed
   // magic/passive (a level-up) both stay in the list; only "fully done" drops out ("no aparece" once at max). Select
   // Artifact is still the plain not-yet-owned catalog. The Magic sheet covers all 4 wiki categories, so it pulls in
@@ -211,7 +214,14 @@ export function LoadoutSheet({ kind, onClose, isLevelUp = false }: LoadoutSheetP
       </div>
 
       {kind === "magic" ? (
-        <MagicPickList key={activeKey} options={filtered} onPicked={onClose} onOpenAttributeSelect={setAttributeSelect} isLevelUp={isLevelUp} />
+        <MagicPickList
+          key={activeKey}
+          options={filtered}
+          onPicked={onClose}
+          onOpenAttributeSelect={setAttributeSelect}
+          isLevelUp={isLevelUp}
+          onOpenEnchantSelect={activeKey === "special" && canEnchant(run) ? () => setEnchantSelect(true) : undefined}
+        />
       ) : (
         <>
           <ArtifactPickGrid key={activeKey} options={filtered} picked={picked} onToggle={togglePick} />
@@ -252,6 +262,8 @@ export function LoadoutSheet({ kind, onClose, isLevelUp = false }: LoadoutSheetP
           isLevelUp={isLevelUp}
         />
       )}
+
+      {enchantSelect && <EnchantSelect onBack={() => setEnchantSelect(false)} onEnchanted={onClose} isLevelUp={isLevelUp} />}
     </div>
   );
 }

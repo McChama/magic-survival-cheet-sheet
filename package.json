@@ -11,11 +11,14 @@
     "i18n:dump": "vite-node scripts/dump-game-data-i18n.mjs",
     "i18n:check-sync": "vite-node scripts/check-i18n-sync.mjs",
     "i18n:check-hardcoded-text": "node scripts/check-hardcoded-text.mjs",
-    "check:formulas": "vite-node scripts/check-formulas.mjs"
+    "check:formulas": "vite-node scripts/check-formulas.mjs",
+    "check:capture": "vite-node scripts/check-capture.mjs",
+    "capture:signatures": "vite-node scripts/gen-title-signatures.mjs",
+    "capture:templates": "vite-node scripts/gen-capture-templates.mjs",
+    "capture:names": "vite-node scripts/gen-name-signatures.mjs"
   },
   "dependencies": {
     "i18next": "^26.4.2",
-    "lucide-react": "^1.45.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-i18next": "^17.0.14",

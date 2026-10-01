@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { subjectAnimFrame, subjectImage, uiImage } from "../../config/assets";
+import { uiImage } from "../../config/assets";
 import { ALWAYS_UNLOCKED_SUBJECT, SUBJECTS, isSubjectUnlocked } from "../../data/classes";
 import { useRunStore } from "../../store/useRunStore";
 import { slug as subjectSlug } from "../../i18n/gameData";
@@ -8,6 +8,7 @@ import { useGameDataText } from "../../i18n/useGameDataText";
 import { ScreenHeader } from "../shared/ScreenHeader";
 import { ScreenTitle } from "../shared/ScreenTitle";
 import { ScreenFooter } from "../shared/ScreenFooter";
+import { SubjectSprite } from "../shared/SubjectSprite";
 
 interface SubjectSelectScreenProps {
   onClose: () => void;
@@ -34,46 +35,21 @@ function chunkSubjects(names: string[], sizes: number[]): string[][] {
 const SUBJECT_ROWS = chunkSubjects(SUBJECTS, SUBJECT_ROW_SIZES);
 
 /**
- * User-picked subset of the 21-frame animation set that reads as a calm idle sway rather
- * than the full set's dramatic swings (see research/game-data-sources.md — the frames
- * are individually cropped with no shared pivot, so this subset is a deliberate choice of
- * which frames jump the least, not just "the idle portion" of a longer sequence).
- */
-const IDLE_FRAMES = [7, 8, 9];
-const IDLE_FRAME_MS = 150;
-
-/**
- * Real in-game character sprite, animated through a hand-picked idle-sway subset (not the
- * full 21-frame set — see IDLE_FRAMES). Sized in percentages of its row's height (not fixed
+ * Real in-game character sprite, swaying (`SubjectSprite`). Sized in percentages of its row's height (not fixed
  * pixels) so all 6 rows scale to fit whatever vertical space is available without scrolling.
  */
 function SubjectSilhouette({ name, label, selected, applied, locked }: { name: string; label: string; selected: boolean; applied: boolean; locked: boolean }) {
-  const slug = subjectSlug(name);
-  const [frameIndex, setFrameIndex] = useState(0);
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setFrameIndex((i) => (i + 1) % IDLE_FRAMES.length);
-    }, IDLE_FRAME_MS);
-    return () => window.clearInterval(id);
-  }, [slug]);
-
   return (
     <div className="relative h-full aspect-[46/76] max-w-full flex items-end justify-center">
-      <img
-        src={subjectAnimFrame(slug, IDLE_FRAMES[frameIndex])}
-        alt={label}
+      <SubjectSprite
+        name={name}
+        label={label}
         className={`max-w-full max-h-[68%] object-contain relative z-10 ${locked ? "grayscale opacity-40" : selected ? "opacity-100" : "opacity-[.85]"}`}
-        onError={(e) => {
-          // Fall back to the static portrait if this subject's animation set is somehow incomplete.
-          e.currentTarget.onerror = null;
-          e.currentTarget.src = subjectImage(`${slug}.png`);
-        }}
       />
       {selected ? (
-        <img src={uiImage("unit/UnitAllyShadow01.png")} alt="" className="absolute bottom-[2%] w-[82%] object-contain" />
+        <img src={uiImage("unit/UnitAllyShadow01.webp")} alt="" className="absolute bottom-[2%] w-[82%] object-contain" />
       ) : applied ? (
-        <img src={uiImage("unit/UnitEnemyShadow01.png")} alt="" className="absolute bottom-[2%] w-[82%] object-contain" />
+        <img src={uiImage("unit/UnitEnemyShadow01.webp")} alt="" className="absolute bottom-[2%] w-[82%] object-contain" />
       ) : (
         <div className="absolute bottom-[2%] w-[65%] h-[13%] rounded-full bg-[#282e34]/[32%]" />
       )}
@@ -82,25 +58,11 @@ function SubjectSilhouette({ name, label, selected, applied, locked }: { name: s
 }
 
 /**
- * Placeholder for the divider asset between a subject's name and its description — no such
- * asset has been dropped into public/assets/uiImages/ yet, so this renders a plain line and
- * silently upgrades to the real image the moment `subject-detail-divider.png` exists there.
+ * The divider between a subject's name and its description: a plain line. The game's own divider art hasn't been
+ * extracted — when it is, swap this for an `<img>`; asking for a file that isn't there cost a 404 on every visit.
  */
 function SubjectDetailDivider() {
-  const [broken, setBroken] = useState(false);
-
-  if (broken) {
-    return <div className="w-[70%] max-w-[220px] h-px bg-white/[.16] mt-0.5 mb-1" />;
-  }
-
-  return (
-    <img
-      src={uiImage("subject-detail-divider.png")}
-      alt=""
-      className="w-[70%] max-w-[220px] h-auto mt-0.5 mb-1"
-      onError={() => setBroken(true)}
-    />
-  );
+  return <div className="w-[70%] max-w-[220px] h-px bg-white/[.16] mt-0.5 mb-1" />;
 }
 
 export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
@@ -132,7 +94,7 @@ export function SubjectSelectScreen({ onClose }: SubjectSelectScreenProps) {
   return (
     <div
       className="absolute inset-0 flex flex-col bg-cover bg-center"
-      style={{ backgroundImage: `url(${uiImage("unit/UnitSkinBackGround.png")})` }}
+      style={{ backgroundImage: `url(${uiImage("unit/UnitSkinBackGround.webp")})` }}
     >
       <ScreenHeader
         onAction={handleClose}

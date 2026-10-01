@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { ENCHANT } from "../../data/enchant";
 import { BASE_MAGIC_BY_ID, MAGIC_DESCRIPTION, baseMagicSpriteUrl } from "../../data/magics";
 import { magicKindOf } from "../../data/magicCategories";
 import { MAGIC_LEVEL_UPS } from "../../data/magicLevelUps";
@@ -9,7 +10,7 @@ import { useLevelUpActions } from "../../hooks/useLevelUpActions";
 import type { RecommenderOption } from "../../engine/scoring";
 import { useRunStore } from "../../store/useRunStore";
 import { useGameDataText } from "../../i18n/useGameDataText";
-import { LEVEL_PICK_FRESH_COLOR, LEVEL_PICK_NORMAL_COLOR, LEVEL_PICK_TALENT_COLOR, MAGIC_KIND_COLOR } from "../../config/frameColors";
+import { ENCHANT_FRAME, ENCHANT_STAR_CLASS, LEVEL_PICK_FRESH_COLOR, LEVEL_PICK_NORMAL_COLOR, LEVEL_PICK_TALENT_COLOR, MAGIC_KIND_COLOR } from "../../config/frameColors";
 import { GameText } from "./GameText";
 import { GridIcon, MaskedMagicIcon } from "./GridCard";
 import { StarIcon } from "./LevelMarks";
@@ -99,6 +100,9 @@ interface MagicPickListProps {
   onOpenAttributeSelect: (request: AttributeSelectRequest) => void;
   /** True only when this list is the Dashboard's level-up flow (not the "+" menu's plain catalog) — see `useLevelUpActions`. */
   isLevelUp: boolean;
+  /** Set while Enchant belongs in this list (the Special chip, and the run can still take one): its row opens the
+   *  "Choose the Magic to strengthen" screen instead of committing — the magic picked there is the commit. */
+  onOpenEnchantSelect?: () => void;
 }
 
 /**
@@ -111,9 +115,11 @@ interface MagicPickListProps {
  * player's own Current Level — see `engine/magicLeveling.ts`). During the Dashboard's level-up flow (`isLevelUp`)
  * that check is against Current Level *plus the pending level-up* — see `effectiveCurrentLevel` below — since
  * tapping a row is what actually commits that pending level (select-then-commit; `useLevelUpActions`). One already
- * at its real max level doesn't appear in `options` at all (`LoadoutSheet` filters it out).
+ * at its real max level doesn't appear in `options` at all (`LoadoutSheet` filters it out). **Enchant** leads the
+ * Special list as the game draws it — its own olive frame, its icon and star in pale gold — and is neither magic nor
+ * passive: its row only opens the screen where the magic it goes to is chosen (`EnchantSelect`).
  */
-export function MagicPickList({ options, onPicked, onOpenAttributeSelect, isLevelUp }: MagicPickListProps) {
+export function MagicPickList({ options, onPicked, onOpenAttributeSelect, isLevelUp, onOpenEnchantSelect }: MagicPickListProps) {
   const { t } = useTranslation("translation");
   const gt = useGameDataText();
   const run = useRunStore((s) => s.run);
@@ -159,6 +165,18 @@ export function MagicPickList({ options, onPicked, onOpenAttributeSelect, isLeve
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-1 pb-6">
       <div className="flex flex-col gap-3">
+        {onOpenEnchantSelect && (
+          <PickRow
+            frame={ENCHANT_FRAME}
+            icon={<GridIcon src={ENCHANT.image} alt={t("enchant.name")} />}
+            title={t("enchant.name")}
+            levelBadge={<StarIcon size="w-[18px] h-[18px]" fill={ENCHANT_STAR_CLASS} />}
+            actionLabel={t("enchant.chooseBtn")}
+            onAction={onOpenEnchantSelect}
+          >
+            <GameText text={ENCHANT.description.text} color={ENCHANT.description.color} />
+          </PickRow>
+        )}
         {options.map((option) => {
           const kind = magicKindOf(option);
           if (!kind) return null;
@@ -208,7 +226,7 @@ export function MagicPickList({ options, onPicked, onOpenAttributeSelect, isLeve
             </PickRow>
           );
         })}
-        {options.length === 0 && <div className="py-[30px] text-center text-[0.8rem] text-[#e8e8e2]/35">{t("loadoutSheet.noResults")}</div>}
+        {options.length === 0 && !onOpenEnchantSelect && <div className="py-[30px] text-center text-[0.8rem] text-[#e8e8e2]/35">{t("loadoutSheet.noResults")}</div>}
       </div>
     </div>
   );

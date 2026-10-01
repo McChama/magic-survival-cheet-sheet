@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MS Companion</string>
+    <string name="launcher_title">Magic Survival Companion</string>
+    <string name="launcher_blurb">Plays the game with the Run Companion as a floating bubble on top. Tap the bubble to open it, tap × to go back to the game.</string>
+    <string name="permission_missing">Step 1: allow \"Display over other apps\" for MS Companion.</string>
+    <string name="permission_ok">\"Display over other apps\" is allowed.</string>
+    <string name="grant_permission">Allow overlay</string>
+    <string name="play">Play with companion</string>
+    <string name="stop">Stop bubble</string>
+    <string name="game_not_installed">Magic Survival is not installed. The bubble is running anyway.</string>
+    <string name="notification_channel">Companion bubble</string>
+    <string name="notification_title">Run Companion is running</string>
+    <string name="notification_text">Tap the bubble over the game to open it.</string>
+    <string name="notification_stop">Stop</string>
+    <string name="close_panel">Back to game</string>
+    <string name="live_sync">Live sync (reads the game screen)</string>
+    <string name="live_sync_blurb">Fills in artifacts, talents and the Owned lists as you play. Android asks to share the screen each time; nothing leaves the phone.</string>
+    <string name="pick_skip">None of these</string>
+    <string name="economy">Low-power capture (experimental)</string>
+    <string name="economy_blurb">Reads the screen a few times a second instead of mirroring every frame. Easier on a slow phone; a level-up may take a moment longer to be noticed. Turn it off if live sync stops reading.</string>
+    <string name="sync_off">v%1$s · Live sync off</string>
+    <string name="sync_failed">v%1$s · Live sync failed: %2$s</string>
+    <string name="sync_silent">v%1$s · Screen shared, reader not answering (frames %2$d)</string>
+    <string name="sync_reading">v%1$s · %2$s · frames %3$d (%4$s/min)</string>
+    <string name="capture_saved">Saved what live sync sees to Pictures/MSCompanion</string>
+    <string name="capture_not_saved">Nothing to save: live sync is not running</string>
+</resources>

@@ -67,7 +67,7 @@ is built from the same four stacked zones, using the shared components in
 |---|---|---|---|
 | Header | `ScreenHeader` | 36px (`h-9`) — exactly the action button's own height, no padding around it | Optional `leftSlot` (e.g. a point counter) + exactly one top-right action button, a fixed 36×36 icon button (`ScreenHeader` enforces this) regardless of what glyph/icon it shows — a deliberate choice to keep the header compact over a larger (WCAG-minimum) tap target. |
 | Title | `ScreenTitle` | 48px (`h-12`) | One line, `1.75rem`, **regular weight — never bold**, centered. This is the screen's name; its color is a named `tone` (`default`, `gold`, or `dark` — Subject Select's dark-on-light title with its soft shadow), never a per-screen `style`, font size or weight. |
-| Content | plain `flex-1` | fills whatever's left | **Scroll is allowed only on the long lists** — `OwnedMagicScreen`, `OwnedArtifactScreen`, `SynergyScreen`, `MagicCombinationScreen`'s grid and the "+" menu's Select Magic / Select Artifact sheets (plain `overflow-y-auto`, since their item counts are genuinely unbounded/large: all 63 fusions, the whole catalog, or however many magics/artifacts a long run has picked up). **No modal ever scrolls**: a modal's content is laid out to fit its card (`DetailModal` clips instead of scrolling, 72dvh tall; check a new modal's content at ~820px height). The Recommender's grid and results *page* instead (`PagedGrid`/`PagedList`/`Pager`: they measure the room with `useElementSize` and show as many whole rows as fit). Every *picker* screen (Subject Select, Class Select, Research, and `RunDashboardScreen` itself since its Loadout section was replaced by nav buttons — see below) is sized to always fit without scrolling instead: chunk the item list into rows, give the row container `flex-1 min-h-0 flex flex-col justify-evenly`, make each row `flex-1 min-h-0 flex justify-center items-center`, and size each item off its row's height (`h-full`/`h-[70%]` + `aspect-*` + `max-w-full`), not a fixed px size — see `SubjectSelectScreen`'s `SUBJECT_ROWS`/`SubjectSilhouette` or `ResearchScreen`'s `RESEARCH_ROWS` for the pattern. This means items shrink on short viewports instead of scrolling; that's the accepted tradeoff. Screen-specific sub-blocks (Research's pips/description, Class Select's level stepper) live here, between the standardized Title and the item grid. |
+| Content | plain `flex-1` | fills whatever's left | **Scroll is allowed only on the long lists** — `OwnedMagicScreen`, `OwnedArtifactScreen`, `SynergyScreen`, `RunsScreen`, `MagicCombinationScreen`'s grid and the "+" menu's Select Magic / Select Artifact sheets (plain `overflow-y-auto`, since their item counts are genuinely unbounded/large: all 63 fusions, the whole catalog, or however many magics/artifacts a long run has picked up). **No modal ever scrolls**: a modal's content is laid out to fit its card (`DetailModal` clips instead of scrolling, 72dvh tall; check a new modal's content at ~820px height). The Recommender's grid and results *page* instead (`PagedGrid`/`PagedList`/`Pager`: they measure the room with `useElementSize` and show as many whole rows as fit). Every *picker* screen (Subject Select, Class Select, Research, and `RunDashboardScreen` itself since its Loadout section was replaced by nav buttons — see below) is sized to always fit without scrolling instead: chunk the item list into rows, give the row container `flex-1 min-h-0 flex flex-col justify-evenly`, make each row `flex-1 min-h-0 flex justify-center items-center`, and size each item off its row's height (`h-full`/`h-[70%]` + `aspect-*` + `max-w-full`), not a fixed px size — see `SubjectSelectScreen`'s `SUBJECT_ROWS`/`SubjectSilhouette` or `ResearchScreen`'s `RESEARCH_ROWS` for the pattern. This means items shrink on short viewports instead of scrolling; that's the accepted tradeoff. Screen-specific sub-blocks (Research's pips/description, Class Select's level stepper) live here, between the standardized Title and the item grid. |
 | Footer | `ScreenFooter` | 96px floor, grows with content | Always a normal flex sibling — **never `position: absolute`**. An absolutely-positioned footer overlaying scrollable content is exactly what caused a real scroll-clipping bug (Subject Select) and is still fine to *look* fine while quietly being one content-length change away from breaking again (this was still true of Class Select's gradient-overlay footer). |
 
 `RunDashboardScreen` no longer has its own "Loadout" section — instead a row
@@ -79,7 +79,7 @@ its popup opens *upward* via `bottom-full`, and its dismiss backdrop is `fixed i
 precisely because it's no longer sitting in its own full-screen wrapper). Every chip in the nav row shows its
 icon in the same 24px glyph box; the Magic Combination button is the game's own heptagram, plain white (masked —
 see `NavIconButton`'s `tint` below) while no combination is available and its own red once one is.
-Home has only two icon buttons now (Research, Subject) — the Drop Probability and Recommender buttons are gone
+Home has three icon buttons now (Research, Subject, Runs — the game's own "Diary" sprite, `UI_Icon006`) — the Drop Probability and Recommender buttons are gone
 (`DropProbabilityScreen` is still in the app, just without an entry point until it gets a new home; the Recommender
 is reached from the Dashboard's "+" menu as "Compare Offer"). A small circular button next to "Current Level" starts
 the real level-up event: it opens Select Magic (the same sheet the "+" menu's "Magic" item opens — `RunDashboardScreen`
@@ -88,9 +88,11 @@ mode (`isLevelUp`), but **does not** raise `run.currentLevel` by itself — it's
 below for where the increment actually happens. Its glyph is the game's own X sprite (`UI_Exit`) turned 45° to read
 "+" — the same technique `LoadoutFab`'s own "+" glyph uses, not the star sprite (`UI_Star01`, since removed) or the
 move-arrow triangle a first pass reused for it before that. Idle, it throbs like a heartbeat: a CSS `scale` pulse
-paired with its tint sweeping from resting gold to the same max-level green a magic's pips turn at max level
-(`LevelMarks.tsx`'s `#3fdc5a`) and back (`animate-pulse-green`, `index.css` — `motion-safe:` so it's skipped under
-reduced motion, same as the Magic Circle bubble's tap effects).
+(`animate-pulse-throb`) paired with its tint sweeping from resting gold to the same max-level green a magic's pips
+turn at max level (`LevelMarks.tsx`'s `#3fdc5a`) and back — a green copy of the glyph fading in over the gold one
+(`animate-pulse-green`, `index.css`), not an animated `background-color`: only `scale` and `opacity` move, so the
+Dashboard isn't repainted on every frame for as long as it is open. Both are `motion-safe:` so they're skipped under
+reduced motion, same as the Magic Circle bubble's tap effects.
 
 **`MagicCombinationScreen`** (`components/screens/`) is the game's own "Magic Combination" screen (the 63 fusions in
 `data/fusions.ts`). Opened from the Dashboard while some combination's requirements are met (`getAvailableFusions` in
@@ -117,6 +119,49 @@ level, talentName)` replacing only the group at `level`) — every magic has one
 independently at level 4 and again at level 7, and a combination can need either pick (the level-4 one unlocks some
 Combinations on its own, not only the level-7 one) — both are checked (`.includes`), not just the most recent pick.
 
+## Runs and the profile
+
+The game only ever has **one run in progress** (it can be saved and continued, never run next to another), but the
+player wants to look back at past builds and never have one run's data land on another. So every run is a record
+(`store/useRunsStore.ts`, `localStorage` key `magic-survival-runs`): at most one is not `ended`, the rest are history.
+`useRunStore` is unchanged for every screen and formula — it holds the **loaded** run (normally the one in progress,
+or an old one opened from the Runs screen); the runs store mirrors it into its record on every change and swaps
+another record's run in on `loadRun`. `startNewRun` turns the run in progress into history and loads a fresh one —
+unless nothing has happened in it yet, in which case it is simply reused (starting twice leaves one run, not two).
+
+**The profile is what a new run starts from**: research, class levels and unlocked subjects belong to the player's
+account, not to a run (`RunProfile` in `useRunStore.ts`; a run used to start from nothing, losing the research). It
+follows the run in progress — editing research while an old run is open changes that old record only — and each
+history record keeps the profile it was played with, so its stats still read as they did.
+
+`RunsScreen` lists them like save slots: the Subject's sprite — swaying, the shared `SubjectSprite` Subject Select
+uses too, and with no backdrop (the player's call): the sprites are dark silhouettes drawn for Subject Select's pale
+wall, so on black a pale `drop-shadow` glow hugging the silhouette is what keeps them visible — the Subject as title,
+the Class under it, then "In progress" or how long ago;
+on the right the character level and the build's main magic (its highest-level one) with that magic's level. White
+frame for the run in progress, dark for history (the Magic Combination grid's pair). Tapping a row loads it and opens
+its dashboard; the small X asks before removing. **Sizes there are in `rem` against this app's 24px root**
+(`index.css`), not the browser's 16 — a first pass sized for 16px came out half again too big.
+
+With live sync, everything that happens in the game is applied to the run in progress whichever run is open
+(`ensureActiveRunLoaded`), and the run boundaries are read off the screen (`session.ts`): **"Enter Area" followed by
+the run = a new run** (`runStarted`; the area takes a while to load, so the screen counts for 15 s after it is gone),
+and the **"Life or Death" prompt not followed by the run = the run is over** (`runEnded`, after 3 s) — unless the run
+then comes back after all (a revive plays an ad first), which reopens it (`runResumed`). A run that simply comes
+back without Enter Area is the same run.
+
+**The menus before a run are read too**, since a run recorded with the wrong class is worth little (every run came
+out as the class and subject of the one before it): **Class** (the class marked "Selected" — its name, and its level
+from how many of its bonus lines are still gray), **Test Subject** (the one marked "Applying", and every subject drawn
+in black = unlocked) and **Research** (the lit dots under each node). Names are told apart by comparing the text on
+screen with each name drawn in the game font (`npm run capture:names` → `nameSignatures.ts`; a drawn name and the
+real one agree at ~0.85-0.90, the next-best name at ~0.70), so no screenshot per class is needed. Those menus only
+exist with no run going, so reading one means the run in progress is over: `prepareNextRun` turns it into history
+and puts what was read on a fresh run — visible in the companion at once — which "Enter Area" then simply starts. The
+Class is also read mid-run, off the first tile of the game's Owned Magic list. Still not read: the area and what it
+gives (only Academy's "Starting Level +10" is in the game's text files), the other classes' levels (their icon tint
+— only level 3's color is known), and nothing has been checked beyond the one screenshot of each menu.
+
 ## Navigation persists across reloads
 
 `App.tsx`'s top-level `screen` state (`Screen` — which of Home/Subject/Class/Dashboard/Research/Owned Magic/etc. is
@@ -125,6 +170,11 @@ showing) lives in `store/useNavigationStore.ts`, a small zustand `persist` store
 page resumes on whatever screen the player was looking at instead of always bouncing back to Home. Only the
 top-level screen persists this way; a screen's own in-progress UI state (an open `LoadoutSheet`, a selected filter
 chip, scroll position) stays local `useState` as before and resets on reload, same as it always has.
+
+`index.html` reads that same key in a small inline script, before the bundle loads: when the screen about to open is
+Home (nothing saved, or `home`) and this isn't the Android companion, it preloads Home's first title frame
+(`uiImages/title/TitleImgFront1.webp`, the screen's largest image), which the browser would otherwise only discover
+once React had rendered. Renaming the storage key, the `home` screen id or that file means changing it there too.
 
 ## Leveling: gated by Current Level, only through Select Magic, select-then-commit
 
@@ -189,6 +239,20 @@ by rarity chips with no "All" (it opens on Normal), to pick the ones the game ju
 opens the Treasure Chest window (`ArtifactOfferModal`, the game's screen): the offered artifacts as Owned Artifact cards
 (the selected one white), its name, rarity, real description, the Synergies it belongs to with their progress rings
 (`ItemSynergies`) and the Obtain button that adds it — and takes it out of the pool (the Recommender's artifact list too) **without leaving the sheet**: the modal closes and Select Artifact stays open for the next offer.
+
+**Enchant is a level-up offer of its own kind** (`data/enchant.ts`; the dictionary's row 329, type "인챈트" — neither
+a magic nor a passive, so it is in neither list): taking it opens the game's "Choose the Magic to strengthen" screen,
+where one **attack** magic — owned or not, all 17 are on the grid, in rows of 4, 4, 4, 3, 2 — gets +50% Damage and a
+second line of its own (the fifth description line of each magic's row: Cooldown -5%, Size +10%, Cyclone's Duration
++15%, Satellite's Rotation Speed +25%). The run records it as the magics it went to (`run.enchantedMagicIds`, read
+through `getEnchantedMagicIds` since an older saved run has no such field), and `collectMagicEffects` counts those
+lines like any other, doubled once the run owns the Fairy ("{Enchant} effect becomes 2X"). In the app it leads Select
+Magic's Special chip as the game draws it — an olive frame, icon and star in pale gold (`ENCHANT_FRAME`) — and its row
+opens `EnchantSelect` (the game's screen: dark tiles on dark brown, the selected one lighter, the "Selected" button),
+whose commit is the pick; Owned Magic then shows one Enchant tile whose modal lists the magics it went to, each with a
+"Remove". Read off one real level-up; **not checked in game**: that it can be taken three times (its max-level column
+says 3), whether the same magic can take it twice, how the Fairy doubles a cooldown cut (here 5% becomes 10%), and
+how the game's own Owned Magic list shows it.
 
 **Passives have levels like the magics** (`data/passiveLevels.ts`, from `eng_Dictionary_Ability.txt`): the ten base passives level up to
 Intelligence 5 (+10% ATK, +3% per level), Fast Casting 3 (-5% cooldown, +1%), Vitality 5 (+20% Max HP and +10% Life Orb, +10% Max HP per level),
@@ -279,7 +343,7 @@ vertically centered in the card (`align="center"`, the default).
 Every card in this view is measured off a real in-game screenshot, not this
 project's generic square `GridTile` look: 108x205px portrait cards
 (`aspect-[108/205]`), 6 per row, on a rough-edged dark-gray panel
-(`ArtifactBackGroundA.png`, 10% side margins), all sharing one black
+(`ArtifactBackGroundA.webp`, 10% side margins), all sharing one black
 background — **only the border color varies** (white for the class, blue for
 active magics, red for specials). Borders are the real `AreaProgressBarA`
 (top/bottom) and `AreaProgressBarB` (left/right, rotated) strip sprites, tinted
@@ -323,8 +387,8 @@ them:
   `boostSignal.*` keys, `config/tierColors.ts`'s `BOOST_SIGNAL_TIER_COLOR`) so
   it stops colliding in terminology with the actual Synergy screen.
 
-`SynergyScreen`'s completion ring is `uiImages/synergyRings/SynergyNum{n}.png`
-/`SynergyNumS{n}.png` (n = 3, 4, or 5) — pixel analysis confirmed
+`SynergyScreen`'s completion ring is `uiImages/synergyRings/SynergyNum{n}.webp`
+/`SynergyNumS{n}.webp` (n = 3, 4, or 5) — pixel analysis confirmed
 `SynergyNum{n}` is a segmented ring with exactly **n gaps**, i.e. the ring
 shape is **how many items this Synergy requires**, not a per-owned-item
 progress indicator. Both variants are white-on-transparent masks (tinted via
@@ -487,6 +551,135 @@ to be selected — see `ResearchScreen`'s fixed `h-[4.75rem]` description zone
 for the pattern. Screen titles and section headings are unaffected by this —
 they keep `ScreenTitle`'s `1.75rem` — this rule is specifically for body-style
 flavor text, not the four zones themselves.
+
+## Android companion (`android/`)
+
+The same web app also ships inside a small Android app (plain Java, no AndroidX) that shows it as a floating bubble
+over the real, unmodified game (`com.vkslrzm.Zombie`) — no root, no APK patching. `MainActivity` asks once for
+"Display over other apps", then "Play with companion" starts `OverlayService` (foreground, `specialUse`) and launches
+the game. Tapping the bubble opens a full-screen overlay panel with a `WebView` — never removed: "closed" it is parked
+just off the screen edge, invisible and untouchable, so the web app keeps running (and `.parked` in `index.css` pauses
+its animations there); `WebAssetClient` serves the bundled
+`dist/` from `https://appassets.androidplatform.net/magic-survival-cheet-sheet/` so the Vite build runs unchanged —
+**that path is Vite's `base`**; change both together. The APK is built by `.github/workflows/android.yml`
+(`npm run build`, then Gradle copies `dist/` in as `assets/web`); a stable signing key comes from the
+`ANDROID_KEYSTORE_*`/`ANDROID_KEY_*` repo secrets — without it each build needs an uninstall first, which wipes the
+saved run (localStorage). Anything web-only (external links, `window.open`, file downloads) won't work in the panel.
+
+**In the companion the app is only the Runs list and a run's Dashboard with what opens from it** (`IS_COMPANION`,
+`config/platform.ts`; `App.tsx`'s `COMPANION_SCREENS`). Home, "Start Game" and the Class / Subject / Research menus
+are left out there — the player's call: it sits on top of the real game, which already has all of those, and live
+sync reads them from it. Runs is the root (a remembered screen that isn't allowed falls back to it); its X goes on
+to the loaded run's Dashboard, "New Run" goes straight to the Dashboard (no class to pick first), and the Dashboard's
+header button leads back to Runs instead of to Class Select. The web build is unchanged. Two things the player turned
+down, so they aren't proposed again: an accessibility service to turn mark-then-confirm into a single tap (the
+permission is too much for what it buys — "disturb as little as possible"), and moving the bubble out of the way of
+a choice screen.
+
+**Live sync reads the game's screen** (optional, the launcher's checkbox; no root, the game untouched). Android's own
+capture prompt (`MediaProjection`) lets `ScreenCapture` mirror the screen at 720px wide; while the game — not the
+panel — is on screen, `OverlayService` ticks four times a second and, when a menu is up, the web app fetches the
+frame from `<base>__capture/frame` (`src/capture/bridge.ts`; frames never leave the phone, the APK has no network
+permission). Everything that interprets a frame is pure TypeScript in `src/capture/`, so it runs in Node too:
+- `recognize.ts` — which screen it is (each title's coarse bitmap, `titleSignatures.ts`, generated by
+  `npm run capture:signatures`; the run itself = the lit pause bars; the artifact-offer panel by its "Obtain" label,
+  since the game shows that one panel under five titles — Treasure Chest, Relic Chest, Black Chest, Obelisk, Broken
+  Obelisk. **The label is searched for, not assumed**: an Obelisk has a "Reroll" button under it that pushes "Obtain"
+  up, which is exactly why a first, fixed-position version read the Obelisk as "not a game screen". Treasure Chest
+  and Obelisk are fixtures; Relic Chest, Black Chest and Broken Obelisk have still never been seen; Enchant's grid of
+  magics by its "Selected" button — the very label, in the very spot, the Class menu is known by, so the two are told
+  apart by what is behind it: black there, a dark brown here. Before that an Enchant was read as the Class menu the
+  moment a magic was selected) and what it shows. Icons are matched against the
+  sprites the app already ships (`library.ts`: the icon's own bounding box stretched to a 16x16 grid, so position, size
+  and the game's squashing don't matter; magics/passives by shape, artifacts in color). Positions live in
+  `geometry.ts`, **measured on one phone (1080x2460)** and scaled by width/height — another aspect ratio is not
+  covered yet.
+- `session.ts` — what a *sequence* of frames means: a chest with a card selected, or Select Attribute with a talent
+  selected, followed by the run resuming = that one was taken (a selection is forgotten if the cards under it change —
+  an Obelisk's "Reroll" deals new ones on the same screen); the game's Owned Magic / Owned Artifact lists (seen twice
+  in a row) = the run's real magics, levels and artifacts. **A plain Select Magic row shows no selection before it
+  closes** (not even while held — the player checked), and Android never lets an app see taps meant for another, so
+  that pick can't be *read*. Instead it is **marked, then confirmed**: while Select Magic is up, `bridge.ts` hands the
+  host each row's rectangle plus the Retrieve button's (`Host.guard`, every tick as a keep-alive) and `OverlayService`
+  covers them with invisible windows that swallow taps. The first tap on one marks it (that window starts letting
+  touches through); the next tap there reaches the game. The game can only ever receive a tap on the marked one —
+  i.e. **only a tap on the same thing as the previous tap** — so when the screen closes the mark *is* the pick: a row
+  (`applyPick`), or Retrieve (nothing taken, a "Mana retrieved" notice). Nothing is drawn over the game (the player
+  asked for that): the **bubble** carries the state. During a choice it stops showing its heptagram and shows the
+  icon of the Dashboard button that choice belongs to, in the game's own two sprites — **white while nothing is
+  selected, gold once something is and only the confirming tap is missing** (ring to match): the Owned Magic icon
+  (`UI_Icon007` / `_Gold`) for a level-up, from the moment the guards are up ("ready, your first tap marks") to the
+  mark, with a beat on every mark since moving the mark changes nothing else; and the Owned Artifact icon
+  (`UI_Icon009` / `_Gold`) while a chest is open, gold once a card is selected and "Obtain" is still to be pressed
+  (`Host.choice` — the chest needs no guards, the game itself selects before it confirms). **Enchant** is both: its
+  row in Select Magic is marked and confirmed like any other, and the grid it opens selects before it confirms like a
+  chest — the bubble keeps the Owned Magic icon there, white until a magic is selected, gold until "Selected" is
+  pressed. The magic selected when the run comes back is the one it went to (`magicEnchanted`: the level and the
+  Enchant are recorded, nothing is asked — before, the level-up's other rows were offered as "which one did you
+  pick?"); the grid's X leads back to the same level-up, with nothing taken.
+  **A level-up offers two, three or four rows** (Arcanist: two, and then no Retrieve button), centered as a block — the
+  rows never change size, the title and the Retrieve button ride up and down with them; all three layouts are fixtures,
+  and Retrieve is found by its label rather than assumed (a fourth row sits where three rows' Retrieve would be).
+  A tap that lands before the guards are up (the screen is read a moment after it appears) leaves no mark: then the
+  companion falls back to asking (`pickNeeded` → small chips on the game's top bar), and the next Owned Magic visit
+  corrects whatever wasn't answered. **The guards must never outlive the screen they cover** — left up, they swallowed
+  the player's first second of movement after every pick. They come down the moment the confirming tap goes through:
+  the bubble's window watches for outside touches (`FLAG_WATCH_OUTSIDE_TOUCH`; Android tells it *that* a touch began
+  elsewhere, never where), and one that began on none of our guards while a row is marked can only have gone through
+  the marked row (`onOutsideTouch` → `__msCapture.passed()`; the pick is still only committed once the screen is seen
+  to close, and a tap that closed nothing within 0.7 s puts the mark back). Failing that, they drop on the second
+  reading that no longer shows Select Magic, 1.5 s after the last keep-alive, and when the panel opens. That untested-
+  on-device path is also what lets several level-ups in a row (Terra, the Owl, Tarot) be picked a second apart: each
+  offer's pick is settled when the next, different offer is read.
+- `apply.ts` — commits through the same store actions as the app's own sheets, and only ever adds or raises (a missed
+  icon must not delete a recorded talent). **`run.currentLevel` goes up with a pick (a learned talent, an answered
+  chip), never with the level-up screen appearing**: "Mana Retrieve" closes Select Magic without taking anything and
+  the character keeps its level (confirmed by the player) — the same select-then-commit rule as "Leveling" above.
+
+The companion's own bubble is part of what gets captured. **It stays where the player put it on every choice screen
+— a level-up, a chest, an obelisk — whatever it covers**: the player asked for exactly that twice (a bubble that moved
+each time a choice opened was worse than what it hides), so do not bring a keep-out back for those. The reading copes
+instead: a level-up's rows are found from *either* edge (the bubble docks to one side), and the bubble's own
+rectangle — `OverlayService` sends it with every tick — is left out of the icon it sits on (`readSelectMagic`'s
+`mask`), so that row is read from what is left of its icon or not at all, never as something else. The one place it
+still **steps aside** (to the bottom corner on its side) is the Owned lists, where a card under it is not read at all
+(`keepOut.ts`, `Host.avoid`). It can't be dropped on the game's top bar either: there it would hide the pause button
+the run is recognised by.
+
+`npm run check:capture` replays the real screenshots in `scripts/capture-fixtures/` (screens, icons, levels,
+selections and whole sequences, at 1080 and at the 720 the capture uses). Run it after touching `src/capture/` or
+replacing a sprite, and add the screenshot whenever the player reports a misread screen.
+
+**It has to run next to the game on a weak phone, so it is built to cost nothing while the player is just playing**
+(asked for by the player; keep it that way when adding to it):
+- The tick that runs all game long looks at **three pixels** in Java (`ScreenCapture.showsTheRun`, the same pause-bar
+  test as `isGameplay` in `recognize.ts` — keep the two in step), which is cheap enough to do every 60 ms: that
+  pace, not the reading itself, is what decides how soon a level-up is noticed and its taps guarded. A menu is read
+  every 60 ms too while it is up (an unchanged one costs nothing: no frame crosses over), and once nothing readable has been on screen for 2 s (the game's animated main menu,
+  which would otherwise hand over a frame per tick) only once a second. While the run stays on screen no frame is copied
+  and the web app isn't called at all. A frame (4.7 MB) only crosses into the WebView when a menu is up, and a menu is
+  a still picture: one frame, then "unchanged" until it closes. Before this, every tick copied a full frame just to
+  learn the run was still on.
+- The sprite templates are **generated ahead of time** (`npm run capture:templates` → `templates.generated.json`, one
+  byte per value, a lazy chunk loaded at the first menu) instead of decoding ~300 images on the phone;
+  `check:capture` reads with those shipped templates and fails if they are stale.
+- **Nothing animates while the panel is parked**: `.parked` pauses the CSS animations and `useUiStore`'s `parked`
+  stops the `setInterval` ones (`SubjectSprite`, Home's title, the Magic Circle bubble's spinning circle — the
+  Dashboard is where the app usually sits while the player plays). A new timer-driven animation must check it too.
+- The header and the bubble are only redrawn when what they show changes, not every tick.
+- **720px is the floor**: at 540 the artifact matching already fails (`WIDTHS=540 npm run check:capture`).
+- What is left is the mirror itself (the system draws each frame a second time, like a screen recording) and the
+  WebView's memory. "Low-power capture" (launcher checkbox, off by default, **never tried on a device**) detaches the
+  mirror's surface between readings so only a few frames a second are drawn twice.
+- The status line shows the installed version, how long the last reading took (`· N ms`) and the frames handed to the
+  reader in total and **over the last full minute** — the number that should sit near zero while simply playing (the
+  total alone misled: it also counts the minutes spent in the game's menus). Ask for that line from a slow phone.
+
+None of the Android side can be run from this repo's machine (no SDK; CI builds it), so it reports on itself: the
+bubble's ring is gold with live sync off, green while the reader answers, red when it was asked for but isn't working,
+and the panel's header says what the reader last saw (`Host.status`, sent every tick) or why capture failed.
+**Holding the bubble saves the frame the reader gets** to Pictures/MSCompanion — ask for that file, not a normal
+screenshot, when a screen is misread on the phone.
 
 ## Source of truth
 

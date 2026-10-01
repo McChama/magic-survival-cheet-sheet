@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // Official Magic Survival font (magicSurvival.ttf), loaded via @font-face in index.css.
+        // Official Magic Survival font (magicSurvival.ttf), loaded via @font-face in index.css (preloaded from index.html).
         magic: ["MagicSurvival", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {

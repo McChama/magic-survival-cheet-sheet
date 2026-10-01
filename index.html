@@ -3,8 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" href="/assets/magicSurvival.ttf" as="font" type="font/ttf" crossorigin />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Magic Survival · Run Companion</title>
+    <script>
+      // Home's title art is the largest thing on its screen, and React is what draws it: left alone, the browser
+      // only learns about the picture once the whole bundle has downloaded and run. This asks for it right away, in
+      // parallel with the bundle — but only when Home is the screen about to open: the app resumes on the screen it
+      // was left on (store/useNavigationStore.ts — same storage key, keep the two in step), and the Android
+      // companion has no Home at all. The URL is the first of HomeScreen.tsx's TITLE_FRAMES.
+      // (Wrapped in a function: a top-level `var` here would be a global.)
+      (function () {
+        try {
+          var saved = JSON.parse(localStorage.getItem("magic-survival-navigation") || "null");
+          var resumeOn = saved && saved.state && saved.state.screen;
+          if (window.MSCompanionHost || (resumeOn && resumeOn !== "home")) return;
+          var link = document.createElement("link");
+          link.rel = "preload";
+          link.as = "image";
+          link.href = "%BASE_URL%assets/uiImages/title/TitleImgFront1.webp";
+          link.fetchPriority = "high";
+          document.head.appendChild(link);
+        } catch (e) {
+          // Storage blocked or unreadable: no head start, the picture loads when React asks for it.
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

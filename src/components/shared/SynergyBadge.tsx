@@ -22,7 +22,7 @@ function segmentFill(owned: boolean[]): string {
 }
 
 /**
- * The completion-ring frame: `SynergyNum{n}.png`/`SynergyNumS{n}.png` (n = how many items
+ * The completion-ring frame: `SynergyNum{n}.webp`/`SynergyNumS{n}.webp` (n = how many items
  * this Synergy requires — the dictionary's own "count" column — NOT how many the player
  * currently owns; pixel analysis confirmed `SynergyNum{n}` has exactly n gaps,
  * a *structural* ring shape, not a per-owned-item progress ring). Both variants are pure
@@ -38,7 +38,7 @@ export function CompletionRing({ owned }: { owned: boolean[] }) {
   const hasProgress = !complete && owned.some(Boolean);
   return (
     <MaskedSprite
-      src={uiImage(`synergyRings/${file}.png`)}
+      src={uiImage(`synergyRings/${file}.webp`)}
       tint={complete ? SYNERGY_RING_COMPLETE : SYNERGY_RING_DIM}
       fill={hasProgress ? segmentFill(owned) : undefined}
       className="absolute inset-0 pointer-events-none"
