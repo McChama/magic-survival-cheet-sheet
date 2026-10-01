@@ -174,7 +174,6 @@ for (const width of WIDTHS) {
   // The companion's bubble only ever steps aside on the Owned lists, where a card under it is simply not read. On
   // a choice screen (a level-up, a chest) it stays where the player put it, whatever it covers.
   const bubbleRight = { x: 0.844, y: 0.24, w: 0.156, h: 0.068 };
-  const bubbleLeft = { x: 0, y: 0.24, w: 0.156, h: 0.068 };
   const covered = async (fixture, screen, bubble) => readKeepOut(await frame(fixture), screen).some((zone) => intersects(zone, bubble));
   expect("bubble on the Owned Magic cards moves", await covered("owned-magic", "ownedMagic", bubbleRight), true);
   expect("bubble below the Owned Magic cards stays", await covered("owned-magic", "ownedMagic", { ...bubbleRight, y: 0.6 }), false);
