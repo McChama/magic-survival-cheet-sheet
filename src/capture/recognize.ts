@@ -371,22 +371,83 @@ export interface SelectMagicRow {
   bottom: number;
 }
 
-/** The magics/passives a level-up offers, top to bottom. */
-export function readSelectMagic(frame: Frame, library: Library): SelectMagicRow[] {
-  const probes = SELECT_MAGIC.probeXs.map((x) => scaleX(frame, x));
-  const rowHeight = scaleY(frame, SELECT_MAGIC.rowHeight);
-  const rows = runs(
-    scaleY(frame, SELECT_MAGIC.scanTop),
-    scaleY(frame, SELECT_MAGIC.scanBottom),
-    (y) => probes.every((x) => luma(frame, x, y) < 14),
-    Math.round(rowHeight * 0.6)
-  );
+export interface SelectMagicReading {
+  /** The magics/passives offered, top to bottom: two, three or four of them. */
+  rows: SelectMagicRow[];
+  /** The "Mana N% Retrieve" button's vertical extent in frame pixels; null when this level-up has none. */
+  retrieve: { top: number; bottom: number } | null;
+}
+
+/** A row's black is pure black; the dimmed field behind it never quite is, even in a dark area full of enemies. */
+const ROW_BLACK = 8;
+
+/** Where the offered rows are (top and bottom, in frame pixels), top to bottom — without looking at what they offer. */
+export function findSelectMagicRows(frame: Frame): [number, number][] {
+  const g = SELECT_MAGIC;
+  const probes = g.probeXs.map((x) => scaleX(frame, x));
+  const rowHeight = scaleY(frame, g.rowHeight);
+  const rowGap = scaleY(frame, g.rowGap);
+  const isBlack = (x: number, y: number) => luma(frame, x, y) < ROW_BLACK;
+  const bands = runs(scaleY(frame, g.scanTop), scaleY(frame, g.scanBottom), (y) => probes.every((x) => isBlack(x, y)), Math.round(rowHeight * 0.6));
+
+  // A row's top margin is black from edge to edge (its "Lv N" label and its name start lower):
+  // that is what tells a row from a black enemy that happens to sit on the probe columns.
+  const spansTheRow = (top: number, height: number) => {
+    const y = top + Math.round(height * 0.06);
+    let black = 0;
+    for (let i = 0; i < 9; i++) if (isBlack(scaleX(frame, 150 + i * 100), y)) black++;
+    return black >= 8;
+  };
+
+  const extents: [number, number][] = [];
+  for (const [top, bottom] of bands) {
+    // Rows whose gap the field left black come back as one tall band: split it back into rows.
+    const count = Math.max(1, Math.round((bottom - top + 1 + rowGap) / (rowHeight + rowGap)));
+    const height = (bottom - top + 1 - (count - 1) * rowGap) / count;
+    for (let i = 0; i < count; i++) {
+      const rowTop = Math.round(top + i * (height + rowGap));
+      if (spansTheRow(rowTop, height)) extents.push([rowTop, Math.round(rowTop + height - 1)]);
+    }
+  }
+  return extents;
+}
+
+export function readSelectMagic(frame: Frame, library: Library): SelectMagicReading {
+  const g = SELECT_MAGIC;
+  const extents = findSelectMagicRows(frame);
   const offered = library.icons.filter((t) => t.kind !== "class");
-  const left = scaleX(frame, SELECT_MAGIC.iconLeft);
-  const right = scaleX(frame, SELECT_MAGIC.iconRight);
-  return rows.map(([top, bottom]) => {
+  const left = scaleX(frame, g.iconLeft);
+  const right = scaleX(frame, g.iconRight);
+  const rows = extents.map(([top, bottom]) => {
     const height = bottom - top + 1;
     const patch = extractPatch(frame, { x: left, y: top + Math.round(height * 0.08), w: right - left, h: Math.round(height * 0.84) }, false);
     return { match: patch ? confident(bestMatch(patch, offered)) : null, top, bottom };
   });
+  return { rows, retrieve: rows.length ? findRetrieve(frame, rows[rows.length - 1].bottom) : null };
+}
+
+/**
+ * The Retrieve button under the last row, found by its pale-blue label: one centered line of
+ * text inside a black box. (The box alone can't be told from a dark field, and nothing else under
+ * the rows is that color — the field's orbs are blue, magenta or orange.)
+ */
+function findRetrieve(frame: Frame, lastRowBottom: number): { top: number; bottom: number } | null {
+  const g = SELECT_MAGIC;
+  const left = scaleX(frame, g.retrieveLeft);
+  const width = scaleX(frame, g.retrieveWidth);
+  const isLabel = (x: number, y: number) => {
+    const [r, green, b] = rgb(frame, x, y);
+    return green > 170 && b > 170 && r > 120;
+  };
+  const box = inkBounds({ x: left, y: lastRowBottom + scaleY(frame, 20), w: width, h: scaleY(frame, g.retrieveReach) }, isLabel, 30);
+  if (!box) return null;
+  // One line of text, centered in the button, with the button's black on either side of it.
+  const centerX = box.x + box.w / 2;
+  const centerY = box.y + (box.h >> 1);
+  const centered = Math.abs(centerX - (left + width / 2)) < width * 0.1;
+  const oneLine = box.h < scaleY(frame, 70) && box.w > width * 0.3;
+  const inBlack = luma(frame, left + scaleX(frame, 25), centerY) < ROW_BLACK && luma(frame, left + width - scaleX(frame, 25), centerY) < ROW_BLACK;
+  if (!centered || !oneLine || !inBlack) return null;
+  const half = scaleY(frame, g.retrieveHeight) / 2;
+  return { top: Math.round(centerY - half), bottom: Math.round(centerY + half) };
 }

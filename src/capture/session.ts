@@ -1,4 +1,4 @@
-import { REF_HEIGHT, REF_WIDTH, type Frame } from "./frame";
+import { REF_WIDTH, type Frame } from "./frame";
 import { SELECT_MAGIC } from "./geometry";
 import type { ScreenRect } from "./keepOut";
 import type { Library, Match } from "./library";
@@ -27,18 +27,10 @@ export interface OfferRow {
   rect: ScreenRect;
 }
 
-/** The "Mana N% Retrieve" button under a level-up's rows: tapping it declines the level-up. */
-export const RETRIEVE_RECT: ScreenRect = {
-  x: SELECT_MAGIC.retrieve.x / REF_WIDTH,
-  y: SELECT_MAGIC.retrieve.y / REF_HEIGHT,
-  w: SELECT_MAGIC.retrieve.w / REF_WIDTH,
-  h: SELECT_MAGIC.retrieve.h / REF_HEIGHT,
-};
-
 /** What one frame shows, already reduced to ids. */
 export type Observation =
   | { screen: "gameplay" | "unknown" | "pause" | "synergy" }
-  | { screen: "selectMagic"; options: OwnedRef[]; rows: OfferRow[] }
+  | { screen: "selectMagic"; options: OwnedRef[]; rows: OfferRow[]; retrieve: ScreenRect | null }
   | { screen: "selectAttribute"; magicId: string | null; groupLevel: number | null; talent: string | null }
   | { screen: "treasureChest"; selectedId: string | null }
   | { screen: "ownedMagic"; entries: OwnedLevel[] }
@@ -67,7 +59,8 @@ export function observe(frame: Frame, library: Library): Observation {
   const screen: Screen = classifyScreen(frame);
   switch (screen) {
     case "selectMagic": {
-      const rows = readSelectMagic(frame, library).map((row) => ({
+      const reading = readSelectMagic(frame, library);
+      const rows = reading.rows.map((row) => ({
         ref: ownedRef(row.match)[0] ?? null,
         rect: {
           x: SELECT_MAGIC.rowLeft / REF_WIDTH,
@@ -76,7 +69,14 @@ export function observe(frame: Frame, library: Library): Observation {
           h: (row.bottom - row.top + 1) / frame.height,
         },
       }));
-      return { screen, options: rows.flatMap((row) => (row.ref ? [row.ref] : [])), rows };
+      // The "Mana N% Retrieve" button under the rows — tapping it declines the level-up. Not every level-up has one.
+      const retrieve = reading.retrieve && {
+        x: SELECT_MAGIC.retrieveLeft / REF_WIDTH,
+        y: reading.retrieve.top / frame.height,
+        w: SELECT_MAGIC.retrieveWidth / REF_WIDTH,
+        h: (reading.retrieve.bottom - reading.retrieve.top + 1) / frame.height,
+      };
+      return { screen, options: rows.flatMap((row) => (row.ref ? [row.ref] : [])), rows, retrieve };
     }
     case "selectAttribute": {
       const reading = readSelectAttribute(frame, library);

@@ -521,9 +521,15 @@ permission). Everything that interprets a frame is pure TypeScript in `src/captu
   closes** (not even while held — the player checked), and Android never lets an app see taps meant for another, so
   that pick can't be *read*. Instead it is **marked, then confirmed**: while Select Magic is up, `bridge.ts` hands the
   host each row's rectangle plus the Retrieve button's (`Host.guard`, every tick as a keep-alive) and `OverlayService`
-  covers them with invisible windows that swallow taps. The first tap on one marks it (a white frame, and that window
-  starts letting touches through); the next tap there reaches the game. The game can only ever receive a tap on the
-  marked one, so when the screen closes the mark *is* the pick — a row (`applyPick`), or Retrieve (nothing taken).
+  covers them with invisible windows that swallow taps. The first tap on one marks it (that window starts letting
+  touches through); the next tap there reaches the game. The game can only ever receive a tap on the marked one —
+  i.e. **only a tap on the same thing as the previous tap** — so when the screen closes the mark *is* the pick: a row
+  (`applyPick`), or Retrieve (nothing taken, a "Mana retrieved" notice). Nothing is drawn over the game (the player
+  asked for that): the **bubble** carries the state, ring and icon — cyan once the guards are up ("ready, your first
+  tap marks"), white once something is marked, with a beat on every mark since moving the mark changes no color.
+  **A level-up offers two, three or four rows** (Arcanist: two, and then no Retrieve button), centered as a block — the
+  rows never change size, the title and the Retrieve button ride up and down with them; all three layouts are fixtures,
+  and Retrieve is found by its label rather than assumed (a fourth row sits where three rows' Retrieve would be).
   A tap that lands before the guards are up (the screen is read a moment after it appears) leaves no mark: then the
   companion falls back to asking (`pickNeeded` → small chips on the game's top bar), and the next Owned Magic visit
   corrects whatever wasn't answered. The guards drop on their own 1.5 s after the last keep-alive, and when the panel

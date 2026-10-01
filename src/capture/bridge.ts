@@ -5,7 +5,7 @@ import { applyCaptureEvent, applyPick, refName } from "./apply";
 import type { Frame } from "./frame";
 import { readKeepOut, type ScreenRect } from "./keepOut";
 import { buildLibrary, type Library } from "./library";
-import { CaptureSession, observe, RETRIEVE_RECT, type Observation, type OwnedRef } from "./session";
+import { CaptureSession, observe, type Observation, type OwnedRef } from "./session";
 
 /**
  * The live half of the screen reading, only alive inside the Android companion
@@ -110,7 +110,7 @@ export function initCaptureBridge() {
   let busy = false;
   let keepOut: ScreenRect[] = [];
   let avoidSent = "[]";
-  /** Select Magic's tap guards: what each guarded row offers (the Retrieve button is one past the last), and the one the player marked. */
+  /** Select Magic's tap guards: what each guarded row offers (the Retrieve button, when there is one, is one past the last), and the one the player marked. */
   let guarding = false;
   let guardRefs: (OwnedRef | null)[] = [];
   let marked: number | null = null;
@@ -132,7 +132,7 @@ export function initCaptureBridge() {
     // Tapped before the guards were up (the screen is read a moment after it appears): fall back to asking.
     if (index === null) return ask(options);
     // Mana Retrieve: nothing taken, and the character keeps its level.
-    if (index >= guardRefs.length) return;
+    if (index >= guardRefs.length) return host!.toast(i18n.t("capture.retrieved"));
     const ref = guardRefs[index];
     if (!ref) return ask(options);
     const message = applyPick(ref);
@@ -178,7 +178,7 @@ export function initCaptureBridge() {
       if (observation.screen === "selectMagic") {
         // Until a row is marked the reading may still be settling; after it, the mark's own border hides part of a row.
         if (marked === null) guardRefs = observation.rows.map((row) => row.ref);
-        host!.guard(JSON.stringify([...observation.rows.map((row) => row.rect), RETRIEVE_RECT]));
+        host!.guard(JSON.stringify([...observation.rows.map((row) => row.rect), ...(observation.retrieve ? [observation.retrieve] : [])]));
         guarding = true;
       } else if (observation.screen !== "unknown") {
         // Any other screen ends the offer (Select Attribute takes it from here on its own).

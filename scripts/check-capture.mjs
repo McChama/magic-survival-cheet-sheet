@@ -16,6 +16,8 @@ const VERBOSE = process.argv.includes("--verbose");
 
 const SCREENS = {
   "select-magic": "selectMagic",
+  "select-magic-2": "selectMagic",
+  "select-magic-4": "selectMagic",
   "select-attribute": "selectAttribute",
   "select-attribute-picked": "selectAttribute",
   "treasure-chest": "treasureChest",
@@ -95,16 +97,26 @@ for (const width of WIDTHS) {
     expect(fixture, attribute, { magicId: "shield", groupLevel: 5, talents: ["Barrier", "Reconstruct", "Destruction Field"], selected });
   }
 
-  const offerFrame = await frame("select-magic");
-  const offer = readSelectMagic(offerFrame, library);
-  if (VERBOSE) console.log("  select magic:", offer.map((row) => detail(row.match)).join(" | "));
-  expect("select magic", offer.map((row) => id(row.match)), ["magic:flashShock", "magic:shield", "magic:meteor"]);
-  // Where each row is, as the share of the screen height the tap guards are laid out with (measured: 685-1069, 1113-1496, 1541-1924 of 2460).
-  expect(
-    "select magic rows",
-    offer.map((row) => [Math.round((row.top / (offerFrame.height)) * 100), Math.round((row.bottom / (offerFrame.height)) * 100)]),
-    [[28, 43], [45, 61], [63, 78]]
-  );
+  // A level-up offers two (Arcanist), three or four rows, centered: what each row is, where it is (the share of
+  // the screen height the tap guards are laid out with), and where the Retrieve button is — two rows come without one.
+  const OFFERS = {
+    "select-magic": { ids: ["magic:flashShock", "magic:shield", "magic:meteor"], rows: [[28, 43], [45, 61], [63, 78]], retrieve: [81, 86] },
+    "select-magic-2": { ids: ["magic:energyBolt", "magic:shield"], rows: [[37, 53], [55, 70]], retrieve: null },
+    "select-magic-4": {
+      ids: ["magic:magicCircle", "magic:electricShock", "magic:thunderstorm", "magic:fireball"],
+      rows: [[20, 36], [37, 53], [55, 70], [72, 88]],
+      retrieve: [90, 95],
+    },
+  };
+  for (const [fixture, expected] of Object.entries(OFFERS)) {
+    const offerFrame = await frame(fixture);
+    const share = (y) => Math.round((y / offerFrame.height) * 100);
+    const offer = readSelectMagic(offerFrame, library);
+    if (VERBOSE) console.log(`  ${fixture}:`, offer.rows.map((row) => detail(row.match)).join(" | "));
+    expect(fixture, offer.rows.map((row) => id(row.match)), expected.ids);
+    expect(`${fixture} rows`, offer.rows.map((row) => [share(row.top), share(row.bottom)]), expected.rows);
+    expect(`${fixture} retrieve`, offer.retrieve && [share(offer.retrieve.top), share(offer.retrieve.bottom)], expected.retrieve);
+  }
 
   // Where the companion's bubble may not sit: it should only have to move when it covers something that is read.
   // The two bubbles below are the size of the real one, docked right (where the player keeps it) and left.
@@ -116,6 +128,8 @@ for (const width of WIDTHS) {
   expect("bubble on the Owned Magic cards moves", await covered("owned-magic", "ownedMagic", bubbleRight), true);
   expect("bubble below the Owned Magic cards stays", await covered("owned-magic", "ownedMagic", { ...bubbleRight, y: 0.6 }), false);
   expect("bubble on the chest's cards moves", await covered("treasure-chest", "treasureChest", { ...bubbleRight, y: 0.3 }), true);
+  expect("bubble above the four rows stays", await covered("select-magic-4", "selectMagic", { ...bubbleLeft, y: 0.12 }), false);
+  expect("bubble on the first of four rows moves", await covered("select-magic-4", "selectMagic", { ...bubbleLeft, y: 0.22 }), true);
   expect("bubble on Pause stays", await covered("pause", "pause", bubbleRight), false);
   expect("bubble on Select Attribute stays", await covered("select-attribute", "selectAttribute", bubbleRight), false);
 

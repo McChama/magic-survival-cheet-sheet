@@ -1,6 +1,6 @@
 import { REF_HEIGHT, REF_WIDTH, type Frame, type Rect } from "./frame";
 import { CHEST, OWNED_GRID, SELECT_MAGIC } from "./geometry";
-import { findOwnedCards, type Screen } from "./recognize";
+import { findOwnedCards, findSelectMagicRows, type Screen } from "./recognize";
 
 /** A rectangle as fractions of the screen (0-1), so it means the same on the capture and on the real display. */
 export interface ScreenRect {
@@ -36,16 +36,17 @@ export function readKeepOut(frame: Frame, screen: Screen): ScreenRect[] {
     }
     case "treasureChest":
       return [fromRef({ x: CHEST.scanLeft, y: CHEST.cardTop, w: CHEST.scanRight - CHEST.scanLeft, h: CHEST.cardBottom - CHEST.cardTop })];
-    case "selectMagic":
-      // A row's left end: the edge that marks it as a row, and its icon.
-      return [
-        fromRef({
-          x: SELECT_MAGIC.rowLeft,
-          y: SELECT_MAGIC.scanTop,
-          w: SELECT_MAGIC.iconRight - SELECT_MAGIC.rowLeft,
-          h: SELECT_MAGIC.scanBottom - SELECT_MAGIC.scanTop,
-        }),
-      ];
+    case "selectMagic": {
+      // A row's left end: the edge that marks it as a row, and its icon. The rows are centered, so if
+      // the ones found sit lopsided there is another the bubble is hiding: the span is mirrored to cover it.
+      const g = SELECT_MAGIC;
+      const rows = findSelectMagicRows(frame).map(([top, bottom]) => [(top * REF_HEIGHT) / frame.height, (bottom * REF_HEIGHT) / frame.height]);
+      const first = rows.length ? rows[0][0] : g.scanTop;
+      const last = rows.length ? rows[rows.length - 1][1] : g.scanBottom;
+      const top = Math.max(g.scanTop, Math.min(first, 2 * g.centerY - last));
+      const bottom = Math.min(g.scanBottom, Math.max(last, 2 * g.centerY - first));
+      return [fromRef({ x: g.rowLeft, y: top, w: g.iconRight - g.rowLeft, h: bottom - top })];
+    }
     default:
       return [];
   }

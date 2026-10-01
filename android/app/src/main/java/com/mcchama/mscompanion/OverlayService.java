@@ -67,7 +67,9 @@ import java.util.List;
  * Live sync (optional, {@link ScreenCapture}): while the panel is parked, the web app is asked
  * twice a second to read the captured frame; it reports back through {@link Host}. The bubble's
  * ring shows whether that loop is alive (green), broken (red) or off (gold), and the panel's
- * header says what the reader last saw.
+ * header says what the reader last saw. During a level-up the whole bubble — ring and icon —
+ * says where "mark, then confirm" stands: cyan once the tap guards are up, white once something
+ * is marked.
  */
 public class OverlayService extends Service {
     private static final String CHANNEL_ID = "companion";
@@ -91,6 +93,10 @@ public class OverlayService extends Service {
     private static final int RING_OFF = Color.parseColor("#efc84f");
     private static final int RING_ALIVE = Color.parseColor("#3fdc5a");
     private static final int RING_BROKEN = Color.parseColor("#f0603c");
+    /** Select Magic's tap guards are up: the color of that screen's own title. */
+    private static final int RING_LISTENING = Color.parseColor("#5ff5e1");
+    /** A row (or Retrieve) is marked: the white the game itself uses for a selection. */
+    private static final int RING_MARKED = Color.WHITE;
 
     private WindowManager windowManager;
     private ImageView bubble;
@@ -251,7 +257,13 @@ public class OverlayService extends Service {
             ring = silent ? RING_BROKEN : RING_ALIVE;
         }
         syncLine.setText(line);
-        if (bubbleRing != null) bubbleRing.setStroke(dp(2), ring);
+        if (bubbleRing == null) return;
+        // The guards outrank the sync colors: they are what the player needs to know before tapping a row.
+        boolean guarding = !guards.isEmpty();
+        int tint = markedGuard >= 0 ? RING_MARKED : RING_LISTENING;
+        bubbleRing.setStroke(dp(2), guarding ? tint : ring);
+        if (guarding) bubble.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
+        else bubble.clearColorFilter();
     }
 
     /** What the web app calls back into (window.MSCompanionHost — see src/capture/bridge.ts). */
@@ -296,10 +308,13 @@ public class OverlayService extends Service {
      * shows no selection first, and Android never lets one app see taps meant for another — so
      * the only way to know the pick is to take the first tap ourselves. Each rectangle (a row,
      * or the Retrieve button) gets an invisible window that swallows taps. Tapping one marks it:
-     * its window turns into a white frame that lets touches through, so the *next* tap there
-     * reaches the game, while the others keep swallowing. The game can therefore only ever
-     * receive a tap on the marked one — the same select-then-confirm the game itself uses for
-     * chests and attributes.
+     * its window starts letting touches through, so the *next* tap there reaches the game, while
+     * the others keep swallowing. The game can therefore only ever receive a tap on the marked
+     * one — the same select-then-confirm the game itself uses for chests and attributes.
+     *
+     * Nothing is drawn over the game. The bubble carries the state instead: cyan while the guards
+     * are up and nothing is marked ("ready — your first tap marks"), white once something is,
+     * with a beat every time a mark registers.
      */
     private void showGuards(String rectsJson) {
         main.removeCallbacks(dropGuards);
@@ -340,6 +355,7 @@ public class OverlayService extends Service {
         // tapped (to consult the companion before picking) where it overlaps a guarded row.
         windowManager.removeViewImmediate(bubble);
         windowManager.addView(bubble, bubbleParams);
+        refreshSyncStatus();
     }
 
     private void markGuard(int index) {
@@ -349,18 +365,19 @@ public class OverlayService extends Service {
             WindowManager.LayoutParams params = (WindowManager.LayoutParams) guard.getLayoutParams();
             boolean marked = i == index;
             params.flags = marked ? GUARD_FLAGS | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE : GUARD_FLAGS;
-            // Android 12+ only lets touches pass through an overlay this see-through or more.
-            params.alpha = marked ? 0.8f : 1f;
-            GradientDrawable frame = null;
-            if (marked) {
-                frame = new GradientDrawable();
-                frame.setColor(Color.TRANSPARENT);
-                frame.setStroke(dp(3), Color.WHITE);
-            }
-            guard.setBackground(frame);
+            // Android 12+ blocks touches through another app's overlay unless the window itself is
+            // (near) transparent — what it draws doesn't count, its alpha does.
+            params.alpha = marked ? 0f : 1f;
             windowManager.updateViewLayout(guard, params);
         }
         webView.evaluateJavascript("window.__msCapture&&window.__msCapture.mark(" + index + ")", null);
+        refreshSyncStatus();
+        // A beat for every mark: moving the mark to another row changes no color, but it still registered.
+        // (Inward: the bubble's window is exactly its size, so growing would be clipped.)
+        bubble.animate().cancel();
+        bubble.setScaleX(0.72f);
+        bubble.setScaleY(0.72f);
+        bubble.animate().scaleX(1f).scaleY(1f).setDuration(220).start();
     }
 
     private void removeGuards() {
@@ -370,9 +387,11 @@ public class OverlayService extends Service {
 
     private void removeGuardViews() {
         for (View guard : guards) windowManager.removeView(guard);
+        boolean had = !guards.isEmpty();
         guards.clear();
         guardLayout = null;
         markedGuard = -1;
+        if (had && syncLine != null) refreshSyncStatus();
     }
 
     /**

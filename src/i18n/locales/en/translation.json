@@ -196,6 +196,7 @@
       "ownedMagic": "Owned Magic ({{count}} read)",
       "ownedArtifact": "Owned Artifact ({{count}} read)",
       "nothingSelected": "nothing selected"
-    }
+    },
+    "retrieved": "Mana retrieved"
   }
 }
